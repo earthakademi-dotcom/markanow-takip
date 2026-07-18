@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# --- KULLANICI, ŞİFRE VE ROL TANIMLAMALARI ---
+# --- STREAMING_CHUNK: Configuring users and authorization credentials... ---
+# Kullanıcı adı, şifre ve rol tanımlamaları
 KULLANICILAR = {
     "Ali Osman Yelbey": {"sifre": "MarkanowAdmin2026!", "rol": "Admin"},
     "Buğra Büyükeren": {"sifre": "BugraVekil456!", "rol": "Admin"},
@@ -13,31 +14,63 @@ KULLANICILAR = {
 
 st.set_page_config(page_title="Markanow ERP & Satış Takip", layout="wide")
 
+# --- STREAMING_CHUNK: Checking session state and login credentials... ---
 # Oturum Hafızası Başlatma
 if "giris_yapildi" not in st.session_state:
     st.session_state.giris_yapildi = False
     st.session_state.kullanici_adi = ""
     st.session_state.kullanici_rolu = ""
 
+# --- STREAMING_CHUNK: Initializing database table structure with class code... ---
+# Temel Veri Tabanı Yapısı (Sınıf Kodu eklenmiş hali)
 if "markalar" not in st.session_state:
     st.session_state.markalar = pd.DataFrame(columns=[
-        "Marka Adı", "Personel", "Adı Soyadı", "Telefon No", "Satış Tarihi",
-        "Başvuru Ücreti", "B. Onay Durumu", "Savunma Ücreti", "S. Onay Durumu",
+        "Marka Adı", "Sınıf Kodu", "Personel", "Adı Soyadı", "Telefon No", "Satış Tarihi",
+        "Ödeme Seçeneği", "Başvuru Ücreti", "B. Onay Durumu", "Savunma Ücreti", "S. Onay Durumu",
         "Tescil Ücreti", "T. Onay Durumu", "Toplam Onaylı Ciro", "Başvuru No",
         "Başvuru Tarihi", "Bülten Tarihi", "İlan Bitiş Tarihi", "İtiraz Tebliğ T.",
         "Savunma Son Gün", "Kurul Kararı / Durum", "Belge Son Ödeme T.", "Yenileme (Vize) T."
     ])
 
+# Geçmiş verilerde Sınıf Kodu kolonu yoksa otomatik olarak ekle ve hata oluşmasını engelle
+if "Sınıf Kodu" not in st.session_state.markalar.columns:
+    st.session_state.markalar.insert(1, "Sınıf Kodu", "-")
+
+# --- STREAMING_CHUNK: Initializing dynamic columns for payment options... ---
+if "Ödeme Seçeneği" not in st.session_state.markalar.columns:
+    st.session_state.markalar.insert(6, "Ödeme Seçeneği", "-")
+
 if "danismanlar" not in st.session_state:
     st.session_state.danismanlar = ["MERVE YURTLU", "Ahmet Yılmaz", "Buğra Büyükeren"]
 
-# --- 1. GİRİŞ EKRANI KONTROLÜ ---
+# --- STREAMING_CHUNK: Displaying the logo and login interface... ---
+def logo_goster():
+    st.markdown(
+        """
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+            <div style="background-color: #1e3a8a; color: white; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; font-family: sans-serif;">
+                M
+            </div>
+            <div>
+                <h1 style="margin: 0; font-family: sans-serif; font-weight: bold; color: #1e293b; letter-spacing: -1px; font-size: 32px;">
+                    markanow <span style="font-size: 18px; color: #2563eb; font-weight: 600;">ERP & Takip</span>
+                </h1>
+            </div>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
+# 1. GİRİŞ EKRANI KONTROLÜ
 if not st.session_state.giris_yapildi:
     st.title("🔒 Markanow Takip Sistemi - Kullanıcı Girişi")
     st.markdown("---")
     
     col1, col2 = st.columns(2)
     with col1:
+        logo_goster()
+        st.write("Devam etmek için lütfen kullanıcı adınızı seçin ve şifrenizi girin.")
+        
         secilen_kullanici = st.selectbox("Kullanıcı Adınızı Seçin", list(KULLANICILAR.keys()))
         girilen_sifre = st.text_input("Şifrenizi Girin", type="password")
         
@@ -52,9 +85,10 @@ if not st.session_state.giris_yapildi:
                 st.error("Hatalı şifre girdiniz! Lütfen tekrar deneyin.")
     st.stop()
 
-# --- 2. GİRİŞ YAPILDIYSA SOL PANEL VE GÜVENLİK BİLGİLERİ ---
+# --- STREAMING_CHUNK: Setting up sidebar and user controls... ---
+# 2. SOL PANEL VE GÜVENLİK BİLGİLERİ
 st.sidebar.title("🔑 Kullanıcı Giriş Paneli")
-st.sidebar.success(f"👤 Aktif Kullanıcı: {st.session_state.kullanici_adi}")
+st.sidebar.success(f"👤 Aktif Kullanıcı:\n{st.session_state.kullanici_adi}")
 st.sidebar.info(f"🛡️ Rolünüz: {st.session_state.kullanici_rolu}")
 
 if st.sidebar.button("Güvenli Çıkış Yap", use_container_width=True):
@@ -65,36 +99,65 @@ if st.sidebar.button("Güvenli Çıkış Yap", use_container_width=True):
 
 st.sidebar.markdown("---")
 
-# --- 3. ANA UYGULAMA BAŞLIĞI ---
-st.title("🛡️ Marka Tescil, Finans ve Personel Takip Sistemi")
-st.write(f"Hoş geldiniz. Sistem şu anda **{st.session_state.kullanici_rolu}** yetkileriyle çalışıyor.")
+logo_goster()
+st.subheader("🛡️ Marka Tescil, Finans ve Personel Takip Sistemi")
+st.write(f"Sistem şu anda **{st.session_state.kullanici_rolu}** yetkileriyle aktif olarak çalışıyor.")
 st.markdown("---")
 
-# --- 4. ROL BAZLI PANEL YETKİLENDİRMELERİ ---
+# --- STREAMING_CHUNK: Rendering the consultant sales entry form with brand name, class code and price... ---
+# 4. ROL BAZLI PANEL YETKİLENDİRMELERİ
 
-# A) MARKA DANIŞMANI PANELİ (Sadece Giriş Yapabilir, Finans/Admin Göremez)
+# A) MARKA DANIŞMANI PANELİ
 if st.session_state.kullanici_rolu == "Marka Danışmanı":
     st.subheader("📝 Yeni Marka Satış Giriş Formu")
     
     with st.form("danisman_satis_formu", clear_on_submit=True):
-        marka_adi = st.text_input("Marka Adı *")
-        musteri_ad_soyad = st.text_input("Müşteri Adı Soyadı")
-        musteri_tel = st.text_input("Müşteri Telefon No")
-        satis_tarihi = st.date_input("Satış Tarihi (Sisteme Giriş)", datetime.today())
+        col_form1, col_form2 = st.columns(2)
         
-        submit = st.form_submit_button("Satışı Sisteme Kaydet")
+        with col_form1:
+            marka_adi = st.text_input("Marka Adı *")
+            
+            # 1'den 45'e kadar sınıf kodlarının çoklu seçim (multiselect) kutusu
+            sinif_listesi = [f"Sınıf {i}" for i in range(1, 46)]
+            secilen_siniflar = st.multiselect(
+                "Sınıf Kodu / Kodları (Birden fazla seçilebilir) *", 
+                options=sinif_listesi,
+                placeholder="Sınıf seçiniz..."
+            )
+            
+            basvuru_ucreti = st.number_input("Satış / Başvuru Ücreti (TL) *", min_value=0, value=0, step=100)
+            
+            # --- STREAMING_CHUNK: Integrating payment option dropdown... ---
+            odeme_secenegi = st.selectbox("Ödeme Seçeneği *", ["EFT / Havale", "Kredi Kartı"])
+            
+        with col_form2:
+            musteri_ad_soyad = st.text_input("Müşteri Adı Soyadı")
+            musteri_tel = st.text_input("Müşteri Telefon No")
+            satis_tarihi = st.date_input("Satış Tarihi (Sisteme Giriş)", datetime.today())
+        
+        submit = st.form_submit_button("Satışı Sisteme Kaydet", use_container_width=True)
         
         if submit:
             if not marka_adi:
-                st.error("Lütfen Marka Adı alanını boş bırakmayınız!")
+                st.error("Lütfen 'Marka Adı' alanını boş bırakmayınız!")
+            elif not secilen_siniflar:
+                st.error("Lütfen en az bir adet 'Sınıf Kodu' seçimi yapınız!")
+            elif basvuru_ucreti <= 0:
+                st.error("Lütfen geçerli bir 'Satış / Başvuru Ücreti' giriniz!")
             else:
+                # Seçilen sınıfları temiz metin haline getir (Örnek: "Sınıf 35, Sınıf 41")
+                sinif_metni = ", ".join([s.replace("Sınıf ", "") for s in secilen_siniflar])
+                
                 yeni_veri = {
                     "Marka Adı": marka_adi,
-                    "Personel": st.session_state.kullanici_adi, # Giriş yapan danışmanın adı otomatik işlenir
+                    "Sınıf Kodu": sinif_metni,
+                    "Personel": st.session_state.kullanici_adi,
                     "Adı Soyadı": musteri_ad_soyad,
                     "Telefon No": musteri_tel,
                     "Satış Tarihi": satis_tarihi.strftime("%d.%m.%Y"),
-                    "Başvuru Ücreti": 0, "B. Onay Durumu": "Bekliyor",
+                    "Ödeme Seçeneği": odeme_secenegi,
+                    "Başvuru Ücreti": basvuru_ucreti,
+                    "B. Onay Durumu": "Bekliyor", # Ücret doğrudan girildiği için onay bekliyor durumuna geçer
                     "Savunma Ücreti": 0, "S. Onay Durumu": "-",
                     "Tescil Ücreti": 0, "T. Onay Durumu": "-",
                     "Toplam Onaylı Ciro": 0, "Başvuru No": "-",
@@ -103,9 +166,9 @@ if st.session_state.kullanici_rolu == "Marka Danışmanı":
                     "Belge Son Ödeme T.": "-", "Yenileme (Vize) T.": "-"
                 }
                 st.session_state.markalar = pd.concat([st.session_state.markalar, pd.DataFrame([yeni_veri])], ignore_index=True)
-                st.success(f"'{marka_adi}' markası başarıyla kaydedildi! Admin ücret tanımı ve Muhasebe onayı bekleniyor.")
+                st.success(f"'{marka_adi}' markası ({sinif_metni}. Sınıflar) {basvuru_ucreti} TL bedel ve {odeme_secenegi} ödeme seçeneği ile başarıyla kaydedildi! Muhasebe onayı bekleniyor.")
 
-# B) ADMIN YÖNETİM VE SÜREÇ İLERLEME PANELİ (Sadece Admin Görebilir)
+# B) ADMIN YÖNETİM VE SÜREÇ İLERLEME PANELİ
 elif st.session_state.kullanici_rolu == "Admin":
     st.subheader("⚙️ Admin Yönetim ve Süreç İlerleme Paneli")
     
@@ -128,10 +191,20 @@ elif st.session_state.kullanici_rolu == "Admin":
             b_ucreti = st.number_input("Başvuru Ücreti (TL)", value=int(st.session_state.markalar.at[idx, "Başvuru Ücreti"]))
             b_no = st.text_input("Başvuru No", value=str(st.session_state.markalar.at[idx, "Başvuru No"]))
             b_tarih = st.text_input("Başvuru Tarihi (GG.AA.YYYY)", value=str(st.session_state.markalar.at[idx, "Başvuru Tarihi"]))
+            s_kodu = st.text_input("Sınıf Kodu", value=str(st.session_state.markalar.at[idx, "Sınıf Kodu"]))
         with c2:
             s_ucreti = st.number_input("Savunma Ücreti (TL)", value=int(st.session_state.markalar.at[idx, "Savunma Ücreti"]))
-            bulten_t = st.text_input("Bülten İlan Tarihi (GG.AA.YYYY)", value=str(st.session_state.markalar.at[idx, "Bülten İlan Tarihi"]))
+            bulten_t = st.text_input("Bülten Tarihi (GG.AA.YYYY)", value=str(st.session_state.markalar.at[idx, "Bülten Tarihi"]))
             itiraz_t = st.text_input("İtiraz Tebliğ Tarihi (GG.AA.YYYY)", value=str(st.session_state.markalar.at[idx, "İtiraz Tebliğ T."]))
+            
+            # --- STREAMING_CHUNK: Displaying and updating admin payment option... ---
+            odeme_secenekleri = ["EFT / Havale", "Kredi Kartı"]
+            mevcut_secenek = str(st.session_state.markalar.at[idx, "Ödeme Seçeneği"]) if "Ödeme Seçeneği" in st.session_state.markalar.columns else "EFT / Havale"
+            try:
+                def_idx = odeme_secenekleri.index(mevcut_secenek)
+            except ValueError:
+                def_idx = 0
+            admin_odeme_secenegi = st.selectbox("Ödeme Seçeneği", odeme_secenekleri, index=def_idx)
         with c3:
             t_ucreti = st.number_input("Tescil Ücreti (TL)", value=int(st.session_state.markalar.at[idx, "Tescil Ücreti"]))
             kurul_karar = st.text_input("Kurul Kararı / Durum", value=str(st.session_state.markalar.at[idx, "Kurul Kararı / Durum"]))
@@ -141,16 +214,18 @@ elif st.session_state.kullanici_rolu == "Admin":
             st.session_state.markalar.at[idx, "Başvuru Ücreti"] = b_ucreti
             st.session_state.markalar.at[idx, "Başvuru No"] = b_no
             st.session_state.markalar.at[idx, "Başvuru Tarihi"] = b_tarih
+            st.session_state.markalar.at[idx, "Sınıf Kodu"] = s_kodu
             st.session_state.markalar.at[idx, "Savunma Ücreti"] = s_ucreti
-            st.session_state.markalar.at[idx, "Bülten İlan Tarihi"] = bulten_t
+            st.session_state.markalar.at[idx, "Bülten Tarihi"] = bulten_t
             st.session_state.markalar.at[idx, "İtiraz Tebliğ T."] = itiraz_t
+            st.session_state.markalar.at[idx, "Ödeme Seçeneği"] = admin_odeme_secenegi
             st.session_state.markalar.at[idx, "Tescil Ücreti"] = t_ucreti
             st.session_state.markalar.at[idx, "Kurul Kararı / Durum"] = kurul_karar
             st.session_state.markalar.at[idx, "Yenileme (Vize) T."] = vize_t
             
-            # Eğer bekliyor durumundaysa ve admin fiyat girdiyse muhasebe için durum alanlarını hazırla
-            if st.session_state.markalar.at[idx, "B. Onay Durumu"] == "Bekliyor":
-                pass
+            # Dinamik muhasebe onay tetikleyicileri
+            if b_ucreti > 0 and st.session_state.markalar.at[idx, "B. Onay Durumu"] == "-":
+                st.session_state.markalar.at[idx, "B. Onay Durumu"] = "Bekliyor"
             if s_ucreti > 0 and st.session_state.markalar.at[idx, "S. Onay Durumu"] == "-":
                 st.session_state.markalar.at[idx, "S. Onay Durumu"] = "Bekliyor"
             if t_ucreti > 0 and st.session_state.markalar.at[idx, "T. Onay Durumu"] == "-":
@@ -161,7 +236,7 @@ elif st.session_state.kullanici_rolu == "Admin":
     else:
         st.info("Sistemde henüz süreç güncellemesi yapılacak bir marka bulunmuyor.")
 
-# C) MUHASEBE PANELİ (Sadece Ödeme Onaylarını Kontrol Edebilir)
+# C) MUHASEBE PANELİ
 elif st.session_state.kullanici_rolu == "Muhasebe":
     st.subheader("💰 Muhasebe Finansal Onay Paneli")
     
@@ -176,7 +251,11 @@ elif st.session_state.kullanici_rolu == "Muhasebe":
             secilen_m_m = st.selectbox("Ödemesi Kontrol Edilecek Marka", bekleyenler["Marka Adı"].tolist())
             m_idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == secilen_m_m].index[0]
             
-            # Ödeme Butonları
+            # --- STREAMING_CHUNK: Displaying payment option to accountant... ---
+            mevcut_yontem = st.session_state.markalar.at[m_idx, "Ödeme Seçeneği"] if "Ödeme Seçeneği" in st.session_state.markalar.columns else "Belirtilmemiş"
+            st.info(f"💳 Müşterinin Tercih Ettiği Ödeme Yöntemi: **{mevcut_yontem}**")
+            
+            # Ödeme Onaylama Butonları
             if st.session_state.markalar.at[m_idx, "B. Onay Durumu"] == "Bekliyor":
                 st.warning(f"Başvuru Ücreti: {st.session_state.markalar.at[m_idx, 'Başvuru Ücreti']} TL | Durum: Bekliyor")
                 if st.button("Başvuru Ödemesini Onayla"):
@@ -204,7 +283,8 @@ elif st.session_state.kullanici_rolu == "Muhasebe":
 
 st.markdown("---")
 
-# --- 5. ORTAK CANLI RAPORLAMA VE CİRO TABLOLARI (Herkes Görebilir)
+# --- STREAMING_CHUNK: Processing live records table and calculating turnover... ---
+# 5. ORTAK CANLI RAPORLAMA VE CİRO TABLOLARI
 st.subheader("📊 Canlı Rapor Tablosu (Excel / Google E-Tablolar Uyumlu)")
 
 # Canlı Ciro Hesaplama Mantığı
@@ -217,7 +297,6 @@ for i, row in st.session_state.markalar.iterrows():
 
 st.dataframe(st.session_state.markalar)
 
-# Excel Çıktı Altyapısı
 def convert_df(df):
     return df.to_csv(index=False).encode('utf-8')
 csv_data = convert_df(st.session_state.markalar)
@@ -225,6 +304,7 @@ st.download_button("📥 Tabloyu Excel (CSV) Olarak İndir", csv_data, "marka_ta
 
 st.markdown("---")
 
+# --- STREAMING_CHUNK: Generating monthly consultant sales and turnover summary... ---
 st.subheader("📈 Aylık Personel Ciro Özeti (Yalnızca Muhasebe Onaylılar)")
 if not st.session_state.markalar.empty:
     ozet_data = []
