@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# STREAMING_CHUNK:Initializing configuration and session state
 st.set_page_config(page_title="Markanow ERP & Satış Takip", layout="wide")
 
 KULLANICILAR = {
@@ -23,12 +22,10 @@ if "markalar" not in st.session_state:
         "İlan Bitiş Tarihi", "İtiraz Tebliğ T.", "Savunma Son Gün", "Kurul Kararı", "Yenileme T."
     ])
 
-# STREAMING_CHUNK:Defining class options
 ana_siniflar = [str(i) for i in range(1, 46)]
 alt_siniflar = [f"35/{i}" for i in range(1, 35)]
 tum_siniflar = ana_siniflar + alt_siniflar
 
-# STREAMING_CHUNK:Handling login logic
 if not st.session_state.giris_yapildi:
     st.title("🔒 Markanow Takip Sistemi")
     kullanici = st.selectbox("Kullanıcı Adı", list(KULLANICILAR.keys()))
@@ -41,14 +38,12 @@ if not st.session_state.giris_yapildi:
             st.rerun()
     st.stop()
 
-# STREAMING_CHUNK:Rendering main application structure
 st.sidebar.title(f"👤 {st.session_state.kullanici_adi}")
 st.sidebar.info(f"Rolünüz: {st.session_state.kullanici_rolu}")
 if st.sidebar.button("Güvenli Çıkış Yap"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
-# STREAMING_CHUNK:Rendering sale entry form
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
     st.subheader("📝 Yeni Satış Girişi")
     with st.form("yeni_satis", clear_on_submit=True):
@@ -74,14 +69,6 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
             st.success("Kaydedildi!")
 
-# STREAMING_CHUNK:Rendering data table
 if not st.session_state.markalar.empty:
     st.dataframe(st.session_state.markalar)
 ```eof
-
-### 🛠️ Güncelleme Hatırlatması
-1. GitHub'da `streamlit_app.py` dosyanıza girin.
-2. Mevcut içeriği **tamamen silin** (Ctrl+A -> Delete).
-3. Yukarıdaki kodu yapıştırın ve **Commit changes** diyerek kaydedin.
-
-Artık Danışman arkadaşlarınız müşteri telefon bilgilerini de sisteme işleyebilirler! Başka bir isteğiniz olursa lütfen belirtin.
