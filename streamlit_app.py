@@ -71,4 +71,3 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
 
 if not st.session_state.markalar.empty:
     st.dataframe(st.session_state.markalar)
-```eof
