@@ -19,7 +19,7 @@ if "markalar" not in st.session_state:
     st.session_state.markalar = pd.DataFrame(columns=[
         "Marka Adı", "Ad Soyad", "Telefon", "TC Kimlik", "Sınıf Kodu", "Personel", 
         "Satış Tarihi", "Ödeme Seçeneği", "Başvuru Ücreti", "B. Onay", "Fatura No",
-        "Başvuru No", "Başvuru Tarihi"
+        "Başvuru No", "Başvuru Tarihi", "Bülten Tarihi"
     ])
 
 tum_siniflar = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
@@ -73,7 +73,7 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
             fiyat = st.number_input("Başvuru Ücreti (TL)", value=0)
             odeme = st.selectbox("Ödeme", ["EFT / Havale", "Kredi Kartı"])
         if st.form_submit_button("Kaydet"):
-            yeni = pd.DataFrame([{"Marka Adı": m_adi, "Ad Soyad": ad_soyad, "Telefon": tel, "TC Kimlik": tc, "Sınıf Kodu": ", ".join(s_kodu), "Personel": st.session_state.kullanici_adi, "Satış Tarihi": s_tarihi, "Ödeme Seçeneği": odeme, "Başvuru Ücreti": fiyat, "B. Onay": "Bekliyor", "Fatura No": "-", "Başvuru No": "-", "Başvuru Tarihi": "-"}])
+            yeni = pd.DataFrame([{"Marka Adı": m_adi, "Ad Soyad": ad_soyad, "Telefon": tel, "TC Kimlik": tc, "Sınıf Kodu": ", ".join(s_kodu), "Personel": st.session_state.kullanici_adi, "Satış Tarihi": s_tarihi, "Ödeme Seçeneği": odeme, "Başvuru Ücreti": fiyat, "B. Onay": "Bekliyor", "Fatura No": "-", "Başvuru No": "-", "Başvuru Tarihi": "-", "Bülten Tarihi": "-"}])
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
             st.success("Kaydedildi!")
 
@@ -96,14 +96,15 @@ if st.session_state.kullanici_rolu in ["Operasyon", "Admin"]:
     st.subheader("⚙️ Operasyon Paneli")
     onayli = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Onaylandı"]
     if not onayli.empty:
-        marka_sec = st.selectbox("Başvuru Girişi Yapılacak Marka", onayli["Marka Adı"].unique())
+        marka_sec = st.selectbox("İşlem Yapılacak Marka", onayli["Marka Adı"].unique())
         idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == marka_sec].index[0]
-        st.info(f"Marka Bilgileri: {st.session_state.markalar.at[idx, 'Marka Adı']} | Sınıf: {st.session_state.markalar.at[idx, 'Sınıf Kodu']}")
         with st.form("operasyon_form"):
-            b_no = st.text_input("Başvuru Numarası")
-            b_tarih = st.date_input("Başvuru Tarihi").strftime("%d.%m.%Y")
-            if st.form_submit_button("Başvuruyu Kaydet"):
+            b_no = st.text_input("Başvuru Numarası", value=st.session_state.markalar.at[idx, "Başvuru No"])
+            b_tarih = st.date_input("Başvuru Tarihi")
+            bulten_tarih = st.date_input("Bülten Tarihi")
+            if st.form_submit_button("Bilgileri Güncelle"):
                 st.session_state.markalar.at[idx, "Başvuru No"] = b_no
-                st.session_state.markalar.at[idx, "Başvuru Tarihi"] = b_tarih
+                st.session_state.markalar.at[idx, "Başvuru Tarihi"] = b_tarih.strftime("%d.%m.%Y")
+                st.session_state.markalar.at[idx, "Bülten Tarihi"] = bulten_tarih.strftime("%d.%m.%Y")
                 st.success("Operasyon bilgileri güncellendi!")
     st.dataframe(onayli)
