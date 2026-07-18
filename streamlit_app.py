@@ -39,25 +39,23 @@ if st.sidebar.button("Güvenli Çıkış Yap"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
-# --- DANIŞMAN RAPORLARI (ONAYLANANLAR ÜZERİNDEN) ---
+# --- AY FİLTRELİ DANIŞMAN RAPORLARI ---
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
-    st.subheader(f"📊 {st.session_state.kullanici_adi} - Performans Özeti (Tüm Zamanlar)")
+    st.subheader(f"📊 {st.session_state.kullanici_adi} - Performans Raporu")
     
-    # Sadece onaylanan satışları al
+    # Tarih formatını ay/yıl olarak al
+    aylar = sorted(list(set([d[3:] for d in st.session_state.markalar["Satış Tarihi"] if d != "-"])), reverse=True)
+    secili_ay = st.selectbox("Raporlanacak Ayı Seçin:", aylar if aylar else [datetime.now().strftime("%m.%Y")])
+    
     onayli_kisisel = st.session_state.markalar[
         (st.session_state.markalar["Personel"] == st.session_state.kullanici_adi) & 
-        (st.session_state.markalar["B. Onay"] == "Onaylandı")
+        (st.session_state.markalar["B. Onay"] == "Onaylandı") &
+        (st.session_state.markalar["Satış Tarihi"].str.endswith(secili_ay))
     ]
     
-    if not onayli_kisisel.empty:
-        toplam_satis = len(onayli_kisisel)
-        toplam_ciro = onayli_kisisel['Başvuru Ücreti'].sum()
-        
-        c1, c2 = st.columns(2)
-        c1.metric("Toplam Onaylı Satış Adedim", toplam_satis)
-        c2.metric("Toplam Onaylı Ciro (TL)", f"{toplam_ciro:,.0f} TL")
-    else:
-        st.info("Henüz onaylanmış satışınız bulunmuyor.")
+    c1, c2 = st.columns(2)
+    c1.metric(f"{secili_ay} Satış Adedim", len(onayli_kisisel))
+    c2.metric(f"{secili_ay} Cirom (TL)", f"{onayli_kisisel['Başvuru Ücreti'].sum():,.0f} TL")
 
 # --- SATIŞ GİRİŞ ---
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
