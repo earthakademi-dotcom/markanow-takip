@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import os
 
 st.set_page_config(page_title="Markanow ERP & Satış Takip", layout="wide")
 
@@ -15,9 +14,6 @@ KULLANICILAR = {
 
 if "giris_yapildi" not in st.session_state:
     st.session_state.giris_yapildi = False
-    st.session_state.kullanici_adi = ""
-    st.session_state.kullanici_rolu = ""
-
 if "markalar" not in st.session_state:
     st.session_state.markalar = pd.DataFrame(columns=[
         "Marka Adı", "Ad Soyad", "TC Kimlik", "Sınıf Kodu", "Personel", "Satış Tarihi", 
@@ -47,9 +43,19 @@ if not st.session_state.giris_yapildi:
             st.rerun()
     st.stop()
 
+st.sidebar.title(f"👤 {st.session_state.kullanici_adi}")
+st.sidebar.info(f"Rolünüz: {st.session_state.kullanici_rolu}")
+if st.sidebar.button("Güvenli Çıkış Yap"):
+    st.session_state.giris_yapildi = False
+    st.rerun()
+
+siniflar = [str(i) for i in range(1, 46)]
+sinif_35_alt = [f"35/{i}" for i in range(1, 35)]
+tum_siniflar = siniflar + sinif_35_alt
+
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
     st.subheader("📝 Yeni Satış Girişi")
-    with st.form("yeni_satis"):
+    with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         with c1:
             m_adi = st.text_input("Marka Adı")
@@ -57,7 +63,7 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
             tc_no = st.text_input("TC Kimlik No")
         with c2:
             s_tarihi = st.date_input("Satış Tarihi").strftime("%d.%m.%Y")
-            s_kodu = st.multiselect("Sınıf Kodu", [str(i) for i in range(1, 46)])
+            s_kodu = st.multiselect("Sınıf Kodu", tum_siniflar)
             fiyat = st.number_input("Başvuru Ücreti (TL)", value=0)
             odeme = st.selectbox("Ödeme", ["EFT / Havale", "Kredi Kartı"])
         
@@ -69,26 +75,7 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
                 "Ödeme Seçeneği": odeme, "B. Onay": "Bekliyor"
             }])
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
-            st.success("Kaydedildi!")
+            st.success("Kaydedildi! Yeni bir satış girişi yapabilirsiniz.")
 
 if not st.session_state.markalar.empty:
     st.dataframe(st.session_state.markalar)
-    
-    if st.session_state.kullanici_rolu in ["Admin"]:
-        st.subheader("⚙️ Süreç Yönetimi")
-        secilen_marka = st.selectbox("Güncellenecek Markayı Seçin", st.session_state.markalar["Marka Adı"].unique())
-        idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == secilen_marka].index[0]
-        
-        with st.form("guncelleme"):
-            b_no = st.text_input("Başvuru No", str(st.session_state.markalar.at[idx, "Başvuru No"]))
-            b_tarih = st.text_input("Başvuru Tarihi (GG.AA.YYYY)", str(st.session_state.markalar.at[idx, "Başvuru Tarihi"]))
-            bulten_t = st.text_input("Bülten Tarihi (GG.AA.YYYY)", str(st.session_state.markalar.at[idx, "Bülten Tarihi"]))
-            
-            if st.form_submit_button("Verileri Güncelle"):
-                st.session_state.markalar.at[idx, "Başvuru No"] = b_no
-                st.session_state.markalar.at[idx, "Başvuru Tarihi"] = b_tarih
-                st.session_state.markalar.at[idx, "Bülten Tarihi"] = bulten_t
-                st.session_state.markalar.at[idx, "İlan Bitiş Tarihi"] = add_months(bulten_t, 2)
-                st.session_state.markalar.at[idx, "İtiraz Tebliğ T."] = add_months(bulten_t, 2)
-                st.session_state.markalar.at[idx, "Savunma Son Gün"] = add_months(add_months(bulten_t, 2), 1)
-                st.rerun()
