@@ -38,6 +38,15 @@ if st.sidebar.button("Güvenli Çıkış Yap"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
+if st.session_state.kullanici_rolu == "Admin":
+    st.subheader("📊 Personel Ciro ve Performans")
+    onaylananlar = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Onaylandı"]
+    if not onaylananlar.empty:
+        ciro_tablo = onaylananlar.groupby("Personel")["Başvuru Ücreti"].sum().reset_index()
+        ciro_tablo.columns = ["Personel", "Toplam Ciro (TL)"]
+        st.table(ciro_tablo)
+    else: st.info("Henüz onaylanmış satış bulunmuyor.")
+
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
     st.subheader("📝 Yeni Satış Girişi")
     with st.form("yeni_satis", clear_on_submit=True):
@@ -60,7 +69,6 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
 if st.session_state.kullanici_rolu in ["Muhasebe", "Admin"]:
     st.subheader("💰 Muhasebe Paneli")
     tab1, tab2 = st.tabs(["Bekleyen Onaylar", "Onaylananlar (Raporlar)"])
-    
     with tab1:
         bekleyen = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Bekliyor"]
         if not bekleyen.empty:
@@ -72,8 +80,6 @@ if st.session_state.kullanici_rolu in ["Muhasebe", "Admin"]:
                     st.session_state.markalar.at[idx, "B. Onay"] = "Onaylandı"
                     st.session_state.markalar.at[idx, "Fatura No"] = fatura
                     st.rerun()
-        else: st.write("Onay bekleyen kayıt yok.")
-
     with tab2:
         onaylanan = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Onaylandı"]
         st.dataframe(onaylanan)
