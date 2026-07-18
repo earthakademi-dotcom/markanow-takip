@@ -22,6 +22,19 @@ if "markalar" not in st.session_state:
 
 tum_siniflar = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
+def hesapla_satis_adeti(secili_siniflar):
+    """
+    1-45 arası sınıflar 1 sayılır.
+    35/1-34 arası alt sınıflar 0 sayılır.
+    """
+    liste = [s.strip() for s in secili_siniflar.split(", ") if s.strip()]
+    adet = 0
+    for s in liste:
+        # Sadece ana sınıfları say (35/... olanları atla)
+        if "/" not in s:
+            adet += 1
+    return adet
+
 if not st.session_state.giris_yapildi:
     st.title("🔒 Markanow Takip Sistemi")
     kullanici = st.selectbox("Kullanıcı Adı", list(KULLANICILAR.keys()))
@@ -39,11 +52,9 @@ if st.sidebar.button("Güvenli Çıkış Yap"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
-# --- AY FİLTRELİ DANIŞMAN RAPORLARI ---
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
     st.subheader(f"📊 {st.session_state.kullanici_adi} - Performans Raporu")
     
-    # Tarih formatını ay/yıl olarak al
     aylar = sorted(list(set([d[3:] for d in st.session_state.markalar["Satış Tarihi"] if d != "-"])), reverse=True)
     secili_ay = st.selectbox("Raporlanacak Ayı Seçin:", aylar if aylar else [datetime.now().strftime("%m.%Y")])
     
@@ -53,12 +64,12 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
         (st.session_state.markalar["Satış Tarihi"].str.endswith(secili_ay))
     ]
     
+    toplam_adet = sum(onayli_kisisel["Sınıf Kodu"].apply(hesapla_satis_adeti))
+    
     c1, c2 = st.columns(2)
-    c1.metric(f"{secili_ay} Satış Adedim", len(onayli_kisisel))
-    c2.metric(f"{secili_ay} Cirom (TL)", f"{onayli_kisisel['Başvuru Ücreti'].sum():,.0f} TL")
+    c1.metric(f"{secili_ay} Toplam Satış Adedim", toplam_adet)
+    c2.metric(f"{secili_ay} Toplam Cirom (TL)", f"{onayli_kisisel['Başvuru Ücreti'].sum():,.0f} TL")
 
-# --- SATIŞ GİRİŞ ---
-if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
     st.subheader("📝 Yeni Satış Girişi")
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
