@@ -39,25 +39,25 @@ if st.sidebar.button("Güvenli Çıkış Yap"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
-# --- DANIŞMAN RAPORLARI ---
+# --- DANIŞMAN RAPORLARI (ONAYLANANLAR ÜZERİNDEN) ---
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
-    st.subheader(f"📊 {st.session_state.kullanici_adi} - Performans Özeti")
-    kisisel = st.session_state.markalar[st.session_state.markalar["Personel"] == st.session_state.kullanici_adi]
+    st.subheader(f"📊 {st.session_state.kullanici_adi} - Performans Özeti (Tüm Zamanlar)")
     
-    if not kisisel.empty:
-        bugun = datetime.now().strftime("%d.%m.%Y")
-        bu_ay = datetime.now().strftime("%m.%Y")
+    # Sadece onaylanan satışları al
+    onayli_kisisel = st.session_state.markalar[
+        (st.session_state.markalar["Personel"] == st.session_state.kullanici_adi) & 
+        (st.session_state.markalar["B. Onay"] == "Onaylandı")
+    ]
+    
+    if not onayli_kisisel.empty:
+        toplam_satis = len(onayli_kisisel)
+        toplam_ciro = onayli_kisisel['Başvuru Ücreti'].sum()
         
-        gunluk = kisisel[kisisel["Satış Tarihi"] == bugun]
-        aylik = kisisel[kisisel["Satış Tarihi"].str.contains(f"\\.{bu_ay}$")]
-        
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Bugünkü Satış", len(gunluk))
-        c2.metric("Bugünkü Ciro", f"{gunluk['Başvuru Ücreti'].sum():,.0f} TL")
-        c3.metric("Bu Ayki Satış", len(aylik))
-        c4.metric("Bu Ayki Ciro", f"{aylik['Başvuru Ücreti'].sum():,.0f} TL")
+        c1, c2 = st.columns(2)
+        c1.metric("Toplam Onaylı Satış Adedim", toplam_satis)
+        c2.metric("Toplam Onaylı Ciro (TL)", f"{toplam_ciro:,.0f} TL")
     else:
-        st.info("Henüz satışınız bulunmuyor.")
+        st.info("Henüz onaylanmış satışınız bulunmuyor.")
 
 # --- SATIŞ GİRİŞ ---
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
@@ -78,14 +78,6 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
             yeni = pd.DataFrame([{"Marka Adı": m_adi, "Ad Soyad": ad_soyad, "Telefon": tel, "TC Kimlik": tc, "Sınıf Kodu": ", ".join(s_kodu), "Personel": st.session_state.kullanici_adi, "Satış Tarihi": s_tarihi, "Ödeme Seçeneği": odeme, "Başvuru Ücreti": fiyat, "B. Onay": "Bekliyor", "Fatura No": "-"}])
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
             st.success("Kaydedildi!")
-
-# --- ADMİN VE MUHASEBE ---
-if st.session_state.kullanici_rolu == "Admin":
-    st.subheader("🌐 Yönetim Paneli")
-    onaylananlar = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Onaylandı"]
-    if not onaylananlar.empty:
-        ciro_tablo = onaylananlar.groupby("Personel")["Başvuru Ücreti"].sum().reset_index()
-        st.table(ciro_tablo)
 
 if st.session_state.kullanici_rolu in ["Muhasebe", "Admin"]:
     st.subheader("💰 Muhasebe Paneli")
