@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 st.set_page_config(page_title="Markanow ERP & Satış Takip", layout="wide")
 
@@ -45,7 +46,6 @@ if st.session_state.kullanici_rolu == "Admin":
         ciro_tablo = onaylananlar.groupby("Personel")["Başvuru Ücreti"].sum().reset_index()
         ciro_tablo.columns = ["Personel", "Toplam Ciro (TL)"]
         st.table(ciro_tablo)
-    else: st.info("Henüz onaylanmış satış bulunmuyor.")
 
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
     st.subheader("📝 Yeni Satış Girişi")
@@ -65,6 +65,12 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
             yeni = pd.DataFrame([{"Marka Adı": m_adi, "Ad Soyad": ad_soyad, "Telefon": tel, "TC Kimlik": tc, "Sınıf Kodu": ", ".join(s_kodu), "Personel": st.session_state.kullanici_adi, "Satış Tarihi": s_tarihi, "Ödeme Seçeneği": odeme, "Başvuru Ücreti": fiyat, "B. Onay": "Bekliyor", "Fatura No": "-"}])
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
             st.success("Kaydedildi!")
+
+    st.subheader("📈 Kişisel Satış Raporum")
+    kisisel = st.session_state.markalar[st.session_state.markalar["Personel"] == st.session_state.kullanici_adi]
+    if not kisisel.empty:
+        st.write(f"Toplam Yapılan Satış: {len(kisisel)} | Toplam Ciro: {kisisel['Başvuru Ücreti'].sum()} TL")
+        st.dataframe(kisisel)
 
 if st.session_state.kullanici_rolu in ["Muhasebe", "Admin"]:
     st.subheader("💰 Muhasebe Paneli")
