@@ -57,17 +57,23 @@ if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
             st.success("Kaydedildi!")
 
-if st.session_state.kullanici_rolu == "Muhasebe":
-    st.subheader("💰 Muhasebe Onay Paneli")
-    if not st.session_state.markalar.empty:
-        marka_sec = st.selectbox("Marka Seçin", st.session_state.markalar["Marka Adı"].unique())
-        idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == marka_sec].index[0]
-        with st.form("muhasebe_onay"):
-            onay = st.selectbox("Ödeme Durumu", ["Bekliyor", "Onaylandı"])
-            fatura = st.text_input("Fatura Numarası", value=st.session_state.markalar.at[idx, "Fatura No"])
-            if st.form_submit_button("Güncelle"):
-                st.session_state.markalar.at[idx, "B. Onay"] = onay
-                st.session_state.markalar.at[idx, "Fatura No"] = fatura
-                st.success("Muhasebe bilgileri güncellendi!")
+if st.session_state.kullanici_rolu in ["Muhasebe", "Admin"]:
+    st.subheader("💰 Muhasebe Paneli")
+    tab1, tab2 = st.tabs(["Bekleyen Onaylar", "Onaylananlar (Raporlar)"])
+    
+    with tab1:
+        bekleyen = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Bekliyor"]
+        if not bekleyen.empty:
+            marka_sec = st.selectbox("Onaylanacak Marka Seçin", bekleyen["Marka Adı"].unique())
+            idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == marka_sec].index[0]
+            with st.form("muhasebe_form"):
+                fatura = st.text_input("Fatura Numarası")
+                if st.form_submit_button("Onayla ve Raporlara Taşı"):
+                    st.session_state.markalar.at[idx, "B. Onay"] = "Onaylandı"
+                    st.session_state.markalar.at[idx, "Fatura No"] = fatura
+                    st.rerun()
+        else: st.write("Onay bekleyen kayıt yok.")
 
-st.dataframe(st.session_state.markalar)
+    with tab2:
+        onaylanan = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Onaylandı"]
+        st.dataframe(onaylanan)
