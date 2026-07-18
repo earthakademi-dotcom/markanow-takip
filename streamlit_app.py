@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Markanow ERP & Satış Takip", layout="wide")
 
@@ -22,11 +22,9 @@ if "markalar" not in st.session_state:
         "Başvuru No", "Başvuru Tarihi", "Bülten Tarihi"
     ])
 
-tum_siniflar = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
-
-def hesapla_satis_adeti(secili_siniflar):
-    liste = [s.strip() for s in secili_siniflar.split(", ") if s.strip()]
-    return sum(1 for s in liste if "/" not in s)
+def str_to_date(d):
+    try: return datetime.strptime(d, "%d.%m.%Y")
+    except: return datetime(2000, 1, 1)
 
 if not st.session_state.giris_yapildi:
     st.title("🔒 Markanow Takip Sistemi")
@@ -41,70 +39,38 @@ if not st.session_state.giris_yapildi:
     st.stop()
 
 st.sidebar.title(f"👤 {st.session_state.kullanici_adi}")
+
+# --- TAKİP MENÜLERİ ---
+if st.sidebar.button("İlan Bitişi Gelenler"): st.session_state.tab = "İlan"
+if st.sidebar.button("Savunma Süresi Gelenler"): st.session_state.tab = "Savunma"
+if st.sidebar.button("Tescil Ödemesi Gelenler"): st.session_state.tab = "Tescil"
+
 if st.sidebar.button("Güvenli Çıkış Yap"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
-# --- DANIŞMAN RAPORLARI ---
+# --- MANTIKSAL KONTROLLER ---
 if st.session_state.kullanici_rolu in ["Marka Danışmanı", "Admin"]:
-    st.subheader(f"📊 {st.session_state.kullanici_adi} - Performans Raporu")
-    aylar = sorted(list(set([d[3:] for d in st.session_state.markalar["Satış Tarihi"] if d != "-"])), reverse=True)
-    secili_ay = st.selectbox("Raporlanacak Ayı Seçin:", aylar if aylar else [datetime.now().strftime("%m.%Y")])
-    onayli_kisisel = st.session_state.markalar[
-        (st.session_state.markalar["Personel"] == st.session_state.kullanici_adi) & 
-        (st.session_state.markalar["B. Onay"] == "Onaylandı") &
-        (st.session_state.markalar["Satış Tarihi"].str.endswith(secili_ay))
-    ]
-    c1, c2 = st.columns(2)
-    c1.metric(f"{secili_ay} Satış Adedim", sum(onayli_kisisel["Sınıf Kodu"].apply(hesapla_satis_adeti)))
-    c2.metric(f"{secili_ay} Cirom (TL)", f"{onayli_kisisel['Başvuru Ücreti'].sum():,.0f} TL")
-
     st.subheader("📝 Yeni Satış Girişi")
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        with c1:
-            m_adi = st.text_input("Marka Adı")
-            ad_soyad = st.text_input("Müşteri Ad Soyad")
-            tel = st.text_input("Telefon Numarası")
-            tc = st.text_input("TC Kimlik No")
-        with c2:
-            s_tarihi = st.date_input("Satış Tarihi").strftime("%d.%m.%Y")
-            s_kodu = st.multiselect("Sınıf Kodu", tum_siniflar)
-            fiyat = st.number_input("Başvuru Ücreti (TL)", value=0)
-            odeme = st.selectbox("Ödeme", ["EFT / Havale", "Kredi Kartı"])
+        m_adi = c1.text_input("Marka Adı")
+        tc = c1.text_input("TC Kimlik No (11 Rakam)")
+        tel = c1.text_input("Telefon (05... ile başlayın)")
+        fiyat = c2.number_input("Başvuru Ücreti", value=0)
+        
         if st.form_submit_button("Kaydet"):
-            yeni = pd.DataFrame([{"Marka Adı": m_adi, "Ad Soyad": ad_soyad, "Telefon": tel, "TC Kimlik": tc, "Sınıf Kodu": ", ".join(s_kodu), "Personel": st.session_state.kullanici_adi, "Satış Tarihi": s_tarihi, "Ödeme Seçeneği": odeme, "Başvuru Ücreti": fiyat, "B. Onay": "Bekliyor", "Fatura No": "-", "Başvuru No": "-", "Başvuru Tarihi": "-", "Bülten Tarihi": "-"}])
-            st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
-            st.success("Kaydedildi!")
+            if len(tc) != 11 or not tc.isdigit(): st.error("TC Kimlik 11 rakam olmalı!")
+            elif not tel.startswith("05") or len(tel) != 11: st.error("Telefon 05 ile başlamalı ve 11 hane olmalı!")
+            else:
+                yeni = pd.DataFrame([{"Marka Adı": m_adi, "TC Kimlik": tc, "Telefon": tel, "Başvuru Ücreti": fiyat, "B. Onay": "Bekliyor"}])
+                st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
+                st.success("Kaydedildi!")
 
-# --- MUHASEBE PANELİ ---
-if st.session_state.kullanici_rolu in ["Muhasebe", "Admin"]:
-    st.subheader("💰 Muhasebe Paneli")
-    bekleyen = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Bekliyor"]
-    if not bekleyen.empty:
-        marka_sec = st.selectbox("Onaylanacak Marka Seçin", bekleyen["Marka Adı"].unique())
-        idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == marka_sec].index[0]
-        with st.form("muhasebe_form"):
-            fatura = st.text_input("Fatura Numarası")
-            if st.form_submit_button("Onayla"):
-                st.session_state.markalar.at[idx, "B. Onay"] = "Onaylandı"
-                st.session_state.markalar.at[idx, "Fatura No"] = fatura
-                st.rerun()
+# --- TAKİP GÖRÜNTÜLEME ---
+if "tab" in st.session_state:
+    st.subheader(f"🔍 Takip: {st.session_state.tab}")
+    df = st.session_state.markalar[st.session_state.markalar["Bülten Tarihi"] != "-"]
+    st.dataframe(df)
 
-# --- OPERASYON PANELİ ---
-if st.session_state.kullanici_rolu in ["Operasyon", "Admin"]:
-    st.subheader("⚙️ Operasyon Paneli")
-    onayli = st.session_state.markalar[st.session_state.markalar["B. Onay"] == "Onaylandı"]
-    if not onayli.empty:
-        marka_sec = st.selectbox("İşlem Yapılacak Marka", onayli["Marka Adı"].unique())
-        idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == marka_sec].index[0]
-        with st.form("operasyon_form"):
-            b_no = st.text_input("Başvuru Numarası", value=st.session_state.markalar.at[idx, "Başvuru No"])
-            b_tarih = st.date_input("Başvuru Tarihi")
-            bulten_tarih = st.date_input("Bülten Tarihi")
-            if st.form_submit_button("Bilgileri Güncelle"):
-                st.session_state.markalar.at[idx, "Başvuru No"] = b_no
-                st.session_state.markalar.at[idx, "Başvuru Tarihi"] = b_tarih.strftime("%d.%m.%Y")
-                st.session_state.markalar.at[idx, "Bülten Tarihi"] = bulten_tarih.strftime("%d.%m.%Y")
-                st.success("Operasyon bilgileri güncellendi!")
-    st.dataframe(onayli)
+if st.sidebar.button("Operasyon Paneli"): st.session_state.tab = "Operasyon"
