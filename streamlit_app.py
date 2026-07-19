@@ -40,9 +40,9 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None; st.rerun()
 st.sidebar.write("---")
 
-menu_options = ["📝 Satış Girişi", "📊 Satışlarım", "📥 Excel'den Yükle"]
+menu_options = ["📝 Satış Girişi", "📊 Satışlarım"]
 if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
-    menu_options.extend(["💰 Muhasebe Onayı"])
+    menu_options.extend(["📥 Excel'den Yükle", "💰 Muhasebe Onayı"])
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
 
@@ -84,7 +84,7 @@ elif menu == "📥 Excel'den Yükle":
             st.success("Tüm satışlar başarıyla aktarıldı!"); st.rerun()
 
 elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay ve Tam Düzenleme")
+    st.header("💰 Muhasebe Onay ve Tam Düzenleme Paneli")
     with st.expander("✏️ TÜM SATIŞ BİLGİLERİNİ TAM DÜZENLE"):
         secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
         if secili_id in df['ID'].values:
@@ -94,7 +94,7 @@ elif menu == "💰 Muhasebe Onayı":
                 v_m, v_a, v_t, v_tl = c1.text_input("Marka", value=row['Marka Adı']), c1.text_input("İsim", value=row['Ad Soyad']), c1.text_input("TC", value=row['TC']), c1.text_input("Tel", value=row['Telefon'])
                 v_d, v_i, v_s = c2.text_input("Doğum", value=row['Doğum Tarihi']), c2.selectbox("İl", ILLER, index=ILLER.index(row['İl']) if row['İl'] in ILLER else 0), c2.text_input("Sınıf", value=row['Sınıf'])
                 v_o, v_tu, v_du, v_f = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"], index=["EFT", "Kredi Kartı"].index(row['Ödeme'])), c2.number_input("Tutar", value=float(row['Tutar'])), c1.selectbox("Durum", ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"], index=["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"].index(row['Durum'])), c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) else "")
-                if st.form_submit_button("GÜNCELLE"):
+                if st.form_submit_button("TÜMÜNÜ GÜNCELLE"):
                     df.loc[df['ID'] == secili_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar', 'Durum', 'Fatura No']] = [v_m, v_a, v_t, v_tl, v_d, v_i, v_s, v_o, v_tu, v_du, v_f]
                     df.to_csv(DATA_FILE, index=False); st.success("Güncellendi!"); st.rerun()
     for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
@@ -109,11 +109,11 @@ elif menu == "👥 Personel Yönetimi":
     st.dataframe(pd.read_csv(USER_FILE), use_container_width=True)
     t1, t2, t3 = st.tabs(["➕ Ekle", "🔑 Şifre Değiştir", "❌ Sil"])
     with t1:
-        n, s = st.text_input("İsim", key="ekle"), st.text_input("Şifre", type="password", key="sifre")
+        n, s = st.text_input("Personel Adı", key="ekle"), st.text_input("Şifre", type="password", key="sifre")
         if st.button("Ekle"): pd.concat([pd.read_csv(USER_FILE), pd.DataFrame({"İsim": [n], "Şifre": [s]})], ignore_index=True).to_csv(USER_FILE, index=False); st.rerun()
     with t2:
         p = st.selectbox("Personel", pd.read_csv(USER_FILE)["İsim"].tolist(), key="sel"); s2 = st.text_input("Yeni Şifre", type="password", key="new")
         if st.button("Güncelle"): u = pd.read_csv(USER_FILE); u.loc[u["İsim"] == p, "Şifre"] = s2; u.to_csv(USER_FILE, index=False); st.rerun()
     with t3:
-        s3 = st.selectbox("Sil", pd.read_csv(USER_FILE)["İsim"].tolist(), key="del")
+        s3 = st.selectbox("Silinecek", pd.read_csv(USER_FILE)["İsim"].tolist(), key="del")
         if st.button("Sil"): u = pd.read_csv(USER_FILE); u[u["İsim"] != s3].to_csv(USER_FILE, index=False); st.rerun()
