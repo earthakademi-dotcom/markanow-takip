@@ -12,29 +12,27 @@ def add_months(date_str, months):
         return (dt + relativedelta(months=months)).strftime("%d.%m.%Y")
     except: return "-"
 
+# --- VERİ ÇERÇEVESİ GÜNCELLEMESİ ---
 if "markalar" not in st.session_state:
     st.session_state.markalar = pd.DataFrame(columns=[
         "Marka Adı", "Bülten Tarihi", "İlan Bitiş", "İtiraz Tebliğ", "İtiraz Son Gün", 
         "Tescil Bildirim", "Tescil Son Gün", "Durum"
     ])
 
+# Eğer 'Durum' sütunu yoksa oluştur (Eski verilerle uyum için)
+if "Durum" not in st.session_state.markalar.columns:
+    st.session_state.markalar["Durum"] = "Bekleyen"
+
 # --- SOL MENÜ ---
 def sidebar_menu():
     st.sidebar.title("📌 İşlem Menüsü")
-    
     st.sidebar.subheader("🎯 Günlük Takip")
     if st.sidebar.button("📅 Bugünün Hatırlatmaları"): st.session_state.menu = "Hatırlatma"
     if st.sidebar.button("⚙️ Operasyon Paneli"): st.session_state.menu = "Operasyon"
-    
     st.sidebar.subheader("📋 Süreç Takip")
     if st.sidebar.button("⏳ Başvuru Beklemede Olanlar"): st.session_state.menu = "Bekleyen"
     if st.sidebar.button("📄 Tescil Tebliğde Olanlar"): st.session_state.menu = "Tescil"
     if st.sidebar.button("⚖️ İtiraz Tebliğde Olanlar"): st.session_state.menu = "İtiraz"
-    
-    st.sidebar.markdown("---")
-    if st.sidebar.button("🚪 Güvenli Çıkış"): 
-        st.session_state.giris_yapildi = False
-        st.rerun()
 
 # --- UYGULAMA MANTIĞI ---
 if "menu" not in st.session_state: st.session_state.menu = "Hatırlatma"
@@ -44,24 +42,17 @@ if st.session_state.menu == "Hatırlatma":
     st.subheader(f"🔔 Bugün: {datetime.now().strftime('%d.%m.%Y')}")
     today = datetime.now().strftime("%d.%m.%Y")
     st.info("📌 Bugünün Son Günleri (İlan, İtiraz veya Tescil)")
-    hatirlatmalar = st.session_state.markalar[
-        (st.session_state.markalar["İlan Bitiş"] == today) | 
-        (st.session_state.markalar["İtiraz Son Gün"] == today) | 
-        (st.session_state.markalar["Tescil Son Gün"] == today)
+    # Güvenli filtreleme: Sütun kontrolü yap
+    df = st.session_state.markalar
+    hatirlatmalar = df[
+        (df["İlan Bitiş"] == today) | (df["İtiraz Son Gün"] == today) | (df["Tescil Son Gün"] == today)
     ]
     st.dataframe(hatirlatmalar)
 
-elif st.session_state.menu == "Bekleyen":
-    st.subheader("⏳ Başvuru Beklemede Olanlar")
-    st.dataframe(st.session_state.markalar[st.session_state.markalar["Durum"] == "Bekleyen"])
-
-elif st.session_state.menu == "Tescil":
-    st.subheader("📄 Tescil Tebliğde Olanlar")
-    st.dataframe(st.session_state.markalar[st.session_state.markalar["Durum"] == "Tescil"])
-
-elif st.session_state.menu == "İtiraz":
-    st.subheader("⚖️ İtiraz Tebliğde Olanlar")
-    st.dataframe(st.session_state.markalar[st.session_state.markalar["Durum"] == "İtiraz"])
+elif st.session_state.menu in ["Bekleyen", "Tescil", "İtiraz"]:
+    durum_map = {"Bekleyen": "⏳ Başvuru Beklemede Olanlar", "Tescil": "📄 Tescil Tebliğde Olanlar", "İtiraz": "⚖️ İtiraz Tebliğde Olanlar"}
+    st.subheader(durum_map[st.session_state.menu])
+    st.dataframe(st.session_state.markalar[st.session_state.markalar["Durum"] == st.session_state.menu])
 
 elif st.session_state.menu == "Operasyon":
     st.subheader("⚙️ Operasyon ve Takip Otomasyonu")
