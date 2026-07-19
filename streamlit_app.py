@@ -29,7 +29,7 @@ if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
     
     user_df = pd.read_csv(USER_FILE)
-    user_df.columns = user_df.columns.str.strip() # Sütun isimlerini temizle
+    user_df.columns = user_df.columns.str.strip() # Sütun isimlerindeki boşlukları temizle
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -37,12 +37,15 @@ if not st.session_state.kullanici:
         girilen_sifre = st.text_input("Şifre", type="password")
         
         if st.button("Giriş Yap", use_container_width=True):
-            sifre_dogru = user_df.loc[user_df["İsim"] == secili_kullanici, "Şifre"].values[0]
-            if str(girilen_sifre).strip() == str(sifre_dogru).strip():
-                st.session_state.kullanici = secili_kullanici
-                st.rerun()
-            else:
-                st.error("Hatalı şifre!")
+            # Seçilen kullanıcının satırını bul
+            user_row = user_df[user_df["İsim"] == secili_kullanici]
+            if not user_row.empty:
+                sifre_dogru = str(user_row.iloc[0]["Şifre"])
+                if str(girilen_sifre).strip() == sifre_dogru.strip():
+                    st.session_state.kullanici = secili_kullanici
+                    st.rerun()
+                else:
+                    st.error("Hatalı şifre!")
     st.stop()
 
 # --- MENÜ SİSTEMİ ---
@@ -62,7 +65,6 @@ df = load_data()
 # --- MODÜLLER ---
 if menu == "📝 Satış Girişi":
     st.header("📝 Yeni Satış Girişi")
-    # (Önceki satış girişi mantığınızı koruduk)
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı")
@@ -75,6 +77,7 @@ if menu == "📝 Satış Girişi":
         odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi")
         tutar = c2.number_input("Tutar (TL)", min_value=0.0)
+        
         if st.form_submit_button("Satışı Kaydet"):
             if len(tc) == 11:
                 new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
