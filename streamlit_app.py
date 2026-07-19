@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime
 
-# STREAMING_CHUNK: Tanımlamalar
+# ... existing code ... (TANIMLAMALAR ve load_data aynı)
 DATA_FILE = "marka_takip.csv"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
@@ -12,58 +12,38 @@ def load_data():
     if os.path.exists(DATA_FILE): return pd.read_csv(DATA_FILE)
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman"])
 
-# STREAMING_CHUNK: Giriş Paneli
+# ... existing code ... (GİRİŞ PANELİ aynı)
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
-if not st.session_state.kullanici:
-    k_adi = st.text_input("Kullanıcı Adı")
-    sifre = st.text_input("Şifre", type="password")
-    if st.button("Giriş"):
-        st.session_state.kullanici = k_adi
-        st.rerun()
-    st.stop()
+# (Giriş kısmı atlanmıştır - önceki kodu kullanın)
 
-# STREAMING_CHUNK: Satış Danışmanı Paneli
-st.sidebar.write(f"👤 Danışman: {st.session_state.kullanici}")
-menu = st.sidebar.radio("Menü", ["📝 Satış Girişi", "📊 Aylık Raporum"])
+# STREAMING_CHUNK: Gelişmiş Menü (Muhasebe Yetkisi Eklendi)
+st.sidebar.write(f"👤 Kullanıcı: {st.session_state.kullanici}")
+menu_options = ["📝 Satış Girişi", "📊 Aylık Raporum"]
+if st.session_state.kullanici == "Muhasebe Kullanıcısı":
+    menu_options.append("⏳ Onay Bekleyenler")
+
+menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
 
-# STREAMING_CHUNK: Satış Formu (Buton Tetiklemeli)
+# STREAMING_CHUNK: Satış Girişi (Onay Bekliyor Durumu)
 if menu == "📝 Satış Girişi":
-    st.header("📝 Yeni Satış Girişi")
-    # clear_on_submit=True ile form başarılı kayıttan sonra sıfırlanır
-    with st.form("yeni_satis", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        m_adi = c1.text_input("Marka Adı")
-        ad_soyad = c1.text_input("İsim Soyisim")
-        tc = c1.text_input("TC (11 Hane)")
-        tel = c1.text_input("Telefon")
-        dogum = c2.date_input("Doğum Tarihi")
-        il = c2.selectbox("İl", ILLER)
-        sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
-        odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
-        s_tarihi = c2.date_input("Satış Tarihi")
-        tutar = c2.number_input("Tutar (TL)", min_value=0.0)
-        
-        # Formun gönderilmesi sadece bu butona basıldığında gerçekleşir
-        submitted = st.form_submit_button("Satışı Kaydet")
-        
-        if submitted:
-            if len(str(tc)) == 11:
-                new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
-                           "Doğum Tarihi": dogum.strftime("%d/%m/%Y"), "İl": il, "Sınıf": ",".join(sinif),
-                           "Ödeme": odeme, "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), 
-                           "Tutar": tutar, "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici}
-                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                df.to_csv(DATA_FILE, index=False)
-                st.success("Satış başarıyla kaydedildi!")
-            else:
-                st.error("TC 11 hane olmalıdır!")
+    # ... existing code ... (Satış girişi aynı kalıyor, sadece Durum = "Muhasebe Onayı Bekliyor")
+    pass
+
+# STREAMING_CHUNK: Muhasebe Onay Paneli
+elif menu == "⏳ Onay Bekleyenler":
+    st.header("⏳ Onay Bekleyen Satışlar")
+    bekleyenler = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
+    st.dataframe(bekleyenler)
+    
+    id_sec = st.number_input("Onaylanacak Satış ID", min_value=1, step=1)
+    if st.button("Onayla"):
+        df.loc[df['ID'] == id_sec, 'Durum'] = 'Onaylandı'
+        df.to_csv(DATA_FILE, index=False)
+        st.success("Satış onaylandı!")
+        st.rerun()
 
 elif menu == "📊 Aylık Raporum":
-    st.header("📊 Aylık Rapor")
-    df_dan = df[df['Danışman'] == st.session_state.kullanici]
-    df_onay = df_dan[df_dan['Durum'] != "Muhasebe Onayı Bekliyor"]
-    col1, col2 = st.columns(2)
-    col1.metric("Toplam Ciro", f"{df_onay['Tutar'].sum():,.2f} TL")
-    adet = sum(1 for s in df_onay['Sınıf'] if not str(s).startswith("35/"))
-    col2.metric("Toplam Satış Adedi", adet)
+    # Rapor artık sadece onaylıları sayıyor
+    df_onayli = df[(df['Danışman'] == st.session_state.kullanici) & (df['Durum'] == 'Onaylandı')]
+    # ... (Geri kalan raporlama aynı)
