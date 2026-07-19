@@ -35,19 +35,17 @@ def say_ana_siniflar(sinif_listesi_str):
     return len([s for s in siniflar if not s.startswith('35/')])
 
 def hesapla_prim(adet):
-    # Veri boş veya geçersizse 0 dön
+    table = load_prim_table()
     try:
         adet = int(float(adet))
-    except (ValueError, TypeError):
-        return 0.0
+    except: return 0.0
     
-    table = load_prim_table()
-    if adet >= 49: return float(table.get("49", 1000))
+    if adet >= 49: return float(adet * table.get("49", 1000))
     for k, v in table.items():
         if "-" in k:
             try:
                 low, high = map(int, k.split('-'))
-                if low <= adet <= high: return float(v)
+                if low <= adet <= high: return float(adet * v)
             except: continue
     return 0.0
 
@@ -147,32 +145,31 @@ elif menu == "💰 Muhasebe Onayı":
         df.to_csv(DATA_FILE, index=False); st.rerun()
 
 elif menu == "💰 Satış Danışmanları Prim":
-    st.header("💰 Satış Danışmanı Prim Raporu")
-    danismanlar = df['Danışman'].unique()
-    secilen_danisman = st.selectbox("Danışman Seçin", danismanlar)
-    c1, c2 = st.columns(2)
-    ay_prim = c1.selectbox("Ay", range(1, 13), index=datetime.now().month-1)
-    yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
-    
-    adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
-    st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{adet}**")
-    
-    tab1, tab2 = st.tabs(["📊 Rapor", "⚙️ Tablo Düzenle"])
+    st.header("💰 Satış Danışmanı Prim Yönetimi")
+    tab1, tab2 = st.tabs(["📊 Prim Raporu", "⚙️ Prim Tablosu Düzenle"])
     with tab1:
+        danismanlar = df['Danışman'].unique()
+        secilen_danisman = st.selectbox("Danışman Seçin", danismanlar)
+        c1, c2 = st.columns(2)
+        ay_prim = c1.selectbox("Ay", range(1, 13), index=datetime.now().month-1)
+        yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+        prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+        adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
+        st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{adet}**")
         c1, c2 = st.columns(2)
         c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
-        c2.metric("Hak Edilen Prim", f"{hesapla_prim(adet):,.2f} TL")
+        c2.metric("Hak Edilen Toplam Prim", f"{hesapla_prim(adet):,.2f} TL")
         st.dataframe(prim_df)
     with tab2:
         if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
             prim_table = load_prim_table()
             new_table = {}
             for k, v in prim_table.items():
-                new_table[k] = st.number_input(f"{k} Prim Değeri", value=v)
+                new_table[k] = st.number_input(f"{k} Aralığı Birim Fiyatı (TL)", value=v)
             if st.button("Kaydet"):
                 with open(PRIM_FILE, "w") as f: json.dump(new_table, f)
                 st.success("Tablo güncellendi!")
+        else: st.warning("Prim tablosunu sadece Admin ve Muhasebe düzenleyebilir.")
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
