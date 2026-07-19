@@ -1,4 +1,4 @@
-import streamlit as st
+mport streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
@@ -24,8 +24,8 @@ if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
     if not os.path.exists(USER_FILE):
-        pd.DataFrame({"İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "OPERASYON YETKİLİSİ"],
-                      "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]}).to_csv(USER_FILE, index=False)
+        pd.DataFrame({"İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN"],
+                      "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123"]}).to_csv(USER_FILE, index=False)
     user_df = pd.read_csv(USER_FILE)
     secili = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
     sifre = st.text_input("Şifre", type="password")
@@ -74,31 +74,34 @@ elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
     my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
     ay = st.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
-    my_df = my_df[my_df['Satış Tarihi_dt'].dt.month == ay]
-    onayli = my_df[my_df['Durum'] == "Onaylandı"]
+    filtered = my_df[my_df['Satış Tarihi_dt'].dt.month == ay]
+    onayli = filtered[filtered['Durum'] == "Onaylandı"]
     col1, col2 = st.columns(2)
     col1.metric("Toplam Ciro (Onaylı)", f"{onayli['Tutar'].sum():,.2f} TL")
     col2.metric("Toplam Sınıf", onayli['Sınıf'].apply(lambda x: len(str(x).split(',')) if pd.notnull(x) else 0).sum())
-    st.dataframe(my_df, use_container_width=True)
-    st.subheader("Faturalandırılacak Satışlar")
-    if not onayli.empty:
+    st.dataframe(filtered, use_container_width=True)
+
+elif menu == "💰 Muhasebe Onayı":
+    st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
+    if st.session_state.kullanici == "SELEN AKCAN":
+        st.subheader("Onay Bekleyen Satışlar")
+        bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
+        for i, row in bekleyen.iterrows():
+            cols = st.columns([1, 8])
+            if cols[0].button("✅ Onayla", key=f"onay_{row['ID']}"):
+                df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
+                df.to_csv(DATA_FILE, index=False); st.rerun()
+            cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
+        st.write("---")
+        st.subheader("Faturalandırılacak Satışlar (Onaylı)")
+        onaylilar = df[df['Durum'] == "Onaylandı"]
+        st.dataframe(onaylilar[['ID', 'Marka Adı', 'Tutar', 'Fatura No']])
         id_f = st.number_input("Fatura Kesilecek ID", step=1)
         f_no = st.text_input("Fatura No")
         if st.button("Fatura Kaydet"):
             df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
             df.to_csv(DATA_FILE, index=False); st.rerun()
-
-elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay Paneli")
-    if st.session_state.kullanici == "SELEN AKCAN":
-        bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
-        for i, row in bekleyen.iterrows():
-            cols = st.columns([1, 8])
-            if cols[0].button("✅", key=f"onay_{row['ID']}"):
-                df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
-                df.to_csv(DATA_FILE, index=False); st.rerun()
-            cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
-    else: st.dataframe(df[df['Durum'] == "Onaylandı"])
+    else: st.dataframe(df[df['Durum'] == "Tamamlandı"])
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
