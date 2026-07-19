@@ -25,6 +25,13 @@ def say_ana_siniflar(sinif_listesi_str):
     # 35/ ile başlayan alt sınıfları hariç tut, ana sınıfları say
     return len([s for s in siniflar if not s.startswith('35/')])
 
+def hesapla_prim(ana_sinif_adedi):
+    # 19 ve altına prim yok, 20-23 arası her sınıf 10 TL
+    if 20 <= ana_sinif_adedi <= 23:
+        return ana_sinif_adedi * 10
+    else:
+        return 0
+
 # --- GİRİŞ VE OTURUM ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
@@ -86,9 +93,9 @@ elif menu == "📊 Satışlarım":
     now = datetime.now()
     filtered = my_df[(my_df['Satış Tarihi_dt'].dt.month == now.month) & (my_df['Satış Tarihi_dt'].dt.year == now.year)]
     onayli = filtered[filtered['Durum'] == "Onaylandı"]
-    col1, col2 = st.columns(2)
-    col1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
-    col2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
+    c1, c2 = st.columns(2)
+    c1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
+    c2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
     st.dataframe(filtered, use_container_width=True)
 
 elif menu == "📊 Aylık Raporum":
@@ -133,9 +140,10 @@ elif menu == "💰 Satış Danışmanları Prim":
     yil_prim = col2.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
     prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
     st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}**")
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
     c2.metric("Toplam Ana Sınıf", prim_df['Sınıf'].apply(say_ana_siniflar).sum())
+    c3.metric("Hak Edilen Prim", f"{hesapla_prim(prim_df['Sınıf'].apply(say_ana_siniflar).sum()):,.2f} TL")
     st.dataframe(prim_df, use_container_width=True)
 
 elif menu == "📊 Performans Raporu":
