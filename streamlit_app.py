@@ -111,7 +111,24 @@ elif menu == "📊 Satışlarım":
     st.dataframe(filtered, use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay Paneli")
+    st.header("💰 Muhasebe Onay ve Düzenleme Paneli")
+    # Düzenleme Bölümü
+    with st.expander("✏️ Yanlış Girilen Satışı Düzenle"):
+        secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
+        if secili_id in df['ID'].values:
+            row = df[df['ID'] == secili_id].iloc[0]
+            with st.form("duzenleme_formu"):
+                c1, c2 = st.columns(2)
+                y_marka = c1.text_input("Marka Adı", value=row['Marka Adı'])
+                y_tutar = c2.number_input("Tutar (TL)", value=float(row['Tutar']))
+                y_durum = c1.selectbox("Durum", ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"], index=["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"].index(row['Durum']))
+                y_fatura = c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) else "")
+                if st.form_submit_button("Güncelle"):
+                    df.loc[df['ID'] == secili_id, ['Marka Adı', 'Tutar', 'Durum', 'Fatura No']] = [y_marka, y_tutar, y_durum, y_fatura]
+                    df.to_csv(DATA_FILE, index=False); st.success("Satış güncellendi!"); st.rerun()
+        else: st.info("Düzenlemek için geçerli bir ID girin.")
+
+    st.write("---")
     bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
     for i, row in bekleyen.iterrows():
         cols = st.columns([1, 8])
@@ -119,15 +136,6 @@ elif menu == "💰 Muhasebe Onayı":
             df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
             df.to_csv(DATA_FILE, index=False); st.rerun()
         cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
-    st.write("---")
-    st.subheader("Faturalandırılacak Satışlar (Onaylı)")
-    onaylilar = df[df['Durum'] == "Onaylandı"]
-    st.dataframe(onaylilar[['ID', 'Marka Adı', 'Tutar', 'Fatura No']])
-    id_f = st.number_input("Fatura Kesilecek ID", step=1)
-    f_no = st.text_input("Fatura No")
-    if st.button("Fatura Kaydet"):
-        df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
-        df.to_csv(DATA_FILE, index=False); st.rerun()
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
@@ -136,7 +144,6 @@ elif menu == "📊 Performans Raporu":
 
 elif menu == "👥 Personel Yönetimi":
     st.header("👥 Personel ve Veri Yönetimi")
-    # --- YÖNETİCİ SİLME ALANI ---
     with st.expander("⚠️ YÖNETİCİ: TÜM VERİLERİ SIFIRLA"):
         st.warning("Bu işlem tüm satış, onay ve fatura verilerini KALICI olarak siler.")
         if st.button("TÜM VERİLERİ SİL"):
