@@ -88,7 +88,8 @@ if menu == "📝 Satış Girişi":
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı"); ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
-        dogum = c2.date_input("Doğum Tarihi"); il = c2.selectbox("İl", ILLER)
+        dogum = c2.date_input("Doğum Tarihi", min_value=datetime(1920, 1, 1))
+        il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR); odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi"); tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         if st.form_submit_button("Satışı Kaydet"):
