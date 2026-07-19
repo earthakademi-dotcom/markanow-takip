@@ -11,7 +11,7 @@ USER_FILE = "kullanicilar.csv"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
-# Başlangıç Kullanıcı Listesi (İsim ve Şifre sütunuyla)
+# Başlangıç Kullanıcı Listesi (Eğer dosya yoksa oluştur)
 if not os.path.exists(USER_FILE):
     pd.DataFrame({
         "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "OPERASYON YETKİLİSİ"],
@@ -27,7 +27,9 @@ if "kullanici" not in st.session_state: st.session_state.kullanici = None
 
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
+    
     user_df = pd.read_csv(USER_FILE)
+    user_df.columns = user_df.columns.str.strip() # Sütun isimlerini temizle
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -36,7 +38,7 @@ if not st.session_state.kullanici:
         
         if st.button("Giriş Yap", use_container_width=True):
             sifre_dogru = user_df.loc[user_df["İsim"] == secili_kullanici, "Şifre"].values[0]
-            if str(girilen_sifre) == str(sifre_dogru):
+            if str(girilen_sifre).strip() == str(sifre_dogru).strip():
                 st.session_state.kullanici = secili_kullanici
                 st.rerun()
             else:
@@ -60,6 +62,7 @@ df = load_data()
 # --- MODÜLLER ---
 if menu == "📝 Satış Girişi":
     st.header("📝 Yeni Satış Girişi")
+    # (Önceki satış girişi mantığınızı koruduk)
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı")
@@ -72,7 +75,6 @@ if menu == "📝 Satış Girişi":
         odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi")
         tutar = c2.number_input("Tutar (TL)", min_value=0.0)
-        
         if st.form_submit_button("Satışı Kaydet"):
             if len(tc) == 11:
                 new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
@@ -86,6 +88,7 @@ if menu == "📝 Satış Girişi":
 elif menu == "👥 Personel Yönetimi":
     st.header("👥 Personel Yönetimi")
     users_df = pd.read_csv(USER_FILE)
+    users_df.columns = users_df.columns.str.strip() # Hata almamak için temizle
     st.dataframe(users_df)
     
     yeni_ad = st.text_input("Personel Adı")
