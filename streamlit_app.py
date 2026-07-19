@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import json
 from datetime import datetime
 
 # --- SAYFA YAPILANDIRMASI ---
@@ -9,6 +10,7 @@ st.set_page_config(page_title="Markanow ERP", layout="wide")
 # --- TANIMLAMALAR ---
 DATA_FILE = "marka_takip.csv"
 USER_FILE = "kullanicilar.csv"
+PRIM_FILE = "prim_tablosu.json"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
@@ -19,20 +21,25 @@ def load_data():
         return df
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
+def load_prim_table():
+    default_table = {"20-23": 100, "24-28": 200, "29-33": 300, "34-38": 550, "39-43": 700, "44-48": 850, "49": 1000}
+    if os.path.exists(PRIM_FILE):
+        with open(PRIM_FILE, "r") as f: return json.load(f)
+    return default_table
+
 def say_ana_siniflar(sinif_listesi_str):
     if pd.isna(sinif_listesi_str): return 0
     siniflar = str(sinif_listesi_str).split(',')
     return len([s for s in siniflar if not s.startswith('35/')])
 
-def hesapla_prim(ana_sinif_adedi):
-    # Hata almamak için değerin sayısal olduğundan emin oluyoruz
-    try:
-        adet = int(ana_sinif_adedi)
-        if 20 <= adet <= 23:
-            return adet * 10
-        return 0
-    except:
-        return 0
+def hesapla_prim(adet):
+    table = load_prim_table()
+    if adet >= 49: return table.get("49", 1000)
+    for k, v in table.items():
+        if "-" in k:
+            low, high = map(int, k.split('-'))
+            if low <= adet <= high: return v
+    return 0
 
 # --- GİRİŞ VE OTURUM ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
@@ -132,23 +139,32 @@ elif menu == "💰 Muhasebe Onayı":
 
 elif menu == "💰 Satış Danışmanları Prim":
     st.header("💰 Satış Danışmanı Prim Raporu")
-    danismanlar = df['Danışman'].unique()
-    secilen_danisman = st.selectbox("Prim Raporu İçin Danışman Seçin", danismanlar)
-    col1, col2 = st.columns(2)
-    ay_prim = col1.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
-    yil_prim = col2.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
-    
-    toplam_ciro = prim_df['Tutar'].sum()
-    ana_sinif_adedi = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
-    kazanilacak_prim = hesapla_prim(ana_sinif_adedi)
-    
-    st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}**")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Toplam Ciro", f"{toplam_ciro:,.2f} TL")
-    c2.metric("Toplam Ana Sınıf", ana_sinif_adedi)
-    c3.metric("Hak Edilen Prim", f"{kazanilacak_prim:,.2f} TL")
-    st.dataframe(prim_df, use_container_width=True)
+    tab1, tab2 = st.tabs(["📊 Prim Raporu", "⚙️ Prim Tablosu Düzenle"])
+    with tab1:
+        danismanlar = df['Danışman'].unique()
+        secilen_danisman = st.selectbox("Prim Raporu İçin Danışman Seçin", danismanlar)
+        c1, c2 = st.columns(2)
+        ay_prim = c1.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
+        yil_prim = c2.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+        prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+        adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
+        st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}**")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
+        c2.metric("Toplam Ana Sınıf", adet)
+        c3.metric("Hak Edilen Prim", f"{hesapla_prim(adet):,.2f} TL")
+        st.dataframe(prim_df)
+    with tab2:
+        if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
+            st.subheader("Prim Kademelerini Düzenle")
+            prim_table = load_prim_table()
+            new_table = {}
+            for k, v in prim_table.items():
+                new_table[k] = st.number_input(f"{k} Sınıf Prim Değeri", value=v)
+            if st.button("Tabloyu Kaydet"):
+                with open(PRIM_FILE, "w") as f: json.dump(new_table, f)
+                st.success("Tablo güncellendi!")
+        else: st.warning("Tabloyu sadece Admin ve Muhasebe düzenleyebilir.")
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
