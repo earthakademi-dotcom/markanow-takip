@@ -1,57 +1,65 @@
 import streamlit as st
-import base64
 
-# STREAMING_CHUNK: Görseli kodun içine gömmek için helper (Hata almamak için en güvenli yol)
-def get_image_as_base64(path):
-    try:
-        with open(path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode()
-    except: return None
+# STREAMING_CHUNK: Sayfa düzeni ve kurumsal arayüz tanımlamaları
+st.set_page_config(page_title="Markanow ERP & Satış Takip", layout="centered")
 
-img_base64 = get_image_as_base64("logo.jpeg.jpeg")
-
-st.set_page_config(page_title="Markanow ERP", layout="centered")
-
-# STREAMING_CHUNK: Kurumsal Tasarım
 st.markdown("""
     <style>
-    .stApp { background-color: #eef2f5; }
-    .card {
-        background-color: white; padding: 40px; border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;
+    .stApp { background-color: #f4f7f6; }
+    .login-card {
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        text-align: center;
+        border: 1px solid #e0e0e0;
     }
-    .logo-img { width: 250px; margin-bottom: 20px; }
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        font-weight: bold;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
+# STREAMING_CHUNK: Oturum durumu yönetimi
+if "giris_yapildi" not in st.session_state:
+    st.session_state.giris_yapildi = False
 
-# STREAMING_CHUNK: Giriş Ekranı
+# STREAMING_CHUNK: Giriş ekranı (Kurumsal Kart)
 if not st.session_state.giris_yapildi:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
     
-    # Görseli base64 üzerinden güvenli yükleme
-    if img_base64:
-        st.markdown(f'<img src="data:image/jpeg;base64,{img_base64}" class="logo-img">', unsafe_allow_html=True)
-    else:
-        st.subheader("🏢 Markanow")
-
-    tab1, tab2 = st.tabs(["Giriş Yap", "Yeni Kullanıcı Kayıt"])
+    # Logonun yerleşimi
+    LOGO_URL = "https://i.imgur.com/dhN0tyf.jpeg"
+    st.markdown(f'<img src="{LOGO_URL}" width="280" style="margin-bottom:25px;">', unsafe_allow_html=True)
+    
+    # Giriş ve Kayıt sekmeleri
+    tab1, tab2 = st.tabs(["🔑 Giriş Yap", "📝 Kayıt Ol"])
     
     with tab1:
         k_adi = st.text_input("Kullanıcı Adı")
         sifre = st.text_input("Şifre", type="password")
-        if st.button("Giriş Yap", use_container_width=True):
+        if st.button("Giriş Yap"):
             if k_adi == "admin" and sifre == "1234":
                 st.session_state.giris_yapildi = True
                 st.rerun()
-            else: st.error("Hatalı giriş!")
-
+            else:
+                st.error("Kullanıcı adı veya şifre hatalı!")
+                
     with tab2:
-        st.text_input("Yeni Kullanıcı Adı", key="n_u")
-        st.text_input("Yeni Şifre", type="password", key="n_p")
-        if st.button("Kayıt Talebi Gönder", use_container_width=True):
-            st.success("Talebiniz yöneticiye iletildi.")
+        st.text_input("Yeni Kullanıcı Adı", key="new_u")
+        st.text_input("Yeni Şifre", type="password", key="new_p")
+        if st.button("Kayıt Talebi Gönder"):
+            st.success("Kayıt talebiniz yöneticiye başarıyla iletildi.")
             
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
+
+# STREAMING_CHUNK: Giriş sonrası ana yönetim paneli
+st.header("Markanow Yönetim Paneli")
+st.write("Hoş geldiniz, işlemlerinize başlayabilirsiniz.")
+
+if st.button("🚪 Güvenli Çıkış"):
+    st.session_state.giris_yapildi = False
+    st.rerun()
