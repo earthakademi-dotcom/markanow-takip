@@ -17,35 +17,8 @@ SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 def load_data():
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE)
-        df['Satış Tarihi_dt'] = pd.to_datetime(df['Satış Tarihi'], dayfirst=True, errors='coerce')
         return df
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
-
-def load_prim_table():
-    default_table = {"20-23": 100, "24-28": 200, "29-33": 300, "34-38": 550, "39-43": 700, "44-48": 850, "49": 1000}
-    if os.path.exists(PRIM_FILE):
-        try:
-            with open(PRIM_FILE, "r") as f: return json.load(f)
-        except: return default_table
-    return default_table
-
-def say_ana_siniflar(sinif_listesi_str):
-    if pd.isna(sinif_listesi_str): return 0
-    siniflar = str(sinif_listesi_str).split(',')
-    return len([s for s in siniflar if not s.startswith('35/')])
-
-def hesapla_prim(adet):
-    table = load_prim_table()
-    try: adet = int(float(adet))
-    except: return 0.0
-    if adet >= 49: return float(adet * table.get("49", 1000))
-    for k, v in table.items():
-        if "-" in k:
-            try:
-                low, high = map(int, k.split('-'))
-                if low <= adet <= high: return float(adet * v)
-            except: continue
-    return 0.0
 
 # --- GİRİŞ ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
@@ -70,11 +43,9 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None; st.rerun()
 st.sidebar.write("---")
 
-menu_options = []
-if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN", "DENİZ TELLİ GÜRLEYENDAĞ"]:
-    menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım", "📊 Aylık Raporum"])
+menu_options = ["📝 Satış Girişi", "📊 Satışlarım"]
 if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
-    menu_options.extend(["💰 Muhasebe Onayı", "💰 Satış Danışmanları Prim"])
+    menu_options.extend(["💰 Muhasebe Onayı"])
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
 
@@ -88,32 +59,40 @@ if menu == "📝 Satış Girişi":
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı"); ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
-        dogum = c2.date_input("Doğum Tarihi", min_value=datetime(1920, 1, 1))
+        st.write("Doğum Tarihi")
+        d1, d2, d3 = st.columns(3)
+        gun = d1.selectbox("Gün", range(1, 32))
+        ay = d2.selectbox("Ay", range(1, 13))
+        yil = d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
         il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR); odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi"); tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         if st.form_submit_button("Satışı Kaydet"):
-            new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
-                       "Doğum Tarihi": dogum.strftime("%d/%m/%Y"), "İl": il, "Sınıf": ",".join(sinif),
-                       "Ödeme": odeme, "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), 
-                       "Tutar": tutar, "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
+            dogum_str = f"{gun:02d}/{ay:02d}/{yil}"
+            new_row = {"ID": len(df)+1 if df.empty else df['ID'].max()+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
+                       "Doğum Tarihi": dogum_str, "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
+                       "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), "Tutar": tutar, 
+                       "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("Satış kaydedildi.")
 
 elif menu == "📊 Satışlarım":
-    st.header(f"📊 {st.session_state.kullanici} - Güncel Ay Satışları")
+    st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
     my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    now = datetime.now()
-    filtered = my_df[(my_df['Satış Tarihi_dt'].dt.month == now.month) & (my_df['Satış Tarihi_dt'].dt.year == now.year)]
-    onayli = filtered[filtered['Durum'] == "Onaylandı"]
-    c1, c2 = st.columns(2)
-    c1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
-    c2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
-    st.dataframe(filtered, use_container_width=True)
+    with st.expander("✏️ Kendi Satışımı Düzenle"):
+        duzenle_id = st.number_input("Düzenlemek istediğiniz Satış ID", step=1)
+        if duzenle_id in my_df['ID'].values:
+            row = df[df['ID'] == duzenle_id].iloc[0]
+            with st.form("kendi_satis_duzenle"):
+                y_marka = st.text_input("Marka Adı", value=row['Marka Adı'])
+                y_tutar = st.number_input("Tutar (TL)", value=float(row['Tutar']))
+                if st.form_submit_button("Güncelle"):
+                    df.loc[df['ID'] == duzenle_id, ['Marka Adı', 'Tutar']] = [y_marka, y_tutar]
+                    df.to_csv(DATA_FILE, index=False); st.success("Satış güncellendi!"); st.rerun()
+    st.dataframe(my_df, use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Düzenleme Paneli")
-    # Düzenleme Bölümü
     with st.expander("✏️ Yanlış Girilen Satışı Düzenle"):
         secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
         if secili_id in df['ID'].values:
@@ -127,47 +106,17 @@ elif menu == "💰 Muhasebe Onayı":
                 if st.form_submit_button("Güncelle"):
                     df.loc[df['ID'] == secili_id, ['Marka Adı', 'Tutar', 'Durum', 'Fatura No']] = [y_marka, y_tutar, y_durum, y_fatura]
                     df.to_csv(DATA_FILE, index=False); st.success("Satış güncellendi!"); st.rerun()
-        else: st.info("Düzenlemek için geçerli bir ID girin.")
-
-    st.write("---")
     bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
     for i, row in bekleyen.iterrows():
-        cols = st.columns([1, 8])
-        if cols[0].button("✅ Onayla", key=f"onay_{row['ID']}"):
+        if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
             df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
             df.to_csv(DATA_FILE, index=False); st.rerun()
-        cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
 
 elif menu == "📊 Performans Raporu":
-    st.header("📊 Kurumsal Performans Paneli")
-    rapor = df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum()
-    st.bar_chart(rapor)
+    st.header("📊 Performans"); st.bar_chart(df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum())
 
 elif menu == "👥 Personel Yönetimi":
     st.header("👥 Personel ve Veri Yönetimi")
-    with st.expander("⚠️ YÖNETİCİ: TÜM VERİLERİ SIFIRLA"):
-        st.warning("Bu işlem tüm satış, onay ve fatura verilerini KALICI olarak siler.")
-        if st.button("TÜM VERİLERİ SİL"):
-            if os.path.exists(DATA_FILE):
-                os.remove(DATA_FILE)
-                st.error("Tüm veriler temizlendi, lütfen sayfayı yenileyin.")
-                st.rerun()
-
-    users_df = pd.read_csv(USER_FILE)
-    st.dataframe(users_df, use_container_width=True)
-    tab1, tab2, tab3 = st.tabs(["➕ Ekle", "🔑 Şifre Değiştir", "❌ Sil"])
-    with tab1:
-        yeni_ad = st.text_input("Personel Adı", key="ekle_ad")
-        yeni_sifre = st.text_input("Şifre Belirle", type="password", key="ekle_sifre")
-        if st.button("Personel Ekle"):
-            pd.concat([users_df, pd.DataFrame({"İsim": [yeni_ad], "Şifre": [yeni_sifre]})], ignore_index=True).to_csv(USER_FILE, index=False); st.rerun()
-    with tab2:
-        secilen_p = st.selectbox("Personel Seçin", users_df["İsim"].tolist(), key="guncelle_sec")
-        yeni_sifre_g = st.text_input("Yeni Şifre", type="password", key="guncelle_sifre")
-        if st.button("Şifreyi Güncelle"):
-            users_df.loc[users_df["İsim"] == secilen_p, "Şifre"] = yeni_sifre_g
-            users_df.to_csv(USER_FILE, index=False); st.rerun()
-    with tab3:
-        silinecek = st.selectbox("Silinecek Personel", users_df["İsim"].tolist(), key="sil_sec")
-        if st.button("Personeli Sil"):
-            users_df[users_df["İsim"] != silinecek].to_csv(USER_FILE, index=False); st.rerun()
+    if st.button("⚠️ TÜM VERİLERİ SİL"):
+        if os.path.exists(DATA_FILE): os.remove(DATA_FILE); st.error("Veriler silindi!"); st.rerun()
+    st.dataframe(pd.read_csv(USER_FILE), use_container_width=True)
