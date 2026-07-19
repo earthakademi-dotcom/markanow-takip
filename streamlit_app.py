@@ -74,3 +74,12 @@ elif menu == "💰 Muhasebe Onayı":
         df.loc[df['ID'] == id_sec, ['Durum', 'Fatura No']] = ["Onaylandı", f_no]
         df.to_csv(DATA_FILE, index=False)
         st.rerun()
+# --- MENÜ SİSTEMİ ---
+st.sidebar.write(f"👤 Danışman: {st.session_state.kullanici}")
+menu = st.sidebar.radio("Menü", ["📝 Satış Girişi", "📊 Aylık Raporum", "💰 Muhasebe Onayı"])
+
+# --- GÜVENLİ ÇIKIŞ ---
+st.sidebar.markdown("---") # Ayırıcı çizgi
+if st.sidebar.button("🚪 Çıkış Yap"):
+    st.session_state.kullanici = None
+    st.rerun()
