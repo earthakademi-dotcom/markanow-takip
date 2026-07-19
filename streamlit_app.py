@@ -22,14 +22,16 @@ def load_data():
 def say_ana_siniflar(sinif_listesi_str):
     if pd.isna(sinif_listesi_str): return 0
     siniflar = str(sinif_listesi_str).split(',')
-    # 35/ ile başlayan alt sınıfları hariç tut, ana sınıfları say
     return len([s for s in siniflar if not s.startswith('35/')])
 
 def hesapla_prim(ana_sinif_adedi):
-    # 19 ve altına prim yok, 20-23 arası her sınıf 10 TL
-    if 20 <= ana_sinif_adedi <= 23:
-        return ana_sinif_adedi * 10
-    else:
+    # Hata almamak için değerin sayısal olduğundan emin oluyoruz
+    try:
+        adet = int(ana_sinif_adedi)
+        if 20 <= adet <= 23:
+            return adet * 10
+        return 0
+    except:
         return 0
 
 # --- GİRİŞ VE OTURUM ---
@@ -56,13 +58,10 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 st.sidebar.write("---")
 
 menu_options = []
-# Satış Danışmanı Menüleri
 if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım", "📊 Aylık Raporum"])
-# Muhasebe + Admin + Deniz Menüleri
 if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["💰 Muhasebe Onayı", "💰 Satış Danışmanları Prim"])
-# Admin + Müdür Menüleri
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
 
@@ -139,11 +138,16 @@ elif menu == "💰 Satış Danışmanları Prim":
     ay_prim = col1.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
     yil_prim = col2.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
     prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+    
+    toplam_ciro = prim_df['Tutar'].sum()
+    ana_sinif_adedi = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
+    kazanilacak_prim = hesapla_prim(ana_sinif_adedi)
+    
     st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}**")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
-    c2.metric("Toplam Ana Sınıf", prim_df['Sınıf'].apply(say_ana_siniflar).sum())
-    c3.metric("Hak Edilen Prim", f"{hesapla_prim(prim_df['Sınıf'].apply(say_ana_siniflar).sum()):,.2f} TL")
+    c1.metric("Toplam Ciro", f"{toplam_ciro:,.2f} TL")
+    c2.metric("Toplam Ana Sınıf", ana_sinif_adedi)
+    c3.metric("Hak Edilen Prim", f"{kazanilacak_prim:,.2f} TL")
     st.dataframe(prim_df, use_container_width=True)
 
 elif menu == "📊 Performans Raporu":
