@@ -5,23 +5,16 @@ from dateutil.relativedelta import relativedelta
 
 st.set_page_config(page_title="Markanow Operasyon", layout="wide")
 
-# --- OTOMASYON HESAPLAMA ---
 def add_months(date_str, months):
     try:
         dt = datetime.strptime(date_str, "%d.%m.%Y")
         return (dt + relativedelta(months=months)).strftime("%d.%m.%Y")
     except: return "-"
 
-# --- VERİ ÇERÇEVESİ GÜNCELLEMESİ ---
 if "markalar" not in st.session_state:
     st.session_state.markalar = pd.DataFrame(columns=[
-        "Marka Adı", "Bülten Tarihi", "İlan Bitiş", "İtiraz Tebliğ", "İtiraz Son Gün", 
-        "Tescil Bildirim", "Tescil Son Gün", "Durum"
+        "Marka Adı", "Bülten Tarihi", "İlan Bitiş", "Durum"
     ])
-
-# Eğer 'Durum' sütunu yoksa oluştur (Eski verilerle uyum için)
-if "Durum" not in st.session_state.markalar.columns:
-    st.session_state.markalar["Durum"] = "Bekleyen"
 
 # --- SOL MENÜ ---
 def sidebar_menu():
@@ -29,47 +22,47 @@ def sidebar_menu():
     st.sidebar.subheader("🎯 Günlük Takip")
     if st.sidebar.button("📅 Bugünün Hatırlatmaları"): st.session_state.menu = "Hatırlatma"
     if st.sidebar.button("⚙️ Operasyon Paneli"): st.session_state.menu = "Operasyon"
+    
+    st.sidebar.subheader("📋 Bülten Süreci")
+    if st.sidebar.button("⏳ Bülten Beklemede"): st.session_state.menu = "B_Beklemede"
+    if st.sidebar.button("📢 Bültende Olanlar"): st.session_state.menu = "B_Aktif"
+    
     st.sidebar.subheader("📋 Süreç Takip")
-    if st.sidebar.button("⏳ Başvuru Beklemede Olanlar"): st.session_state.menu = "Bekleyen"
-    if st.sidebar.button("📄 Tescil Tebliğde Olanlar"): st.session_state.menu = "Tescil"
-    if st.sidebar.button("⚖️ İtiraz Tebliğde Olanlar"): st.session_state.menu = "İtiraz"
+    if st.sidebar.button("⏳ Başvuru Beklemede"): st.session_state.menu = "Bekleyen"
+    if st.sidebar.button("📄 Tescil Tebliğde"): st.session_state.menu = "Tescil"
+    if st.sidebar.button("⚖️ İtiraz Tebliğde"): st.session_state.menu = "İtiraz"
 
-# --- UYGULAMA MANTIĞI ---
+# --- UYGULAMA ---
 if "menu" not in st.session_state: st.session_state.menu = "Hatırlatma"
 sidebar_menu()
 
-if st.session_state.menu == "Hatırlatma":
-    st.subheader(f"🔔 Bugün: {datetime.now().strftime('%d.%m.%Y')}")
-    today = datetime.now().strftime("%d.%m.%Y")
-    st.info("📌 Bugünün Son Günleri (İlan, İtiraz veya Tescil)")
-    # Güvenli filtreleme: Sütun kontrolü yap
-    df = st.session_state.markalar
-    hatirlatmalar = df[
-        (df["İlan Bitiş"] == today) | (df["İtiraz Son Gün"] == today) | (df["Tescil Son Gün"] == today)
-    ]
-    st.dataframe(hatirlatmalar)
+df = st.session_state.markalar
 
-elif st.session_state.menu in ["Bekleyen", "Tescil", "İtiraz"]:
-    durum_map = {"Bekleyen": "⏳ Başvuru Beklemede Olanlar", "Tescil": "📄 Tescil Tebliğde Olanlar", "İtiraz": "⚖️ İtiraz Tebliğde Olanlar"}
-    st.subheader(durum_map[st.session_state.menu])
-    st.dataframe(st.session_state.markalar[st.session_state.markalar["Durum"] == st.session_state.menu])
+if st.session_state.menu == "B_Beklemede":
+    st.subheader("⏳ Bülten Beklemede")
+    st.dataframe(df[df["Bülten Tarihi"].isna() | (df["Bülten Tarihi"] == "-")])
+
+elif st.session_state.menu == "B_Aktif":
+    st.subheader("📢 Bültende Olanlar")
+    st.dataframe(df[df["Bülten Tarihi"].notna() & (df["Bülten Tarihi"] != "-")])
 
 elif st.session_state.menu == "Operasyon":
-    st.subheader("⚙️ Operasyon ve Takip Otomasyonu")
-    if not st.session_state.markalar.empty:
-        m_adi = st.selectbox("Marka Seçin", st.session_state.markalar["Marka Adı"].unique())
-        idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == m_adi].index[0]
+    st.subheader("⚙️ Operasyon ve Takip")
+    if not df.empty:
+        m_adi = st.selectbox("Marka Seçin", df["Marka Adı"].unique())
+        idx = df[df["Marka Adı"] == m_adi].index[0]
         with st.form("oto_takip"):
-            bulten = st.date_input("Bülten Tarihi")
-            itiraz = st.date_input("İtiraz Tebliğ Tarihi")
-            tescil = st.date_input("Tescil Bildirim Tarihi")
-            durum = st.selectbox("Durum Güncelle", ["Bekleyen", "İtiraz", "Tescil"])
+            bulten = st.date_input("Bülten Tarihi (Boş bırakırsanız beklemede kalır)")
+            durum = st.selectbox("Durum", ["Bekleyen", "İtiraz", "Tescil"])
             if st.form_submit_button("Hesapla ve Güncelle"):
-                b_str = bulten.strftime("%d.%m.%Y")
+                b_str = bulten.strftime("%d.%m.%Y") if bulten else "-"
                 st.session_state.markalar.at[idx, "Bülten Tarihi"] = b_str
-                st.session_state.markalar.at[idx, "İlan Bitiş"] = add_months(b_str, 2)
-                st.session_state.markalar.at[idx, "İtiraz Son Gün"] = add_months(itiraz.strftime("%d.%m.%Y"), 1)
-                st.session_state.markalar.at[idx, "Tescil Son Gün"] = add_months(tescil.strftime("%d.%m.%Y"), 2)
+                st.session_state.markalar.at[idx, "İlan Bitiş"] = add_months(b_str, 2) if b_str != "-" else "-"
                 st.session_state.markalar.at[idx, "Durum"] = durum
                 st.rerun()
-    st.dataframe(st.session_state.markalar)
+    st.dataframe(df)
+
+elif st.session_state.menu == "Hatırlatma":
+    st.info("📌 Bugünün Takibi")
+    today = datetime.now().strftime("%d.%m.%Y")
+    st.dataframe(df[(df["İlan Bitiş"] == today)])
