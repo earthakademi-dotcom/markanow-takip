@@ -19,6 +19,13 @@ def load_data():
         return df
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
+# --- YARDIMCI FONKSİYON: ANA SINIF SAYISI ---
+def say_ana_siniflar(sinif_listesi_str):
+    if pd.isna(sinif_listesi_str): return 0
+    siniflar = str(sinif_listesi_str).split(',')
+    # Sadece 35/ ile başlamayan, 1-45 arası ana sınıfları say
+    return len([s for s in siniflar if not s.startswith('35/')])
+
 # --- GİRİŞ VE OTURUM ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
@@ -78,7 +85,7 @@ elif menu == "📊 Satışlarım":
     onayli = filtered[filtered['Durum'] == "Onaylandı"]
     col1, col2 = st.columns(2)
     col1.metric("Toplam Ciro (Onaylı)", f"{onayli['Tutar'].sum():,.2f} TL")
-    col2.metric("Toplam Sınıf", onayli['Sınıf'].apply(lambda x: len(str(x).split(',')) if pd.notnull(x) else 0).sum())
+    col2.metric("Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
     st.dataframe(filtered, use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
