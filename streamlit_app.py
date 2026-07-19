@@ -39,20 +39,20 @@ def hesapla_prim(df_danisman):
     adet = df_danisman['Sınıf'].apply(say_ana_siniflar).sum()
     satis_adedi = len(df_danisman)
     
-    # 1. Sınıf Primi (Adet * Birim Fiyat)
     sinif_primi = 0.0
-    if adet >= 49: sinif_primi = float(adet * table.get("49", 1000))
+    if adet >= 49: 
+        sinif_primi = float(adet * table.get("49", 1000))
     else:
         for k, v in table.items():
             if "-" in k:
                 try:
                     low, high = map(int, k.split('-'))
-                    if low <= adet <= high: sinif_primi = float(adet * v)
+                    if low <= adet <= high: 
+                        sinif_primi = float(adet * v)
+                        break
                 except: continue
-    
-    # 2. Sabit Satış Primi
+                
     sabit_prim = satis_adedi * table.get("sabit_satis_primi", 100)
-    
     return sinif_primi + sabit_prim
 
 # --- GİRİŞ VE OTURUM ---
@@ -159,7 +159,7 @@ elif menu == "💰 Satış Danışmanları Prim":
     yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
     prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
     
-    st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{prim_df['Sınıf'].apply(say_ana_siniflar).sum()}**")
+    st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{prim_df['Sınıf'].apply(say_ana_siniflar).sum()}** | Satış: **{len(prim_df)}**")
     
     tab1, tab2 = st.tabs(["📊 Rapor", "⚙️ Prim Tablosu Düzenle"])
     with tab1:
