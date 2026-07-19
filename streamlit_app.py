@@ -1,9 +1,8 @@
 import streamlit as st
 
-# STREAMING_CHUNK: Sayfa Yapılandırması
 st.set_page_config(page_title="Markanow ERP", layout="centered")
 
-# STREAMING_CHUNK: Stil ve Logo Entegrasyonu
+# STREAMING_CHUNK: Stil ve Logo Düzenlemesi
 st.markdown("""
     <style>
     .stApp { background-color: #eef2f5; }
@@ -15,24 +14,35 @@ st.markdown("""
         text-align: center;
         border: 1px solid #e1e4e8;
     }
-    /* Logonun beyaz alanını arka planla birleştirme */
-    .logo-img { 
-        width: 320px; 
+    .logo-container {
+        background-color: white; /* Logonun arkasını tamamen beyaz yapar */
+        padding: 10px;
+        border-radius: 10px;
         margin-bottom: 20px;
-        mix-blend-mode: multiply; 
+        display: flex;
+        justify-content: center;
+    }
+    .logo-img { 
+        width: 100%; 
+        max-width: 320px; 
     }
     </style>
 """, unsafe_allow_html=True)
 
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 
-# STREAMING_CHUNK: Giriş Ekranı (Merkezi Tasarım)
+# STREAMING_CHUNK: Giriş Ekranı
 if not st.session_state.giris_yapildi:
     st.markdown('<div class="login-card">', unsafe_allow_html=True)
     
-    LOGO_URL = "https://i.imgur.com/dhN0tyf.jpeg"
-    # mix-blend-mode sınıfı logodaki beyaz arka planı kaldırıp web rengiyle birleştirir
-    st.markdown(f'<img src="{LOGO_URL}" class="logo-img">', unsafe_allow_html=True)
+    # Yeni linki entegre ettik
+    LOGO_URL = "https://i.imgur.com/zZJ3TZW.jpeg"
+    
+    st.markdown(f'''
+        <div class="logo-container">
+            <img src="{LOGO_URL}" class="logo-img">
+        </div>
+    ''', unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
     
