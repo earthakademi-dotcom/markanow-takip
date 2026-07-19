@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 import os
 
-# STREAMING_CHUNK: Kullanıcı Tanımları ve Veri Yapısı
+# STREAMING_CHUNK: Kullanıcı Tanımları ve Şehir Listesi
 KULLANICILAR = {
     "Ali Osman Yelbey": {"sifre": "MarkanowAdmin2026!", "rol": "Admin"},
     "MERVE YURTLU": {"sifre": "MerveDanisman789!", "rol": "Danışman"},
     "Muhasebe Kullanıcısı": {"sifre": "Muhasebe987!", "rol": "Muhasebe"},
     "Operasyon Yetkilisi": {"sifre": "Op123456!", "rol": "Operasyon"}
 }
+
+ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 
 DATA_FILE = "marka_satislar.csv"
 siniflar = [str(i) for i in range(1, 46)]
@@ -22,7 +24,7 @@ def load_data():
 
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# STREAMING_CHUNK: Giriş Sistemi
+# STREAMING_CHUNK: Giriş Sistemi ve Sidebar Kontrolleri
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 
 if not st.session_state.giris_yapildi:
@@ -39,7 +41,6 @@ if not st.session_state.giris_yapildi:
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# STREAMING_CHUNK: Sidebar (Kimlik ve Kontroller)
 with st.sidebar:
     st.title(f"👤 {st.session_state.kullanici}")
     st.info(f"Görev: {st.session_state.rol}")
@@ -47,10 +48,7 @@ with st.sidebar:
     if st.button("🚪 Güvenli Çıkış"):
         st.session_state.giris_yapildi = False
         st.rerun()
-    st.markdown("---")
-    # Sayfa altı navigasyon
-    if st.button("⬅️ Geri"):
-        st.warning("Ana menüye dönülüyor...")
+    if st.button("⬅️ Geri"): st.warning("Ana ekran güncelleniyor...")
 
 # STREAMING_CHUNK: Ana Yönetim Paneli
 st.title("🏢 Markanow Satış Yönetim Paneli")
@@ -58,13 +56,13 @@ df = load_data()
 
 tab1, tab2, tab3 = st.tabs(["📝 Satış Girişi", "⚙️ Operasyon Onay", "📊 Finansal Raporlar"])
 
-with tab1: # Detaylı Satış Formu
+with tab1: # Detaylı Satış Formu (Arama Özellikli İl seçimi)
     with st.form("detayli_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         marka = c1.text_input("Marka Adı")
         ad_soyad = c1.text_input("Müşteri Ad Soyad")
         tc = c1.text_input("TC Kimlik No")
-        il = c2.selectbox("İl", ["İstanbul", "Ankara", "İzmir", "Bursa", "Diğer"])
+        il = c2.selectbox("İl Seçin", ILLER) # Arama özelliği olan 81 il
         sinif = c2.multiselect("Sınıf Seçimi", tum_sinif_secenekleri)
         tarih = c2.date_input("Satış Tarihi")
         tutar = st.number_input("Tutar (TL)", min_value=0.0)
@@ -76,16 +74,16 @@ with tab1: # Detaylı Satış Formu
                        "Danışman": st.session_state.kullanici}
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
             df.to_csv(DATA_FILE, index=False)
-            st.success("Satış kaydedildi.")
+            st.success("Kayıt operasyona iletildi.")
 
 with tab2: # Operasyon Paneli
     st.dataframe(df, use_container_width=True)
-    onay_id = st.number_input("Onaylanacak Satış ID", min_value=1, step=1)
-    if st.button("Seçili Kaydı Onayla"):
+    onay_id = st.number_input("Onaylanacak ID", min_value=1, step=1)
+    if st.button("Onayla"):
         df.loc[df['ID'] == onay_id, 'Durum'] = 'Onaylandı'
         df.to_csv(DATA_FILE, index=False)
         st.rerun()
 
-with tab3: # Raporlama
+with tab3: # Raporlar
     st.metric("Toplam Satış", f"{df['Tutar'].sum():,.2f} TL")
     st.bar_chart(df.set_index("Marka Adı")["Tutar"])
