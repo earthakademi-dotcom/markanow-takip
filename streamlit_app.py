@@ -19,13 +19,6 @@ def load_data():
         return df
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
-# --- YARDIMCI FONKSİYON: ANA SINIF SAYISI ---
-def say_ana_siniflar(sinif_listesi_str):
-    if pd.isna(sinif_listesi_str): return 0
-    siniflar = str(sinif_listesi_str).split(',')
-    # Sadece 35/ ile başlamayanları say (1-45 arası ana sınıflar)
-    return len([s for s in siniflar if not s.startswith('35/')])
-
 # --- GİRİŞ VE OTURUM ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
@@ -81,17 +74,17 @@ elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
     my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
     ay = st.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
-    my_df = my_df[my_df['Satış Tarihi_dt'].dt.month == ay]
-    onayli = my_df[my_df['Durum'] == "Onaylandı"]
+    filtered = my_df[my_df['Satış Tarihi_dt'].dt.month == ay]
+    onayli = filtered[filtered['Durum'] == "Onaylandı"]
     col1, col2 = st.columns(2)
     col1.metric("Toplam Ciro (Onaylı)", f"{onayli['Tutar'].sum():,.2f} TL")
-    # Ana sınıf hesaplama fonksiyonunu kullanıyoruz
-    col2.metric("Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
-    st.dataframe(my_df, use_container_width=True)
+    col2.metric("Toplam Sınıf", onayli['Sınıf'].apply(lambda x: len(str(x).split(',')) if pd.notnull(x) else 0).sum())
+    st.dataframe(filtered, use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay Paneli")
+    st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
     if st.session_state.kullanici == "SELEN AKCAN":
+        st.subheader("Onay Bekleyen Satışlar")
         bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
         for i, row in bekleyen.iterrows():
             cols = st.columns([1, 8])
@@ -108,7 +101,7 @@ elif menu == "💰 Muhasebe Onayı":
         if st.button("Fatura Kaydet"):
             df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
             df.to_csv(DATA_FILE, index=False); st.rerun()
-    else: st.dataframe(df[df['Durum'] == "Onaylandı"])
+    else: st.dataframe(df[df['Durum'] == "Tamamlandı"])
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
