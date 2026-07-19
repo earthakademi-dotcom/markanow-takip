@@ -22,6 +22,7 @@ def load_data():
 def say_ana_siniflar(sinif_listesi_str):
     if pd.isna(sinif_listesi_str): return 0
     siniflar = str(sinif_listesi_str).split(',')
+    # Sadece 35/ ile başlamayan ana sınıfları say
     return len([s for s in siniflar if not s.startswith('35/')])
 
 # --- GİRİŞ VE OTURUM ---
@@ -49,10 +50,11 @@ st.sidebar.write("---")
 
 menu_options = []
 if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
-    menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım"])
-menu_options.extend(["📊 Aylık Raporum", "💰 Muhasebe Onayı"])
+    menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım", "📊 Aylık Raporum"])
+if st.session_state.kullanici == "SELEN AKCAN":
+    menu_options.append("💰 Muhasebe Onayı")
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
-    menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
+    menu_options.extend(["💰 Muhasebe Onayı", "📊 Performans Raporu", "👥 Personel Yönetimi"])
 
 menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
@@ -78,27 +80,22 @@ if menu == "📝 Satış Girişi":
 elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Güncel Ay Satışları")
     my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    
-    # Sadece içinde bulunulan ayın satışlarını filtrele
     now = datetime.now()
     filtered = my_df[(my_df['Satış Tarihi_dt'].dt.month == now.month) & (my_df['Satış Tarihi_dt'].dt.year == now.year)]
-    
     onayli = filtered[filtered['Durum'] == "Onaylandı"]
-    col1, col2 = st.columns(2)
-    col1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
-    col2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
+    c1, c2 = st.columns(2)
+    c1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
+    c2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
     st.dataframe(filtered, use_container_width=True)
 
 elif menu == "📊 Aylık Raporum":
     st.header("📊 Detaylı Aylık Raporum")
     my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    col1, col2 = st.columns(2)
-    yil = col1.selectbox("Yıl Seçin", sorted(my_df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    ay = col2.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
-    
+    c1, c2 = st.columns(2)
+    yil = c1.selectbox("Yıl Seçin", sorted(my_df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+    ay = c2.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
     rapor_df = my_df[(my_df['Satış Tarihi_dt'].dt.year == yil) & (my_df['Satış Tarihi_dt'].dt.month == ay)]
     onayli_rapor = rapor_df[rapor_df['Durum'] == "Onaylandı"]
-    
     c1, c2 = st.columns(2)
     c1.metric(f"{ay}/{yil} Toplam Ciro", f"{onayli_rapor['Tutar'].sum():,.2f} TL")
     c2.metric(f"{ay}/{yil} Toplam Ana Sınıf", onayli_rapor['Sınıf'].apply(say_ana_siniflar).sum())
@@ -106,7 +103,7 @@ elif menu == "📊 Aylık Raporum":
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
-    if st.session_state.kullanici == "SELEN AKCAN":
+    if st.session_state.kullanici == "SELEN AKCAN" or st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
         st.subheader("Onay Bekleyen Satışlar")
         bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
         for i, row in bekleyen.iterrows():
