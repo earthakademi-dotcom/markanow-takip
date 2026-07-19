@@ -36,9 +36,8 @@ def say_ana_siniflar(sinif_listesi_str):
 
 def hesapla_prim(adet):
     table = load_prim_table()
-    # 49 ve üzeri durumu
+    adet = int(adet)
     if adet >= 49: return float(table.get("49", 1000))
-    # Aralık kontrolü
     for k, v in table.items():
         if "-" in k:
             try:
@@ -99,63 +98,18 @@ if menu == "📝 Satış Girişi":
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("Satış kaydedildi.")
 
-elif menu == "📊 Satışlarım":
-    st.header(f"📊 {st.session_state.kullanici} - Güncel Ay Satışları")
-    my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    now = datetime.now()
-    filtered = my_df[(my_df['Satış Tarihi_dt'].dt.month == now.month) & (my_df['Satış Tarihi_dt'].dt.year == now.year)]
-    onayli = filtered[filtered['Durum'] == "Onaylandı"]
-    c1, c2 = st.columns(2)
-    c1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
-    c2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
-    st.dataframe(filtered, use_container_width=True)
-
-elif menu == "📊 Aylık Raporum":
-    st.header("📊 Detaylı Aylık Raporum")
-    my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    c1, c2 = st.columns(2)
-    yil = c1.selectbox("Yıl Seçin", sorted(my_df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    ay = c2.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
-    rapor_df = my_df[(my_df['Satış Tarihi_dt'].dt.year == yil) & (my_df['Satış Tarihi_dt'].dt.month == ay)]
-    onayli_rapor = rapor_df[rapor_df['Durum'] == "Onaylandı"]
-    c1, c2 = st.columns(2)
-    c1.metric(f"{ay}/{yil} Toplam Ciro", f"{onayli_rapor['Tutar'].sum():,.2f} TL")
-    c2.metric(f"{ay}/{yil} Toplam Ana Sınıf", onayli_rapor['Sınıf'].apply(say_ana_siniflar).sum())
-    st.dataframe(rapor_df, use_container_width=True)
-
-elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay Paneli")
-    bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
-    for i, row in bekleyen.iterrows():
-        cols = st.columns([1, 8])
-        if cols[0].button("✅ Onayla", key=f"onay_{row['ID']}"):
-            df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
-            df.to_csv(DATA_FILE, index=False); st.rerun()
-        cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
-    st.write("---")
-    st.subheader("Faturalandırılacak Satışlar (Onaylı)")
-    onaylilar = df[df['Durum'] == "Onaylandı"]
-    st.dataframe(onaylilar[['ID', 'Marka Adı', 'Tutar', 'Fatura No']])
-    id_f = st.number_input("Fatura Kesilecek ID", step=1)
-    f_no = st.text_input("Fatura No")
-    if st.button("Fatura Kaydet"):
-        df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
-        df.to_csv(DATA_FILE, index=False); st.rerun()
-
 elif menu == "💰 Satış Danışmanları Prim":
-    st.header("💰 Satış Danışmanı Prim Raporu")
-    danismanlar = df['Danışman'].unique()
-    secilen_danisman = st.selectbox("Danışman Seçin", danismanlar)
-    c1, c2 = st.columns(2)
-    ay_prim = c1.selectbox("Ay", range(1, 13), index=datetime.now().month-1)
-    yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
-    
-    adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
-    st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{adet}**")
-    
-    tab1, tab2 = st.tabs(["📊 Rapor", "⚙️ Tablo Düzenle"])
+    st.header("💰 Satış Danışmanı Prim Yönetimi")
+    tab1, tab2 = st.tabs(["📊 Prim Raporu", "⚙️ Prim Tablosu Düzenle"])
     with tab1:
+        danismanlar = df['Danışman'].unique()
+        secilen_danisman = st.selectbox("Prim Raporu İçin Danışman Seçin", danismanlar)
+        c1, c2 = st.columns(2)
+        ay_prim = c1.selectbox("Ay", range(1, 13), index=datetime.now().month-1)
+        yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+        prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+        adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
+        st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}** | Toplam Ana Sınıf: **{adet}**")
         c1, c2 = st.columns(2)
         c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
         c2.metric("Hak Edilen Prim", f"{hesapla_prim(adet):,.2f} TL")
@@ -165,33 +119,8 @@ elif menu == "💰 Satış Danışmanları Prim":
             prim_table = load_prim_table()
             new_table = {}
             for k, v in prim_table.items():
-                new_table[k] = st.number_input(f"{k} Prim Değeri", value=v)
-            if st.button("Kaydet"):
+                new_table[k] = st.number_input(f"{k} Sınıf Prim Değeri (TL)", value=v)
+            if st.button("Prim Tablosunu Kaydet"):
                 with open(PRIM_FILE, "w") as f: json.dump(new_table, f)
                 st.success("Tablo güncellendi!")
-
-elif menu == "📊 Performans Raporu":
-    st.header("📊 Kurumsal Performans Paneli")
-    rapor = df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum()
-    st.bar_chart(rapor)
-
-elif menu == "👥 Personel Yönetimi":
-    st.header("👥 Personel Yönetimi")
-    users_df = pd.read_csv(USER_FILE)
-    st.dataframe(users_df, use_container_width=True)
-    tab1, tab2, tab3 = st.tabs(["➕ Ekle", "🔑 Şifre Değiştir", "❌ Sil"])
-    with tab1:
-        yeni_ad = st.text_input("Personel Adı", key="ekle_ad")
-        yeni_sifre = st.text_input("Şifre Belirle", type="password", key="ekle_sifre")
-        if st.button("Personel Ekle"):
-            pd.concat([users_df, pd.DataFrame({"İsim": [yeni_ad], "Şifre": [yeni_sifre]})], ignore_index=True).to_csv(USER_FILE, index=False); st.rerun()
-    with tab2:
-        secilen_p = st.selectbox("Personel Seçin", users_df["İsim"].tolist(), key="guncelle_sec")
-        yeni_sifre_g = st.text_input("Yeni Şifre", type="password", key="guncelle_sifre")
-        if st.button("Şifreyi Güncelle"):
-            users_df.loc[users_df["İsim"] == secilen_p, "Şifre"] = yeni_sifre_g
-            users_df.to_csv(USER_FILE, index=False); st.rerun()
-    with tab3:
-        silinecek = st.selectbox("Silinecek Personel", users_df["İsim"].tolist(), key="sil_sec")
-        if st.button("Personeli Sil"):
-            users_df[users_df["İsim"] != silinecek].to_csv(USER_FILE, index=False); st.rerun()
+        else: st.warning("Prim tablosunu sadece Admin ve Muhasebe düzenleyebilir.")
