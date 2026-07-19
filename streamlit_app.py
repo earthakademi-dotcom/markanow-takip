@@ -28,11 +28,21 @@ if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
     
-    # 1. Dosyayı oku
-    user_df = pd.read_csv(USER_FILE)
+    # 1. Dosya bozuksa sil ve yeniden oluştur
+    if os.path.exists(USER_FILE):
+        user_df_test = pd.read_csv(USER_FILE)
+        # Sütunları kontrol et, yoksa silip yeniden oluştur
+        if "İsim" not in user_df_test.columns or "Şifre" not in user_df_test.columns:
+            os.remove(USER_FILE)
     
-    # 2. Sütun isimlerindeki boşlukları temizle ve standartlaştır
-    user_df.columns = user_df.columns.str.strip()
+    if not os.path.exists(USER_FILE):
+        pd.DataFrame({
+            "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "OPERASYON YETKİLİSİ"],
+            "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
+        }).to_csv(USER_FILE, index=False)
+    
+    user_df = pd.read_csv(USER_FILE)
+    user_df.columns = ["İsim", "Şifre"] # Başlıkları zorla tanımla
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -40,23 +50,14 @@ if not st.session_state.kullanici:
         girilen_sifre = st.text_input("Şifre", type="password")
         
         if st.button("Giriş Yap", use_container_width=True):
-            # Seçili kullanıcının verisini filtrele
             user_row = user_df[user_df["İsim"] == secili_kullanici]
+            kayitli_sifre = str(user_row.iloc[0]["Şifre"]).strip()
             
-            if not user_row.empty:
-                # Sütun adını "Şifre" olarak kullandığınızdan emin olun
-                # Hata almamak için sütun adlarını kontrol ediyoruz
-                if "Şifre" in user_row.columns:
-                    kayitli_sifre = str(user_row.iloc[0]["Şifre"]).strip()
-                    if str(girilen_sifre).strip() == kayitli_sifre:
-                        st.session_state.kullanici = secili_kullanici
-                        st.rerun()
-                    else:
-                        st.error("Hatalı şifre!")
-                else:
-                    st.error("Hata: 'Şifre' sütunu bulunamadı. Lütfen kullanıcı dosyanızı kontrol edin.")
+            if str(girilen_sifre).strip() == kayitli_sifre:
+                st.session_state.kullanici = secili_kullanici
+                st.rerun()
             else:
-                st.error("Kullanıcı bulunamadı.")
+                st.error("Hatalı şifre!")
     st.stop()
 # --- MENÜ SİSTEMİ ---
 st.sidebar.title("Markanow ERP")
