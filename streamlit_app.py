@@ -28,8 +28,11 @@ if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
     
+    # 1. Dosyayı oku
     user_df = pd.read_csv(USER_FILE)
-    user_df.columns = user_df.columns.str.strip() # Sütun isimlerindeki boşlukları temizle
+    
+    # 2. Sütun isimlerindeki boşlukları temizle ve standartlaştır
+    user_df.columns = user_df.columns.str.strip()
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -37,17 +40,24 @@ if not st.session_state.kullanici:
         girilen_sifre = st.text_input("Şifre", type="password")
         
         if st.button("Giriş Yap", use_container_width=True):
-            # Seçilen kullanıcının satırını bul
+            # Seçili kullanıcının verisini filtrele
             user_row = user_df[user_df["İsim"] == secili_kullanici]
+            
             if not user_row.empty:
-                sifre_dogru = str(user_row.iloc[0]["Şifre"])
-                if str(girilen_sifre).strip() == sifre_dogru.strip():
-                    st.session_state.kullanici = secili_kullanici
-                    st.rerun()
+                # Sütun adını "Şifre" olarak kullandığınızdan emin olun
+                # Hata almamak için sütun adlarını kontrol ediyoruz
+                if "Şifre" in user_row.columns:
+                    kayitli_sifre = str(user_row.iloc[0]["Şifre"]).strip()
+                    if str(girilen_sifre).strip() == kayitli_sifre:
+                        st.session_state.kullanici = secili_kullanici
+                        st.rerun()
+                    else:
+                        st.error("Hatalı şifre!")
                 else:
-                    st.error("Hatalı şifre!")
+                    st.error("Hata: 'Şifre' sütunu bulunamadı. Lütfen kullanıcı dosyanızı kontrol edin.")
+            else:
+                st.error("Kullanıcı bulunamadı.")
     st.stop()
-
 # --- MENÜ SİSTEMİ ---
 st.sidebar.title("Markanow ERP")
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
