@@ -77,4 +77,4 @@ with tab2: # Operasyon Paneli
 with tab3: # Raporlar
     st.metric("Toplam Satış Hacmi", f"{df['Tutar'].sum():,.2f} TL")
     st.bar_chart(df.set_index("Marka Adı")["Tutar"])
-```eof
+
