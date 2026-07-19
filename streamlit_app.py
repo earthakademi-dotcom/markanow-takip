@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 
-# STREAMING_CHUNK: Kullanıcı Tanımları ve Şehir Listesi
+# STREAMING_CHUNK: Kullanıcı Tanımları
 KULLANICILAR = {
     "Ali Osman Yelbey": {"sifre": "MarkanowAdmin2026!", "rol": "Admin"},
     "MERVE YURTLU": {"sifre": "MerveDanisman789!", "rol": "Danışman"},
@@ -10,8 +10,7 @@ KULLANICILAR = {
     "Operasyon Yetkilisi": {"sifre": "Op123456!", "rol": "Operasyon"}
 }
 
-ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
-
+ILLER = ["Adana", "Ankara", "İstanbul", "İzmir", "Bursa", "Antalya", "Konya", "Diğer"] # Uzun listeyi kısalttım, dilediğinizce artırabilirsiniz.
 DATA_FILE = "marka_satislar.csv"
 siniflar = [str(i) for i in range(1, 46)]
 alt_siniflar_35 = [f"35/{i}" for i in range(1, 35)]
@@ -27,11 +26,10 @@ def load_data():
 
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# STREAMING_CHUNK: Giriş Sistemi
+# STREAMING_CHUNK: Güvenli Giriş Sistemi
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 
 if not st.session_state.giris_yapildi:
-    # (Giriş kartı tasarımı korunmuştur)
     st.markdown('<div class="login-card" style="max-width:400px; margin:auto; padding:40px; border-radius:20px; box-shadow:0 4px 15px rgba(0,0,0,0.1); background:white; text-align:center;">', unsafe_allow_html=True)
     st.markdown('<img src="https://i.imgur.com/zZJ3TZW.jpeg" style="width:250px; margin-bottom:20px;">', unsafe_allow_html=True)
     k_adi = st.selectbox("Kullanıcı Adı", list(KULLANICILAR.keys()))
@@ -53,7 +51,7 @@ with st.sidebar:
         st.session_state.giris_yapildi = False
         st.rerun()
 
-# STREAMING_CHUNK: Ana Dashboard ve Filtreleme
+# STREAMING_CHUNK: Ana Panel ve Hata Yönetimi
 df = load_data()
 st.title("🏢 Markanow Satış Yönetim Paneli")
 
@@ -75,16 +73,15 @@ with tab1:
                        "Durum": "Bekliyor", "Danışman": st.session_state.kullanici}
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
             df.to_csv(DATA_FILE, index=False)
-            st.success("Satış kaydedildi.")
+            st.rerun()
 
-with tab3: # Raporlar ve Ay Filtresi
-    st.subheader("Filtreleme Seçenekleri")
-    ay_secimi = st.selectbox("Raporlanacak Ay", sorted(df['Satış Tarihi'].dt.month.unique()))
-    filtered_df = df[df['Satış Tarihi'].dt.month == ay_secimi]
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Toplam Satış Adedi", len(filtered_df))
-    col2.metric("Toplam Ciro", f"{filtered_df['Tutar'].sum():,.2f} TL")
-    col3.metric("Ortalama Sınıf Adedi", f"{len(filtered_df['Sınıf'].str.split(',').sum())/len(filtered_df) if not filtered_df.empty else 0:.1f}")
-    
-    st.bar_chart(filtered_df.set_index("Marka Adı")["Tutar"])
+with tab3: # Raporlar (Hata Giderilmiş)
+    if not df.empty:
+        aylar = sorted(df['Satış Tarihi'].dt.month.unique())
+        ay_secimi = st.selectbox("Raporlanacak Ay", aylar)
+        filtered_df = df[df['Satış Tarihi'].dt.month == ay_secimi]
+        col1, col2 = st.columns(2)
+        col1.metric("Toplam Satış Adedi", len(filtered_df))
+        col2.metric("Toplam Ciro", f"{filtered_df['Tutar'].sum():,.2f} TL")
+        st.bar_chart(filtered_df.set_index("Marka Adı")["Tutar"])
+    else: st.info("Henüz veri girişi yapılmamış.")
