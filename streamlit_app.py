@@ -33,19 +33,16 @@ def gunun_hatirlatmalari():
     st.subheader(f"🔔 Bugün: {datetime.now().strftime('%d.%m.%Y')}")
     today = datetime.now().strftime("%d.%m.%Y")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.info("📌 Bugünün Son Günleri")
-        hatirlatmalar = st.session_state.markalar[
-            (st.session_state.markalar["İlan Bitiş"] == today) | 
-            (st.session_state.markalar["İtiraz Son Gün"] == today) | 
-            (st.session_state.markalar["Tescil Son Gün"] == today)
-        ]
-        st.dataframe(hatirlatmalar)
+    st.info("📌 Bugünün Son Günleri (İlan, İtiraz veya Tescil)")
+    hatirlatmalar = st.session_state.markalar[
+        (st.session_state.markalar["İlan Bitiş"] == today) | 
+        (st.session_state.markalar["İtiraz Son Gün"] == today) | 
+        (st.session_state.markalar["Tescil Son Gün"] == today)
+    ]
+    st.dataframe(hatirlatmalar)
 
 # --- UYGULAMA MANTIĞI ---
 if "menu" not in st.session_state: st.session_state.menu = "Hatırlatma"
-
 sidebar_menu()
 
 if st.session_state.menu == "Hatırlatma":
@@ -56,15 +53,22 @@ elif st.session_state.menu == "Operasyon":
     if not st.session_state.markalar.empty:
         m_adi = st.selectbox("Marka Seçin", st.session_state.markalar["Marka Adı"].unique())
         idx = st.session_state.markalar[st.session_state.markalar["Marka Adı"] == m_adi].index[0]
+        
         with st.form("oto_takip"):
             bulten = st.date_input("Bülten Tarihi")
             itiraz = st.date_input("İtiraz Tebliğ Tarihi")
             tescil = st.date_input("Tescil Bildirim Tarihi")
+            
             if st.form_submit_button("Hesapla ve Güncelle"):
+                # Hesaplamalar
                 b_str = bulten.strftime("%d.%m.%Y")
                 st.session_state.markalar.at[idx, "Bülten Tarihi"] = b_str
                 st.session_state.markalar.at[idx, "İlan Bitiş"] = add_months(b_str, 2)
                 st.session_state.markalar.at[idx, "İtiraz Son Gün"] = add_months(itiraz.strftime("%d.%m.%Y"), 1)
                 st.session_state.markalar.at[idx, "Tescil Son Gün"] = add_months(tescil.strftime("%d.%m.%Y"), 2)
-                st.success("Tarihler güncellendi!")
+                
+                # Başarılı mesajı sonrası otomatik ana ekrana dönme
+                st.success("Tarihler güncellendi, ana ekrana dönülüyor...")
+                st.rerun() 
+                
     st.dataframe(st.session_state.markalar)
