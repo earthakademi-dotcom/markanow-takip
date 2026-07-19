@@ -36,7 +36,7 @@ if menu == "📝 Satış Girişi":
         m_adi = c1.text_input("Marka Adı")
         ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)")
-        tel = c1.text_input("Telefon")
+       tel = c1.text_input("Telefon (Örn: 05xxxxxxxxxx)")
         dogum = c2.date_input("Doğum Tarihi")
         il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
@@ -78,8 +78,3 @@ elif menu == "💰 Muhasebe Onayı":
 st.sidebar.write(f"👤 Danışman: {st.session_state.kullanici}")
 menu = st.sidebar.radio("Menü", ["📝 Satış Girişi", "📊 Aylık Raporum", "💰 Muhasebe Onayı"])
 
-# --- GÜVENLİ ÇIKIŞ ---
-st.sidebar.markdown("---") # Ayırıcı çizgi
-if st.sidebar.button("🚪 Çıkış Yap"):
-    st.session_state.kullanici = None
-    st.rerun()
