@@ -22,6 +22,7 @@ def load_data():
 def say_ana_siniflar(sinif_listesi_str):
     if pd.isna(sinif_listesi_str): return 0
     siniflar = str(sinif_listesi_str).split(',')
+    # 35/ ile başlayan alt sınıfları hariç tut, ana sınıfları say
     return len([s for s in siniflar if not s.startswith('35/')])
 
 # --- GİRİŞ VE OTURUM ---
@@ -51,12 +52,10 @@ menu_options = []
 # Satış Danışmanı Menüleri
 if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım", "📊 Aylık Raporum"])
-
-# Yetkili Menüleri (Muhasebe + Admin + Deniz)
-if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "SELEN AKCAN", "DENİZ TELLİ GÜRLEYENDAĞ"]:
+# Muhasebe + Admin + Deniz Menüleri
+if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["💰 Muhasebe Onayı", "💰 Satış Danışmanları Prim"])
-
-# Admin/Müdür Menüleri
+# Admin + Müdür Menüleri
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
 
@@ -87,9 +86,9 @@ elif menu == "📊 Satışlarım":
     now = datetime.now()
     filtered = my_df[(my_df['Satış Tarihi_dt'].dt.month == now.month) & (my_df['Satış Tarihi_dt'].dt.year == now.year)]
     onayli = filtered[filtered['Durum'] == "Onaylandı"]
-    c1, c2 = st.columns(2)
-    c1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
-    c2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
+    col1, col2 = st.columns(2)
+    col1.metric("Bu Ay Toplam Ciro", f"{onayli['Tutar'].sum():,.2f} TL")
+    col2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
     st.dataframe(filtered, use_container_width=True)
 
 elif menu == "📊 Aylık Raporum":
@@ -107,33 +106,37 @@ elif menu == "📊 Aylık Raporum":
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
-    if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
-        st.subheader("Onay Bekleyen Satışlar")
-        bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
-        for i, row in bekleyen.iterrows():
-            cols = st.columns([1, 8])
-            if cols[0].button("✅ Onayla", key=f"onay_{row['ID']}"):
-                df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
-                df.to_csv(DATA_FILE, index=False); st.rerun()
-            cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
-        st.write("---")
-        st.subheader("Faturalandırılacak Satışlar (Onaylı)")
-        onaylilar = df[df['Durum'] == "Onaylandı"]
-        st.dataframe(onaylilar[['ID', 'Marka Adı', 'Tutar', 'Fatura No']])
-        id_f = st.number_input("Fatura Kesilecek ID", step=1)
-        f_no = st.text_input("Fatura No")
-        if st.button("Fatura Kaydet"):
-            df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
+    st.subheader("Onay Bekleyen Satışlar")
+    bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
+    for i, row in bekleyen.iterrows():
+        cols = st.columns([1, 8])
+        if cols[0].button("✅ Onayla", key=f"onay_{row['ID']}"):
+            df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
             df.to_csv(DATA_FILE, index=False); st.rerun()
-    else: st.dataframe(df[df['Durum'] == "Tamamlandı"])
+        cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
+    st.write("---")
+    st.subheader("Faturalandırılacak Satışlar (Onaylı)")
+    onaylilar = df[df['Durum'] == "Onaylandı"]
+    st.dataframe(onaylilar[['ID', 'Marka Adı', 'Tutar', 'Fatura No']])
+    id_f = st.number_input("Fatura Kesilecek ID", step=1)
+    f_no = st.text_input("Fatura No")
+    if st.button("Fatura Kaydet"):
+        df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
+        df.to_csv(DATA_FILE, index=False); st.rerun()
 
 elif menu == "💰 Satış Danışmanları Prim":
-    st.header("💰 Satış Danışmanları Prim Raporu")
-    ay_prim = st.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
-    yil_prim = st.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    prim_df = df[(df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
-    ozet = prim_df.groupby('Danışman').agg({'Tutar': 'sum', 'Sınıf': lambda x: sum(x.apply(say_ana_siniflar))}).rename(columns={'Tutar': 'Toplam Ciro', 'Sınıf': 'Toplam Ana Sınıf'})
-    st.dataframe(ozet, use_container_width=True)
+    st.header("💰 Satış Danışmanı Prim Raporu")
+    danismanlar = df['Danışman'].unique()
+    secilen_danisman = st.selectbox("Prim Raporu İçin Danışman Seçin", danismanlar)
+    col1, col2 = st.columns(2)
+    ay_prim = col1.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
+    yil_prim = col2.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+    prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+    st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}**")
+    c1, c2 = st.columns(2)
+    c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
+    c2.metric("Toplam Ana Sınıf", prim_df['Sınıf'].apply(say_ana_siniflar).sum())
+    st.dataframe(prim_df, use_container_width=True)
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
