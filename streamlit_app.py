@@ -1,46 +1,43 @@
 import streamlit as st
 
-# STREAMING_CHUNK: Sayfa Yapılandırması
+# STREAMING_CHUNK: Sayfa düzeni ve kurumsal arka plan
 st.set_page_config(page_title="Markanow ERP", layout="centered")
 
-# STREAMING_CHUNK: Stil Ayarları
 st.markdown("""
     <style>
-    .stApp { background-color: #f4f7f9; }
-    .main-box {
-        background-color: white;
+    .stApp { background-color: #eef2f5; }
+    .login-card {
+        background-color: #ffffff;
         padding: 40px;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         text-align: center;
-        margin-top: 50px;
+        border: 1px solid #e1e4e8;
     }
+    .stButton>button { border-radius: 10px; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-# STREAMING_CHUNK: Oturum Durumu
+# STREAMING_CHUNK: Oturum yönetimi
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 
-# STREAMING_CHUNK: Giriş Ekranı
+# STREAMING_CHUNK: Giriş ekranı (Kurumsal Kart yapısı)
 if not st.session_state.giris_yapildi:
-    st.markdown('<div class="main-box">', unsafe_allow_html=True)
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
     
-    # Yeni logonun entegrasyonu
+    # Logonun yüklenmesi
     try:
-        st.image("WhatsApp Image 2026-04-04 at 11.52.05 (1).jpeg", width=280)
-    except:
-        st.title("Markanow Patent")
-        
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    tab1, tab2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
+        st.image("logo.jpeg.jpeg", width=250)
+    except Exception:
+        st.title("Markanow")
+
+    tab1, tab2 = st.tabs(["Giriş Yap", "Yeni Kullanıcı Kayıt"])
     
     with tab1:
-        kullanici = st.text_input("Kullanıcı Adı")
+        k_adi = st.text_input("Kullanıcı Adı")
         sifre = st.text_input("Şifre", type="password")
         if st.button("Giriş Yap", use_container_width=True):
-            # Basit Yetkilendirme
-            if kullanici == "admin" and sifre == "1234":
+            if k_adi == "admin" and sifre == "1234":
                 st.session_state.giris_yapildi = True
                 st.rerun()
             else:
@@ -49,14 +46,14 @@ if not st.session_state.giris_yapildi:
     with tab2:
         st.text_input("Yeni Kullanıcı Adı", key="reg_u")
         st.text_input("Yeni Şifre", type="password", key="reg_p")
-        if st.button("Kaydı İlet", use_container_width=True):
-            st.success("Kayıt talebiniz yöneticiye iletildi.")
+        if st.button("Kayıt Talebi Gönder", use_container_width=True):
+            st.success("Talebiniz yöneticiye iletildi.")
             
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# STREAMING_CHUNK: Giriş Sonrası Arayüz
-st.title("Markanow Yönetim Paneli")
-if st.button("Güvenli Çıkış"):
+# STREAMING_CHUNK: Giriş sonrası panel
+st.header("Markanow Yönetim Paneli")
+if st.button("🚪 Güvenli Çıkış"):
     st.session_state.giris_yapildi = False
     st.rerun()
