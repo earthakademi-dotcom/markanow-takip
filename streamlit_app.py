@@ -72,26 +72,7 @@ if menu == "📝 Satış Girişi":
 
 elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
-    my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    with st.expander("✏️ Kendi Satışımı Tam Detaylı Düzenle"):
-        duzenle_id = st.number_input("Düzenlemek istediğiniz Satış ID", step=1)
-        if duzenle_id in my_df['ID'].values:
-            row = df[df['ID'] == duzenle_id].iloc[0]
-            with st.form("kendi_satis_duzenle_tam"):
-                c1, c2 = st.columns(2)
-                y_marka = c1.text_input("Marka Adı", value=row['Marka Adı'])
-                y_ad = c1.text_input("İsim Soyisim", value=row['Ad Soyad'])
-                y_tc = c1.text_input("TC", value=row['TC'])
-                y_tel = c1.text_input("Telefon", value=row['Telefon'])
-                y_dogum = c2.text_input("Doğum Tarihi (GG/AA/YYYY)", value=row['Doğum Tarihi'])
-                y_il = c2.selectbox("İl", ILLER, index=ILLER.index(row['İl']) if row['İl'] in ILLER else 0)
-                y_sinif = c2.text_input("Sınıf", value=row['Sınıf'])
-                y_odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"], index=["EFT", "Kredi Kartı"].index(row['Ödeme']))
-                y_tutar = c2.number_input("Tutar (TL)", value=float(row['Tutar']))
-                if st.form_submit_button("Tüm Bilgileri Güncelle"):
-                    df.loc[df['ID'] == duzenle_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar']] = [y_marka, y_ad, y_tc, y_tel, y_dogum, y_il, y_sinif, y_odeme, y_tutar]
-                    df.to_csv(DATA_FILE, index=False); st.success("Bilgiler güncellendi!"); st.rerun()
-    st.dataframe(my_df, use_container_width=True)
+    st.dataframe(df[df['Danışman'] == st.session_state.kullanici], use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Tam Düzenleme Paneli")
