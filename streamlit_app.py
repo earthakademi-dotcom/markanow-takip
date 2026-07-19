@@ -1,63 +1,68 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
-st.set_page_config(page_title="Markanow Otomasyon", layout="wide")
+# STREAMING_CHUNK: Kurumsal Görünüm İçin Tasarım Ayarları
+st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- HESAPLAMA ---
-def add_months(date_str, months):
-    try:
-        dt = datetime.strptime(date_str, "%d.%m.%Y")
-        return (dt + relativedelta(months=months)).strftime("%d.%m.%Y")
-    except: return "-"
+st.markdown("""
+    <style>
+    /* Kurumsal Renkler ve Font */
+    .stApp { background-color: #f4f7f9; }
+    h1, h2, h3 { color: #2c3e50; font-family: 'Segoe UI', sans-serif; }
+    
+    /* Yan Menü Tasarımı */
+    [data-testid="stSidebar"] { 
+        background-color: #ffffff; 
+        border-right: 1px solid #e1e4e8;
+    }
+    
+    /* Buton Tasarımları */
+    .stButton>button { 
+        width: 100%; 
+        border-radius: 5px; 
+        border: none; 
+        background-color: #f8f9fa; 
+        color: #34495e; 
+        text-align: left; 
+        padding: 10px 15px;
+        transition: all 0.3s;
+    }
+    .stButton>button:hover { background-color: #e9ecef; color: #2c3e50; }
+    
+    /* Başlık Grupları */
+    .menu-header { color: #7f8c8d; font-size: 0.8rem; text-transform: uppercase; margin-top: 20px; padding-left: 15px; }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- VERİ HAZIRLIĞI ---
-if "markalar" not in st.session_state:
-    st.session_state.markalar = pd.DataFrame(columns=[
-        "Marka Adı", "Başvuru No", "Başvuru Tarihi", "Bülten Tarihi", 
-        "Tescil Tebliğ Tarihi", "İtiraz Tebliğ Tarihi", "Durum"
-    ])
-
-# --- SOL MENÜ ---
+# STREAMING_CHUNK: Menü Yapısı
 def sidebar_menu():
-    st.sidebar.title("📌 İşlem Menüsü")
-    
-    st.sidebar.subheader("🎯 Başvuru Süreci")
-    if st.sidebar.button("⏳ Başvuru Beklemede"): st.session_state.menu = "Basvuru_Beklemede"
-    if st.sidebar.button("📋 Bülten Beklemede"): st.session_state.menu = "Bulten_Beklemede"
-    
-    st.sidebar.subheader("📋 Süreç Takip")
-    if st.sidebar.button("📢 Bültende (Yayında)"): st.session_state.menu = "Bultende"
-    if st.sidebar.button("⚖️ İtiraz Beklemede"): st.session_state.menu = "Itiraz_Beklemede"
-    if st.sidebar.button("📄 Tescil Tebliğ Beklemede"): st.session_state.menu = "Tescil_Beklemede"
-    if st.sidebar.button("💰 Tescil Kurum Ödeme Beklemede"): st.session_state.menu = "Odeme_Beklemede"
-    if st.sidebar.button("❌ Red Edilenler"): st.session_state.menu = "Red"
+    with st.sidebar:
+        st.markdown("### 🏢 MARKANOW ERP")
+        st.markdown("---")
+        
+        st.markdown('<p class="menu-header">BAŞVURU SÜRECİ</p>', unsafe_allow_html=True)
+        if st.button("⏳ Başvuru Beklemede"): st.session_state.menu = "Basvuru_Beklemede"
+        if st.button("📋 Bülten Beklemede"): st.session_state.menu = "Bulten_Beklemede"
+        
+        st.markdown('<p class="menu-header">SÜREÇ TAKİP</p>', unsafe_allow_html=True)
+        if st.button("📢 Bültende (Yayında)"): st.session_state.menu = "Bultende"
+        if st.button("⚖️ İtiraz Beklemede"): st.session_state.menu = "Itiraz"
+        if st.button("📄 Tescil Tebliğ Beklemede"): st.session_state.menu = "Tescil"
+        if st.button("💰 Tescil Kurum Ödeme"): st.session_state.menu = "Odeme"
+        if st.button("❌ Red Edilenler"): st.session_state.menu = "Red"
 
+# STREAMING_CHUNK: Mantık ve İçerik Yönetimi
+if "menu" not in st.session_state: st.session_state.menu = "Basvuru_Beklemede"
 sidebar_menu()
 
-# --- UYGULAMA MANTIĞI ---
-if "menu" not in st.session_state: st.session_state.menu = "Basvuru_Beklemede"
+# Kurumsal Başlık Yapısı
+st.markdown(f"## {st.session_state.menu.replace('_', ' ')}")
+st.markdown("---")
 
-st.subheader(f"⚙️ {st.session_state.menu.replace('_', ' ')}")
+# Örnek Operasyon Paneli Alanı
+with st.expander("🛠 Operasyon Paneli (Veri Güncelleme)", expanded=False):
+    st.write("Marka bilgilerini ve süreç aşamalarını buradan güncelleyebilirsiniz.")
 
-# Örnek Operasyon Paneli (Burada durum değişikliği ve tarih girişi yapılır)
-with st.expander("🛠 Operasyon Paneli (Veri Güncelleme)"):
-    m_adi = st.selectbox("Marka Seçin", st.session_state.markalar["Marka Adı"].unique() if not st.session_state.markalar.empty else [])
-    # ... buraya form alanları (Başvuru No, Bülten Tarihi, vb.) gelecek ...
-    # Otomatik geçiş mantığı örneği:
-    # if bulten_tarihi_girildi: durum = "Bültende"
-    # if itiraz_teblig_girildi: durum = "Itiraz_Beklemede"
-
-# --- LİSTELEME ---
-df = st.session_state.markalar
-if st.session_state.menu == "Basvuru_Beklemede":
-    st.dataframe(df[df["Durum"] == "Başvuru Beklemede"])
-elif st.session_state.menu == "Bulten_Beklemede":
-    st.dataframe(df[df["Durum"] == "Bülten Beklemede"])
-elif st.session_state.menu == "Bultende":
-    st.dataframe(df[df["Durum"] == "Bültende"])
-elif st.session_state.menu == "Itiraz_Beklemede":
-    st.dataframe(df[df["Durum"] == "İtiraz Beklemede"])
-elif st.session_state.menu == "Tescil_Beklemede":
-    st.dataframe(df[df["Durum"] == "Tescil Tebliğ Beklemede"])
+# Tablo Görünümü
+st.info("Bu alanda süreçteki tüm kayıtlarınız güncel olarak listelenir.")
+st.dataframe(pd.DataFrame(), use_container_width=True)
