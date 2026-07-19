@@ -10,40 +10,27 @@ KULLANICILAR = {
     "Muhasebe Kullanıcısı": "Muhasebe987!"
 }
 
-# STREAMING_CHUNK: Sayfa Yapılandırması
+# STREAMING_CHUNK: Arayüz Yapılandırması
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# STREAMING_CHUNK: Genel Stil Ayarları
-st.markdown("""
-    <style>
-    .stApp { background-color: #f8f9fa; }
-    .login-card {
-        background-color: white; padding: 40px; border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;
-        max-width: 500px; margin: auto;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# STREAMING_CHUNK: Oturum ve Veri Başlatma
+# STREAMING_CHUNK: Oturum ve Veri Durumu
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 if "markalar" not in st.session_state:
     st.session_state.markalar = pd.DataFrame(columns=["Marka Adı", "Müşteri", "Tarih", "Tutar"])
 
-# STREAMING_CHUNK: Giriş Ekranı (Logo ile)
+# STREAMING_CHUNK: Giriş Ekranı (Kurumsal)
 if not st.session_state.giris_yapildi:
-    st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    st.markdown('<img src="https://i.imgur.com/zZJ3TZW.jpeg" style="width:250px; margin-bottom:20px;">', unsafe_allow_html=True)
+    st.markdown('<div style="max-width: 400px; margin: auto; padding: 40px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white;">', unsafe_allow_html=True)
+    st.markdown('<img src="https://i.imgur.com/zZJ3TZW.jpeg" style="width:100%; margin-bottom:20px;">', unsafe_allow_html=True)
     
-    secili_kullanici = st.selectbox("Kullanıcı Adı", list(KULLANICILAR.keys()))
+    k_adi = st.selectbox("Kullanıcı Adı", list(KULLANICILAR.keys()))
     sifre = st.text_input("Şifre", type="password")
-    
     if st.button("Giriş Yap", use_container_width=True):
-        if KULLANICILAR.get(secili_kullanici) == sifre:
+        if KULLANICILAR.get(k_adi) == sifre:
             st.session_state.giris_yapildi = True
-            st.session_state.kullanici_adi = secili_kullanici
+            st.session_state.kullanici_adi = k_adi
             st.rerun()
-        else: st.error("Hatalı giriş!")
+        else: st.error("Hatalı şifre!")
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -53,19 +40,18 @@ if st.sidebar.button("🚪 Çıkış"):
     st.session_state.giris_yapildi = False
     st.rerun()
 
-st.title("📊 Markanow Satış Yönetim Paneli")
+st.title("📈 Markanow Satış Takip")
 
-with st.expander("📝 Yeni Satış Girişi"):
+# Satış Formu
+with st.expander("📝 Yeni Satış Girişi", expanded=True):
     with st.form("yeni_satis", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        m_adi = col1.text_input("Marka Adı")
-        m_musteri = col1.text_input("Müşteri Adı")
-        tarih = col2.date_input("Satış Tarihi")
-        tutar = col2.number_input("Tutar (TL)")
+        c1, c2 = st.columns(2)
+        m_adi = c1.text_input("Marka Adı")
+        m_musteri = c1.text_input("Müşteri Adı")
+        tarih = c2.date_input("Satış Tarihi")
+        tutar = c2.number_input("Tutar (TL)", min_value=0.0, format="%.2f")
         
-        if st.form_submit_button("Kaydet"):
+        if st.form_submit_button("Satışı Kaydet"):
             yeni = pd.DataFrame([[m_adi, m_musteri, tarih, tutar]], columns=["Marka Adı", "Müşteri", "Tarih", "Tutar"])
             st.session_state.markalar = pd.concat([st.session_state.markalar, yeni], ignore_index=True)
-            st.success("Satış başarıyla kaydedildi.")
-
-st.dataframe(st.session_state.markalar, use_container_width=True)
+            st.success("Satış başarıyla eklendi!")
