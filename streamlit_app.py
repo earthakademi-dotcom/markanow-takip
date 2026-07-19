@@ -36,10 +36,8 @@ def say_ana_siniflar(sinif_listesi_str):
 
 def hesapla_prim(adet):
     table = load_prim_table()
-    try:
-        adet = int(float(adet))
+    try: adet = int(float(adet))
     except: return 0.0
-    
     if adet >= 49: return float(adet * table.get("49", 1000))
     for k, v in table.items():
         if "-" in k:
@@ -49,7 +47,7 @@ def hesapla_prim(adet):
             except: continue
     return 0.0
 
-# --- GİRİŞ VE OTURUM ---
+# --- GİRİŞ ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
@@ -66,7 +64,7 @@ if not st.session_state.kullanici:
             st.rerun()
     st.stop()
 
-# --- MENÜ SİSTEMİ ---
+# --- MENÜ ---
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None; st.rerun()
@@ -112,19 +110,6 @@ elif menu == "📊 Satışlarım":
     c2.metric("Bu Ay Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
     st.dataframe(filtered, use_container_width=True)
 
-elif menu == "📊 Aylık Raporum":
-    st.header("📊 Detaylı Aylık Raporum")
-    my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    c1, c2 = st.columns(2)
-    yil = c1.selectbox("Yıl Seçin", sorted(my_df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-    ay = c2.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
-    rapor_df = my_df[(my_df['Satış Tarihi_dt'].dt.year == yil) & (my_df['Satış Tarihi_dt'].dt.month == ay)]
-    onayli_rapor = rapor_df[rapor_df['Durum'] == "Onaylandı"]
-    c1, c2 = st.columns(2)
-    c1.metric(f"{ay}/{yil} Toplam Ciro", f"{onayli_rapor['Tutar'].sum():,.2f} TL")
-    c2.metric(f"{ay}/{yil} Toplam Ana Sınıf", onayli_rapor['Sınıf'].apply(say_ana_siniflar).sum())
-    st.dataframe(rapor_df, use_container_width=True)
-
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay Paneli")
     bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
@@ -144,40 +129,22 @@ elif menu == "💰 Muhasebe Onayı":
         df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
         df.to_csv(DATA_FILE, index=False); st.rerun()
 
-elif menu == "💰 Satış Danışmanları Prim":
-    st.header("💰 Satış Danışmanı Prim Yönetimi")
-    tab1, tab2 = st.tabs(["📊 Prim Raporu", "⚙️ Prim Tablosu Düzenle"])
-    with tab1:
-        danismanlar = df['Danışman'].unique()
-        secilen_danisman = st.selectbox("Danışman Seçin", danismanlar)
-        c1, c2 = st.columns(2)
-        ay_prim = c1.selectbox("Ay", range(1, 13), index=datetime.now().month-1)
-        yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-        prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
-        adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
-        st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{adet}**")
-        c1, c2 = st.columns(2)
-        c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
-        c2.metric("Hak Edilen Toplam Prim", f"{hesapla_prim(adet):,.2f} TL")
-        st.dataframe(prim_df)
-    with tab2:
-        if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
-            prim_table = load_prim_table()
-            new_table = {}
-            for k, v in prim_table.items():
-                new_table[k] = st.number_input(f"{k} Aralığı Birim Fiyatı (TL)", value=v)
-            if st.button("Kaydet"):
-                with open(PRIM_FILE, "w") as f: json.dump(new_table, f)
-                st.success("Tablo güncellendi!")
-        else: st.warning("Prim tablosunu sadece Admin ve Muhasebe düzenleyebilir.")
-
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
     rapor = df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum()
     st.bar_chart(rapor)
 
 elif menu == "👥 Personel Yönetimi":
-    st.header("👥 Personel Yönetimi")
+    st.header("👥 Personel ve Veri Yönetimi")
+    # --- YÖNETİCİ SİLME ALANI ---
+    with st.expander("⚠️ YÖNETİCİ: TÜM VERİLERİ SIFIRLA"):
+        st.warning("Bu işlem tüm satış, onay ve fatura verilerini KALICI olarak siler.")
+        if st.button("TÜM VERİLERİ SİL"):
+            if os.path.exists(DATA_FILE):
+                os.remove(DATA_FILE)
+                st.error("Tüm veriler temizlendi, lütfen sayfayı yenileyin.")
+                st.rerun()
+
     users_df = pd.read_csv(USER_FILE)
     st.dataframe(users_df, use_container_width=True)
     tab1, tab2, tab3 = st.tabs(["➕ Ekle", "🔑 Şifre Değiştir", "❌ Sil"])
