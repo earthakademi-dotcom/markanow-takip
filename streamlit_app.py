@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 
-# STREAMING_CHUNK: Kullanıcı Tanımları ve Veri Yapısı
+# STREAMING_CHUNK: Kullanıcılar ve Veri Hazırlığı
 KULLANICILAR = {
     "Ali Osman Yelbey": {"sifre": "MarkanowAdmin2026!", "rol": "Admin"},
     "MERVE YURTLU": {"sifre": "MerveDanisman789!", "rol": "Danışman"},
@@ -12,14 +12,19 @@ KULLANICILAR = {
 
 DATA_FILE = "marka_satislar.csv"
 
+# Sınıf listeleri
+siniflar = [str(i) for i in range(1, 46)]
+alt_siniflar_35 = [f"35/{i}" for i in range(1, 35)]
+tum_sinif_secenekleri = siniflar + alt_siniflar_35
+
 def load_data():
-    cols = ["ID", "Marka Adı", "Ad Soyad", "TC Kimlik", "Sınıf Kodu", "Tutar", "Durum", "Danışman"]
+    cols = ["ID", "Marka Adı", "Ad Soyad", "TC Kimlik", "İl", "Sınıf", "Satış Tarihi", "Tutar", "Durum", "Danışman"]
     if os.path.exists(DATA_FILE): return pd.read_csv(DATA_FILE)
     return pd.DataFrame(columns=cols)
 
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# STREAMING_CHUNK: Giriş Paneli
+# STREAMING_CHUNK: Giriş Kontrolü
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 
 if not st.session_state.giris_yapildi:
@@ -36,43 +41,40 @@ if not st.session_state.giris_yapildi:
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# STREAMING_CHUNK: Ana Yönetim Paneli
-st.sidebar.title(f"👤 {st.session_state.kullanici}")
-st.sidebar.info(f"Rol: {st.session_state.rol}")
-if st.sidebar.button("🚪 Güvenli Çıkış"):
-    st.session_state.giris_yapildi = False
-    st.rerun()
-
-st.title("🏢 Markanow Satış Yönetim Paneli")
+# STREAMING_CHUNK: Ana Yönetim Paneli ve Form
 df = load_data()
 
-tab1, tab2, tab3 = st.tabs(["📝 Satış Girişi", "⚙️ Operasyon Süreçleri", "📊 Finansal Raporlar"])
+st.title("📊 Markanow Satış Takip")
+tab1, tab2, tab3 = st.tabs(["📝 Yeni Satış Girişi", "⚙️ Operasyon Onay", "📈 Finansal Raporlar"])
 
 with tab1: # Detaylı Satış Formu
-    with st.form("detayli_satis", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        marka_adi = c1.text_input("Marka Adı")
-        ad_soyad = c1.text_input("Müşteri Ad Soyad")
-        tc_kimlik = c2.text_input("TC Kimlik No")
-        sinif = c2.text_input("Sınıf Kodu (örn: 35/1)")
+    with st.form("yeni_satis_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        marka = col1.text_input("Marka Adı")
+        ad_soyad = col1.text_input("Müşteri Ad Soyad")
+        tc = col1.text_input("TC Kimlik No")
+        il = col2.selectbox("İl", ["İstanbul", "Ankara", "İzmir", "Bursa", "Diğer"])
+        sinif = col2.multiselect("Sınıf Bilgisi", tum_sinif_secenekleri)
+        tarih = col2.date_input("Satış Tarihi")
         tutar = st.number_input("Tutar (TL)", min_value=0.0)
         
         if st.form_submit_button("Satışı Kaydet"):
-            new_row = {"ID": len(df)+1, "Marka Adı": marka_adi, "Ad Soyad": ad_soyad, 
-                       "TC Kimlik": tc_kimlik, "Sınıf Kodu": sinif, "Tutar": tutar, 
-                       "Durum": "Bekliyor", "Danışman": st.session_state.kullanici}
-            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            new_data = {"ID": len(df)+1, "Marka Adı": marka, "Ad Soyad": ad_soyad, "TC Kimlik": tc, 
+                        "İl": il, "Sınıf": ", ".join(sinif), "Satış Tarihi": tarih, "Tutar": tutar, 
+                        "Durum": "Bekliyor", "Danışman": st.session_state.kullanici}
+            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
             df.to_csv(DATA_FILE, index=False)
-            st.success("Tüm bilgiler kaydedildi.")
+            st.success("Kayıt başarılı!")
 
-with tab2: # Operasyonel Onay
+with tab2: # Operasyon Paneli
     st.dataframe(df, use_container_width=True)
-    onay_id = st.number_input("Onaylanacak Satış ID", min_value=1, step=1)
-    if st.button("İşlemi Onayla"):
+    onay_id = st.number_input("Onaylanacak Satış ID", min_value=1)
+    if st.button("Seçili Kaydı Onayla"):
         df.loc[df['ID'] == onay_id, 'Durum'] = 'Onaylandı'
         df.to_csv(DATA_FILE, index=False)
         st.rerun()
 
-with tab3: # Raporlama
-    st.metric("Toplam Ciro", f"{df['Tutar'].sum():,.2f} TL")
+with tab3: # Raporlar
+    st.metric("Toplam Satış Hacmi", f"{df['Tutar'].sum():,.2f} TL")
     st.bar_chart(df.set_index("Marka Adı")["Tutar"])
+```eof
