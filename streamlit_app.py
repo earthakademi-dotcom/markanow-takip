@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 
-# STREAMING_CHUNK: Yapılandırma ve CSS
+# STREAMING_CHUNK: Tanımlamalar
 KULLANICILAR = {
     "Ali Osman Yelbey": {"sifre": "MarkanowAdmin2026!", "rol": "Admin"},
     "MERVE YURTLU": {"sifre": "MerveDanisman789!", "rol": "Danışman"},
@@ -13,16 +13,11 @@ ILLER = ["Adana", "Ankara", "İstanbul", "İzmir", "Bursa", "Antalya", "Konya", 
 DATA_FILE = "marka_satislar.csv"
 tum_sinif_secenekleri = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
-# Hatalı kutucukları kırmızı yapan CSS
-st.markdown("""
-    <style>
-    .error-input { border: 2px solid red !important; }
-    </style>
-""", unsafe_allow_html=True)
-
 def load_data():
     if os.path.exists(DATA_FILE): return pd.read_csv(DATA_FILE)
-    return pd.DataFrame(columns=["ID", "Marka Adı", "TC Kimlik", "Telefon", "Tutar", "Durum", "Danışman"])
+    return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC Kimlik", "Telefon", "Tutar", "Durum", "Danışman"])
+
+st.set_page_config(page_title="Markanow ERP", layout="wide")
 
 # STREAMING_CHUNK: Giriş Kontrolü
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
@@ -38,31 +33,45 @@ if not st.session_state.giris_yapildi:
             st.rerun()
     st.stop()
 
-# STREAMING_CHUNK: Satış Giriş Formu ve Anlık Hata Kontrolü
-st.title("🏢 Markanow Satış Yönetim Paneli")
-df = load_data()
-tab1, tab2, tab3 = st.tabs(["📝 Satış Girişi", "⚙️ Operasyon Onay", "📊 Finansal Raporlar"])
+# STREAMING_CHUNK: Sol Menü (Sidebar) Yapısı
+with st.sidebar:
+    st.title("📂 Markanow ERP")
+    st.write(f"👤 **Kullanıcı:** {st.session_state.kullanici}")
+    st.write(f"🛡️ **Rol:** {st.session_state.rol}")
+    st.markdown("---")
+    
+    # Menü Seçimi (Tabs yerine Radio butonlar ile)
+    menu = st.radio("Menü", ["📝 Satış Girişi", "⚙️ Operasyon Onay", "📊 Finansal Raporlar"])
+    
+    st.markdown("---")
+    if st.button("🚪 Güvenli Çıkış"):
+        st.session_state.giris_yapildi = False
+        st.rerun()
 
-with tab1:
+# STREAMING_CHUNK: İçerik Yönetimi
+df = load_data()
+
+if menu == "📝 Satış Girişi":
+    st.header("📝 Yeni Satış Girişi")
     m_adi = st.text_input("Marka Adı*")
     tc = st.text_input("TC Kimlik No (11 Hane)*")
-    
-    # TC Hata Kontrolü
-    tc_hata = False
-    if tc and (len(tc) != 11 or not tc.isdigit()):
-        st.error("⚠️ TC Kimlik No 11 haneli sayı olmalıdır!")
-        tc_hata = True
-        
     tel = st.text_input("Telefon (05xxxxxxxxx)*")
-    tel_hata = False
-    if tel and (not tel.startswith("05") or len(tel) != 11 or not tel.isdigit()):
-        st.error("⚠️ Telefon 05 ile başlamalı ve 11 hane olmalıdır!")
-        tel_hata = True
-
     tutar = st.number_input("Tutar (TL)*", min_value=0.0)
     
     if st.button("Satışı Kaydet"):
-        if tc_hata or tel_hata or not m_adi:
-            st.error("Lütfen hatalı alanları düzeltin!")
+        if len(tc) != 11 or not tel.startswith("05"):
+            st.error("TC veya Telefon formatı hatalı!")
         else:
+            new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "TC Kimlik": tc, "Telefon": tel, "Tutar": tutar, "Durum": "Bekliyor", "Danışman": st.session_state.kullanici}
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            df.to_csv(DATA_FILE, index=False)
             st.success("Satış kaydedildi.")
+
+elif menu == "⚙️ Operasyon Onay":
+    st.header("⚙️ Operasyonel Süreçler")
+    st.dataframe(df)
+
+elif menu == "📊 Finansal Raporlar":
+    st.header("📊 Finansal Raporlar")
+    if not df.empty:
+        st.metric("Toplam Ciro", f"{df['Tutar'].sum():,.2f} TL")
