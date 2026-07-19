@@ -1,39 +1,39 @@
 import streamlit as st
-import pandas as pd
 
-# --- KULLANICI LİSTESİ ---
-KULLANICILAR = {
-    "Ali Osman Yelbey": {"sifre": "MarkanowAdmin2026!", "rol": "Admin"},
-    "Buğra Büyükeren": {"sifre": "BugraVekil456!", "rol": "Admin"},
-    "MERVE YURTLU": {"sifre": "MerveDanisman789!", "rol": "Marka Danışmanı"},
-    "Ahmet Yılmaz": {"sifre": "AhmetDanisman321!", "rol": "Marka Danışmanı"},
-    "Muhasebe Kullanıcısı": {"sifre": "Muhasebe987!", "rol": "Muhasebe"}
-}
-
-# --- OTURUM YÖNETİMİ ---
-if "giris_yapildi" not in st.session_state:
-    st.session_state.giris_yapildi = False
-
-if not st.session_state.giris_yapildi:
-    st.title("🔒 Markanow Giriş")
-    kullanici = st.selectbox("Kullanıcı Adı", list(KULLANICILAR.keys()))
-    sifre = st.text_input("Şifre", type="password")
+# --- ŞİFRE KAYDETME VE GÜNCELLEME ---
+def sifre_kayit_paneli():
+    st.markdown("### 🔑 Şifre Yönetimi")
+    st.info("Kişisel şifrenizi güncellemek için aşağıdaki formu kullanın.")
     
-    if st.button("Giriş Yap"):
-        if KULLANICILAR[kullanici]["sifre"] == sifre:
-            st.session_state.giris_yapildi = True
-            st.session_state.kullanici_adi = kullanici
-            st.rerun()
-        else:
-            st.error("Hatalı şifre!")
-    st.stop()
+    with st.form("sifre_guncelle_formu"):
+        mevcut = st.text_input("Mevcut Şifre", type="password")
+        yeni = st.text_input("Yeni Şifre", type="password")
+        yeni_tekrar = st.text_input("Yeni Şifre (Tekrar)", type="password")
+        
+        kaydet = st.form_submit_button("Şifreyi Güncelle ve Kaydet")
+        
+        if kaydet:
+            # Mevcut şifre kontrolü
+            if mevcut == KULLANICILAR[st.session_state.kullanici_adi]["sifre"]:
+                if yeni == yeni_tekrar and len(yeni) >= 6:
+                    # Şifre güncelleme işlemi
+                    KULLANICILAR[st.session_state.kullanici_adi]["sifre"] = yeni
+                    st.success("Şifreniz başarıyla güncellendi ve sisteme kaydedildi!")
+                elif len(yeni) < 6:
+                    st.error("Şifre en az 6 karakter olmalıdır.")
+                else:
+                    st.error("Yeni şifreler eşleşmiyor!")
+            else:
+                st.error("Mevcut şifrenizi yanlış girdiniz.")
 
-# --- GİRİŞ YAPILDIKTAN SONRAKİ ARAYÜZ ---
-st.set_page_config(page_title="Markanow ERP", layout="wide")
+# --- MENÜYE EKLEME ---
+# Sidebar fonksiyonunuzun içine ekleyin:
+def sidebar_menu():
+    # ... mevcut menüler ...
+    st.markdown('<p class="menu-header">HESAP</p>', unsafe_allow_html=True)
+    if st.button("🔑 Şifre Ayarları"): st.session_state.menu = "Sifre_Ayarlari"
+    # ...
 
-# ... (Kalan tasarım ve menü kodlarınız buraya eklenecek) ...
-
-st.write(f"Hoş geldiniz, {st.session_state.kullanici_adi}")
-if st.button("🚪 Güvenli Çıkış"):
-    st.session_state.giris_yapildi = False
-    st.rerun()
+# --- UYGULAMA İÇİNDE ---
+if st.session_state.menu == "Sifre_Ayarlari":
+    sifre_kayit_paneli()
