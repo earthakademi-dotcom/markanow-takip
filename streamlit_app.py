@@ -16,19 +16,8 @@ SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        df = pd.read_csv(DATA_FILE)
-        df['Satış Tarihi_dt'] = pd.to_datetime(df['Satış Tarihi'], dayfirst=True, errors='coerce')
-        return df
+        return pd.read_csv(DATA_FILE)
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
-
-def hesapla_prim(adet):
-    table = {"20-23": 100, "24-28": 200, "29-33": 300, "34-38": 550, "39-43": 700, "44-48": 850, "49": 1000}
-    if adet >= 49: return adet * table.get("49", 1000)
-    for k, v in table.items():
-        if "-" in k:
-            low, high = map(int, k.split('-'))
-            if low <= adet <= high: return adet * v
-    return 0
 
 # --- GİRİŞ ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
@@ -66,7 +55,7 @@ if menu == "📝 Satış Girişi":
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı"); ad_soyad = c1.text_input("İsim Soyisim")
-        tc = c1.text_input("TC"); tel = c1.text_input("Telefon")
+        tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
         st.write("Doğum Tarihi")
         d1, d2, d3 = st.columns(3)
         gun, ay, yil = d1.selectbox("Gün", range(1, 32)), d2.selectbox("Ay", range(1, 13)), d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
@@ -82,24 +71,31 @@ if menu == "📝 Satış Girişi":
             st.success("Satış kaydedildi.")
 
 elif menu == "📊 Satışlarım":
-    st.header(f"📊 {st.session_state.kullanici} - Prim ve Rapor Paneli")
-    my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    
-    # Aylık Raporlama ve Prim
-    ay = st.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
-    my_df['Satış Tarihi_dt'] = pd.to_datetime(my_df['Satış Tarihi'], dayfirst=True)
-    rapor = my_df[(my_df['Satış Tarihi_dt'].dt.month == ay) & (my_df['Durum'] == "Tamamlandı")]
-    
-    adet = rapor['Sınıf'].apply(lambda x: len(str(x).split(','))).sum()
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Toplam Ciro", f"{rapor['Tutar'].sum():,.2f} TL")
-    c2.metric("Toplam Adet", adet)
-    c3.metric("Hak Edilen Prim", f"{hesapla_prim(adet):,.2f} TL")
-    st.dataframe(my_df, use_container_width=True)
+    st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
+    st.dataframe(df[df['Danışman'] == st.session_state.kullanici], use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay ve Tam Düzenleme")
-    # (Muhasebe düzenleme kısmı önceki ile aynı kalabilir)
+    st.header("💰 Muhasebe Onay ve Tam Düzenleme Paneli")
+    with st.expander("✏️ TÜM SATIŞ BİLGİLERİNİ TAM DÜZENLE"):
+        secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
+        if secili_id in df['ID'].values:
+            row = df[df['ID'] == secili_id].iloc[0]
+            with st.form("tam_duzenleme_formu"):
+                c1, c2 = st.columns(2)
+                v_m = c1.text_input("Marka Adı", value=row['Marka Adı'])
+                v_a = c1.text_input("Ad Soyad", value=row['Ad Soyad'])
+                v_t = c1.text_input("TC", value=row['TC'])
+                v_tl = c1.text_input("Telefon", value=row['Telefon'])
+                v_d = c2.text_input("Doğum Tarihi", value=row['Doğum Tarihi'])
+                v_i = c2.selectbox("İl", ILLER, index=ILLER.index(row['İl']) if row['İl'] in ILLER else 0)
+                v_s = c2.text_input("Sınıf", value=row['Sınıf'])
+                v_o = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"], index=["EFT", "Kredi Kartı"].index(row['Ödeme']))
+                v_tu = c2.number_input("Tutar", value=float(row['Tutar']))
+                v_du = c1.selectbox("Durum", ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"], index=["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"].index(row['Durum']))
+                v_f = c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) else "")
+                if st.form_submit_button("TÜMÜNÜ GÜNCELLE"):
+                    df.loc[df['ID'] == secili_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar', 'Durum', 'Fatura No']] = [v_m, v_a, v_t, v_tl, v_d, v_i, v_s, v_o, v_tu, v_du, v_f]
+                    df.to_csv(DATA_FILE, index=False); st.success("Güncellendi!"); st.rerun()
     for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
         if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
             df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
@@ -109,4 +105,17 @@ elif menu == "📊 Performans Raporu":
     st.header("📊 Performans"); st.bar_chart(df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum())
 
 elif menu == "👥 Personel Yönetimi":
-    st.header("👥 Yönetim"); st.dataframe(pd.read_csv(USER_FILE), use_container_width=True)
+    st.header("👥 Personel ve Veri Yönetimi")
+    if st.button("⚠️ TÜM VERİLERİ SİL"):
+        if os.path.exists(DATA_FILE): os.remove(DATA_FILE); st.error("Veriler silindi!"); st.rerun()
+    st.dataframe(pd.read_csv(USER_FILE), use_container_width=True)
+    t1, t2, t3 = st.tabs(["➕ Ekle", "🔑 Şifre Değiştir", "❌ Sil"])
+    with t1:
+        n, s = st.text_input("Personel Adı", key="ekle"), st.text_input("Şifre", type="password", key="sifre")
+        if st.button("Personel Ekle"): pd.concat([pd.read_csv(USER_FILE), pd.DataFrame({"İsim": [n], "Şifre": [s]})], ignore_index=True).to_csv(USER_FILE, index=False); st.rerun()
+    with t2:
+        p = st.selectbox("Personel", pd.read_csv(USER_FILE)["İsim"].tolist(), key="sel"); s2 = st.text_input("Yeni Şifre", type="password", key="new")
+        if st.button("Şifre Güncelle"): u = pd.read_csv(USER_FILE); u.loc[u["İsim"] == p, "Şifre"] = s2; u.to_csv(USER_FILE, index=False); st.rerun()
+    with t3:
+        s3 = st.selectbox("Silinecek", pd.read_csv(USER_FILE)["İsim"].tolist(), key="del")
+        if st.button("Sil"): u = pd.read_csv(USER_FILE); u[u["İsim"] != s3].to_csv(USER_FILE, index=False); st.rerun()
