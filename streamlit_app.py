@@ -16,8 +16,7 @@ SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        df = pd.read_csv(DATA_FILE)
-        return df
+        return pd.read_csv(DATA_FILE)
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
@@ -31,10 +30,8 @@ if not st.session_state.kullanici:
     secili = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
     sifre = st.text_input("Şifre", type="password")
     if st.button("Giriş Yap", use_container_width=True):
-        user_row = user_df[user_df["İsim"] == secili]
-        if str(sifre).strip() == str(user_row.iloc[0]["Şifre"]).strip():
-            st.session_state.kullanici = secili
-            st.rerun()
+        if str(sifre).strip() == str(user_df[user_df["İsim"] == secili].iloc[0]["Şifre"]).strip():
+            st.session_state.kullanici = secili; st.rerun()
     st.stop()
 
 # --- MENÜ ---
@@ -61,9 +58,7 @@ if menu == "📝 Satış Girişi":
         tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
         st.write("Doğum Tarihi")
         d1, d2, d3 = st.columns(3)
-        gun = d1.selectbox("Gün", range(1, 32))
-        ay = d2.selectbox("Ay", range(1, 13))
-        yil = d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
+        gun, ay, yil = d1.selectbox("Gün", range(1, 32)), d2.selectbox("Ay", range(1, 13)), d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
         il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR); odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi"); tutar = c2.number_input("Tutar (TL)", min_value=0.0)
@@ -101,21 +96,27 @@ elif menu == "📊 Satışlarım":
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Düzenleme Paneli")
-    with st.expander("✏️ Yanlış Girilen Satışı Düzenle"):
+    with st.expander("✏️ Tüm Satış Bilgilerini Tam Düzenle"):
         secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
         if secili_id in df['ID'].values:
             row = df[df['ID'] == secili_id].iloc[0]
-            with st.form("duzenleme_formu"):
+            with st.form("tam_duzenleme_formu"):
                 c1, c2 = st.columns(2)
                 y_marka = c1.text_input("Marka Adı", value=row['Marka Adı'])
+                y_ad = c1.text_input("İsim Soyisim", value=row['Ad Soyad'])
+                y_tc = c1.text_input("TC", value=row['TC'])
+                y_tel = c1.text_input("Telefon", value=row['Telefon'])
+                y_dogum = c2.text_input("Doğum Tarihi", value=row['Doğum Tarihi'])
+                y_il = c2.selectbox("İl", ILLER, index=ILLER.index(row['İl']) if row['İl'] in ILLER else 0)
+                y_sinif = c2.text_input("Sınıf", value=row['Sınıf'])
+                y_odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"], index=["EFT", "Kredi Kartı"].index(row['Ödeme']))
                 y_tutar = c2.number_input("Tutar (TL)", value=float(row['Tutar']))
                 y_durum = c1.selectbox("Durum", ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"], index=["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"].index(row['Durum']))
                 y_fatura = c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) else "")
-                if st.form_submit_button("Güncelle"):
-                    df.loc[df['ID'] == secili_id, ['Marka Adı', 'Tutar', 'Durum', 'Fatura No']] = [y_marka, y_tutar, y_durum, y_fatura]
+                if st.form_submit_button("Tüm Bilgileri Güncelle"):
+                    df.loc[df['ID'] == secili_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar', 'Durum', 'Fatura No']] = [y_marka, y_ad, y_tc, y_tel, y_dogum, y_il, y_sinif, y_odeme, y_tutar, y_durum, y_fatura]
                     df.to_csv(DATA_FILE, index=False); st.success("Satış güncellendi!"); st.rerun()
-    bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
-    for i, row in bekleyen.iterrows():
+    for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
         if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
             df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
             df.to_csv(DATA_FILE, index=False); st.rerun()
