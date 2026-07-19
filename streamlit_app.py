@@ -24,7 +24,9 @@ def load_data():
 def load_prim_table():
     default_table = {"20-23": 100, "24-28": 200, "29-33": 300, "34-38": 550, "39-43": 700, "44-48": 850, "49": 1000}
     if os.path.exists(PRIM_FILE):
-        with open(PRIM_FILE, "r") as f: return json.load(f)
+        try:
+            with open(PRIM_FILE, "r") as f: return json.load(f)
+        except: return default_table
     return default_table
 
 def say_ana_siniflar(sinif_listesi_str):
@@ -34,12 +36,16 @@ def say_ana_siniflar(sinif_listesi_str):
 
 def hesapla_prim(adet):
     table = load_prim_table()
-    if adet >= 49: return table.get("49", 1000)
+    # 49 ve üzeri durumu
+    if adet >= 49: return float(table.get("49", 1000))
+    # Aralık kontrolü
     for k, v in table.items():
         if "-" in k:
-            low, high = map(int, k.split('-'))
-            if low <= adet <= high: return v
-    return 0
+            try:
+                low, high = map(int, k.split('-'))
+                if low <= adet <= high: return float(v)
+            except: continue
+    return 0.0
 
 # --- GİRİŞ VE OTURUM ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
@@ -118,8 +124,7 @@ elif menu == "📊 Aylık Raporum":
     st.dataframe(rapor_df, use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
-    st.subheader("Onay Bekleyen Satışlar")
+    st.header("💰 Muhasebe Onay Paneli")
     bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
     for i, row in bekleyen.iterrows():
         cols = st.columns([1, 8])
@@ -139,32 +144,31 @@ elif menu == "💰 Muhasebe Onayı":
 
 elif menu == "💰 Satış Danışmanları Prim":
     st.header("💰 Satış Danışmanı Prim Raporu")
-    tab1, tab2 = st.tabs(["📊 Prim Raporu", "⚙️ Prim Tablosu Düzenle"])
+    danismanlar = df['Danışman'].unique()
+    secilen_danisman = st.selectbox("Danışman Seçin", danismanlar)
+    c1, c2 = st.columns(2)
+    ay_prim = c1.selectbox("Ay", range(1, 13), index=datetime.now().month-1)
+    yil_prim = c2.selectbox("Yıl", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+    prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+    
+    adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
+    st.info(f"Danışman: **{secilen_danisman}** | Toplam Ana Sınıf: **{adet}**")
+    
+    tab1, tab2 = st.tabs(["📊 Rapor", "⚙️ Tablo Düzenle"])
     with tab1:
-        danismanlar = df['Danışman'].unique()
-        secilen_danisman = st.selectbox("Prim Raporu İçin Danışman Seçin", danismanlar)
         c1, c2 = st.columns(2)
-        ay_prim = c1.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
-        yil_prim = c2.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
-        prim_df = df[(df['Danışman'] == secilen_danisman) & (df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
-        adet = prim_df['Sınıf'].apply(say_ana_siniflar).sum()
-        st.info(f"Danışman: **{secilen_danisman}** | Dönem: **{ay_prim}/{yil_prim}**")
-        c1, c2, c3 = st.columns(3)
         c1.metric("Toplam Ciro", f"{prim_df['Tutar'].sum():,.2f} TL")
-        c2.metric("Toplam Ana Sınıf", adet)
-        c3.metric("Hak Edilen Prim", f"{hesapla_prim(adet):,.2f} TL")
+        c2.metric("Hak Edilen Prim", f"{hesapla_prim(adet):,.2f} TL")
         st.dataframe(prim_df)
     with tab2:
         if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
-            st.subheader("Prim Kademelerini Düzenle")
             prim_table = load_prim_table()
             new_table = {}
             for k, v in prim_table.items():
-                new_table[k] = st.number_input(f"{k} Sınıf Prim Değeri", value=v)
-            if st.button("Tabloyu Kaydet"):
+                new_table[k] = st.number_input(f"{k} Prim Değeri", value=v)
+            if st.button("Kaydet"):
                 with open(PRIM_FILE, "w") as f: json.dump(new_table, f)
                 st.success("Tablo güncellendi!")
-        else: st.warning("Tabloyu sadece Admin ve Muhasebe düzenleyebilir.")
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
