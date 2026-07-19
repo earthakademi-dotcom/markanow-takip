@@ -3,10 +3,17 @@ import pandas as pd
 import os
 from datetime import datetime
 
+# --- SAYFA YAPILANDIRMASI ---
+# Sekme başlığını ve sayfa genişliğini ayarlayalım
+st.set_page_config(page_title="Markanow ERP", layout="centered")
+
 # --- TANIMLAMALAR ---
 DATA_FILE = "marka_takip.csv"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
+
+# Kullanıcı listesi (Buraya kendi ekibinin isimlerini yazabilirsin)
+KULLANICILAR = ["Danışman 1", "Danışman 2", "Muhasebe", "Yönetici"] 
 
 def load_data():
     if os.path.exists(DATA_FILE): return pd.read_csv(DATA_FILE)
@@ -16,21 +23,32 @@ def load_data():
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
 
 if not st.session_state.kullanici:
-    k_adi = st.text_input("Kullanıcı Adı")
-    sifre = st.text_input("Şifre", type="password")
-    if st.button("Giriş"):
-        st.session_state.kullanici = k_adi
-        st.rerun()
+    # Sistemin Başlığı
+    st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
+    st.write("---")
+    
+    # Giriş Formu (Ortalanmış görünüm için)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        k_adi = st.selectbox("Kullanıcı Seçiniz", KULLANICILAR)
+        sifre = st.text_input("Şifre", type="password")
+        
+        if st.button("Giriş Yap", use_container_width=True):
+            st.session_state.kullanici = k_adi
+            st.rerun()
     st.stop()
 
 # --- MENÜ SİSTEMİ ---
-st.sidebar.write(f"👤 Danışman: **{st.session_state.kullanici}**")
+st.sidebar.title("Markanow ERP")
+st.sidebar.write(f"👤 Aktif Kullanıcı: **{st.session_state.kullanici}**")
+st.sidebar.write("---")
 
 # Güvenli Çıkış Butonu
-if st.sidebar.button("🚪 Güvenli Çıkış"):
+if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
     st.rerun()
 
+st.sidebar.write("---")
 menu = st.sidebar.radio("Menü", ["📝 Satış Girişi", "📊 Aylık Raporum", "💰 Muhasebe Onayı"])
 
 df = load_data()
@@ -47,7 +65,7 @@ if menu == "📝 Satış Girişi":
         dogum = c2.date_input("Doğum Tarihi")
         il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
-        odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
+        odeme = c2.selectbox("Ödeme Yöntemi", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi")
         tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         
@@ -59,8 +77,9 @@ if menu == "📝 Satış Girişi":
                            "Tutar": tutar, "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici}
                 df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 df.to_csv(DATA_FILE, index=False)
-                st.success("Satış muhasebe onayına gönderildi.")
-            else: st.error("TC 11 hane olmalı!")
+                st.success("Satış başarıyla muhasebe onayına gönderildi.")
+            else: 
+                st.error("Lütfen 11 haneli geçerli bir TC Kimlik Numarası giriniz!")
 
 elif menu == "📊 Aylık Raporum":
     st.header("📊 Aylık Rapor")
@@ -72,12 +91,24 @@ elif menu == "📊 Aylık Raporum":
     col2.metric("Toplam Satış Adedi", adet)
 
 elif menu == "💰 Muhasebe Onayı":
-    st.header("💰 Muhasebe Onayı Bekleyenler")
+    st.header("💰 Muhasebe Onayı Bekleyen İşlemler")
     bekleyenler = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
-    st.dataframe(bekleyenler)
-    id_sec = st.number_input("Onaylanacak Satış ID", min_value=1, step=1)
-    f_no = st.text_input("Fatura No")
-    if st.button("Onayla"):
-        df.loc[df['ID'] == id_sec, ['Durum', 'Fatura No']] = ["Onaylandı", f_no]
-        df.to_csv(DATA_FILE, index=False)
-        st.rerun()
+    
+    if not bekleyenler.empty:
+        st.dataframe(bekleyenler, use_container_width=True)
+        
+        st.write("---")
+        st.subheader("İşlem Onaylama")
+        id_sec = st.number_input("Onaylanacak Satış ID", min_value=1, step=1)
+        f_no = st.text_input("Fatura No")
+        
+        if st.button("Satışı Onayla"):
+            if id_sec in bekleyenler['ID'].values:
+                df.loc[df['ID'] == id_sec, ['Durum', 'Fatura No']] = ["Onaylandı", f_no]
+                df.to_csv(DATA_FILE, index=False)
+                st.success(f"{id_sec} numaralı işlem onaylandı.")
+                st.rerun()
+            else:
+                st.error("Girilen ID ile bekleyen bir işlem bulunamadı.")
+    else:
+        st.info("Şu anda onay bekleyen herhangi bir satış bulunmamaktadır.")
