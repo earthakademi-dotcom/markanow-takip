@@ -19,11 +19,9 @@ def load_data():
         return df
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
-# --- YARDIMCI FONKSİYON: ANA SINIF SAYISI ---
 def say_ana_siniflar(sinif_listesi_str):
     if pd.isna(sinif_listesi_str): return 0
     siniflar = str(sinif_listesi_str).split(',')
-    # Sadece 35/ ile başlamayan, 1-45 arası ana sınıfları say
     return len([s for s in siniflar if not s.startswith('35/')])
 
 # --- GİRİŞ VE OTURUM ---
@@ -87,6 +85,22 @@ elif menu == "📊 Satışlarım":
     col1.metric("Toplam Ciro (Onaylı)", f"{onayli['Tutar'].sum():,.2f} TL")
     col2.metric("Toplam Ana Sınıf", onayli['Sınıf'].apply(say_ana_siniflar).sum())
     st.dataframe(filtered, use_container_width=True)
+
+elif menu == "📊 Aylık Raporum":
+    st.header("📊 Detaylı Aylık Raporum")
+    my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
+    
+    col1, col2 = st.columns(2)
+    yil = col1.selectbox("Yıl Seçin", sorted(my_df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+    ay = col2.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
+    
+    rapor_df = my_df[(my_df['Satış Tarihi_dt'].dt.year == yil) & (my_df['Satış Tarihi_dt'].dt.month == ay)]
+    onayli_rapor = rapor_df[rapor_df['Durum'] == "Onaylandı"]
+    
+    c1, c2 = st.columns(2)
+    c1.metric(f"{ay}/{yil} Toplam Ciro", f"{onayli_rapor['Tutar'].sum():,.2f} TL")
+    c2.metric(f"{ay}/{yil} Toplam Ana Sınıf", onayli_rapor['Sınıf'].apply(say_ana_siniflar).sum())
+    st.dataframe(rapor_df, use_container_width=True)
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
