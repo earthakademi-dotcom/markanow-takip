@@ -1,44 +1,57 @@
 import streamlit as st
+import pandas as pd
 
-st.set_page_config(page_title="Markanow ERP", layout="wide")
+# STREAMING_CHUNK: Stil ve Kurumsal Görünüm
+st.set_page_config(page_title="Markanow ERP", layout="centered")
 
-# --- 1. OTURUM VE MENU TANIMLARI ---
-if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
-if "menu" not in st.session_state: st.session_state.menu = "Basvuru_Beklemede"
+st.markdown("""
+    <style>
+    .stApp { background-color: #f0f2f6; }
+    .login-container { 
+        background: white; padding: 30px; border-radius: 15px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        text-align: center;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- 2. LOGIN EKRANI ---
-if not st.session_state.giris_yapildi:
-    st.title("🔒 Markanow Giriş")
-    kullanici = st.text_input("Kullanıcı Adı")
-    sifre = st.text_input("Şifre", type="password")
-    if st.button("Giriş Yap"):
-        # Buraya kendi kullanıcı kontrol mantığınızı ekleyin
-        if kullanici == "admin" and sifre == "1234":
-            st.session_state.giris_yapildi = True
-            st.rerun()
-        else:
-            st.error("Hatalı giriş!")
-    st.stop() # Giriş yapılmadıysa aşağısını çalıştırma
+# STREAMING_CHUNK: Kullanıcı Veritabanı (Başlangıç için)
+if "KULLANICILAR" not in st.session_state:
+    st.session_state.KULLANICILAR = {
+        "admin": {"sifre": "1234", "rol": "Admin"}
+    }
 
-# --- 3. ANA UYGULAMA (Giriş yapıldıktan sonra) ---
-with st.sidebar:
-    st.markdown("### 🏢 Markanow ERP")
-    if st.button("⏳ Başvuru Beklemede"): 
-        st.session_state.menu = "Basvuru_Beklemede"
-        st.rerun()
-    if st.button("🔑 Şifre Ayarları"): 
-        st.session_state.menu = "Sifre_Ayarlari"
-        st.rerun()
-    st.markdown("---")
-    if st.button("🚪 Güvenli Çıkış"):
-        st.session_state.giris_yapildi = False
-        st.rerun()
+# STREAMING_CHUNK: Giriş ve Kayıt Ekranı
+if not st.session_state.get("giris_yapildi", False):
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    # Logoyu yerleştiriyoruz
+    st.image("https://upload.wikimedia.org/wikipedia/commons/e/e4/Markanow_Logo.png", width=200) # Logonuzun URL'sini buraya ekleyin
+    
+    tab1, tab2 = st.tabs(["Giriş Yap", "Yeni Kullanıcı Kayıt"])
+    
+    with tab1:
+        k_adi = st.text_input("Kullanıcı Adı")
+        sifre = st.text_input("Şifre", type="password")
+        if st.button("Giriş Yap"):
+            user = st.session_state.KULLANICILAR.get(k_adi)
+            if user and user["sifre"] == sifre:
+                st.session_state.giris_yapildi = True
+                st.session_state.kullanici_adi = k_adi
+                st.rerun()
+            else: st.error("Hatalı bilgiler!")
 
-# --- 4. SAYFA YÖNETİMİ ---
-if st.session_state.menu == "Basvuru_Beklemede":
-    st.header("⏳ Başvuru Beklemede")
-    st.write("Süreçteki dosyalarınız burada görünecek.")
+    with tab2:
+        yeni_k = st.text_input("Yeni Kullanıcı Adı")
+        yeni_s = st.text_input("Yeni Şifre", type="password")
+        if st.button("Kaydet"):
+            st.session_state.KULLANICILAR[yeni_k] = {"sifre": yeni_s, "rol": "Kullanıcı"}
+            st.success("Kullanıcı oluşturuldu! Giriş yapabilirsiniz.")
+            
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.stop()
 
-elif st.session_state.menu == "Sifre_Ayarlari":
-    st.header("🔑 Şifre Yönetimi")
-    st.write("Şifrenizi buradan güncelleyebilirsiniz.")
+# --- Giriş Yapıldıktan Sonra ---
+st.title(f"Hoş geldiniz, {st.session_state.kullanici_adi}")
+if st.button("🚪 Güvenli Çıkış"):
+    st.session_state.giris_yapildi = False
+    st.rerun()
