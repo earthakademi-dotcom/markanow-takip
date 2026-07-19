@@ -21,7 +21,6 @@ def load_data():
 
 # --- GİRİŞ VE OTURUM ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
-
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
     if not os.path.exists(USER_FILE):
@@ -35,23 +34,18 @@ if not st.session_state.kullanici:
         if str(sifre).strip() == str(user_row.iloc[0]["Şifre"]).strip():
             st.session_state.kullanici = secili
             st.rerun()
-        else: st.error("Hatalı şifre!")
     st.stop()
 
 # --- MENÜ SİSTEMİ ---
-st.sidebar.title("Markanow ERP")
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
-    st.session_state.kullanici = None
-    st.rerun()
-
+    st.session_state.kullanici = None; st.rerun()
 st.sidebar.write("---")
 
 menu_options = []
 if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
     menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım"])
 menu_options.extend(["📊 Aylık Raporum", "💰 Muhasebe Onayı"])
-
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
 
@@ -63,38 +57,29 @@ if menu == "📝 Satış Girişi":
     st.header("📝 Yeni Satış Girişi")
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        m_adi = c1.text_input("Marka Adı")
-        ad_soyad = c1.text_input("İsim Soyisim")
-        tc = c1.text_input("TC (11 Hane)")
-        tel = c1.text_input("Telefon")
-        dogum = c2.date_input("Doğum Tarihi")
-        il = c2.selectbox("İl", ILLER)
-        sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
-        odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
-        s_tarihi = c2.date_input("Satış Tarihi")
-        tutar = c2.number_input("Tutar (TL)", min_value=0.0)
+        m_adi = c1.text_input("Marka Adı"); ad_soyad = c1.text_input("İsim Soyisim")
+        tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
+        dogum = c2.date_input("Doğum Tarihi"); il = c2.selectbox("İl", ILLER)
+        sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR); odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
+        s_tarihi = c2.date_input("Satış Tarihi"); tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         if st.form_submit_button("Satışı Kaydet"):
-            if len(tc) == 11:
-                new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
-                           "Doğum Tarihi": dogum.strftime("%d/%m/%Y"), "İl": il, "Sınıf": ",".join(sinif),
-                           "Ödeme": odeme, "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), 
-                           "Tutar": tutar, "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
-                pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
-                st.success("Satış kaydedildi.")
-            else: st.error("TC 11 hane olmalı!")
+            new_row = {"ID": len(df)+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
+                       "Doğum Tarihi": dogum.strftime("%d/%m/%Y"), "İl": il, "Sınıf": ",".join(sinif),
+                       "Ödeme": odeme, "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), 
+                       "Tutar": tutar, "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
+            pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
+            st.success("Satış kaydedildi.")
 
 elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
     my_df = df[df['Danışman'] == st.session_state.kullanici].copy()
-    ay_sec = st.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
-    my_df = my_df[my_df['Satış Tarihi_dt'].dt.month == ay_sec]
-    
+    ay = st.selectbox("Ay Seçin", range(1, 13), index=datetime.now().month-1)
+    my_df = my_df[my_df['Satış Tarihi_dt'].dt.month == ay]
     onayli = my_df[my_df['Durum'] == "Onaylandı"]
     col1, col2 = st.columns(2)
     col1.metric("Toplam Ciro (Onaylı)", f"{onayli['Tutar'].sum():,.2f} TL")
     col2.metric("Toplam Sınıf", onayli['Sınıf'].apply(lambda x: len(str(x).split(',')) if pd.notnull(x) else 0).sum())
     st.dataframe(my_df, use_container_width=True)
-    
     st.subheader("Faturalandırılacak Satışlar")
     if not onayli.empty:
         id_f = st.number_input("Fatura Kesilecek ID", step=1)
@@ -107,21 +92,18 @@ elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay Paneli")
     if st.session_state.kullanici == "SELEN AKCAN":
         bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
-        st.dataframe(bekleyen)
-        id_onay = st.number_input("Onaylanacak ID", step=1)
-        if st.button("Satışı Onayla"):
-            df.loc[df['ID'] == id_onay, 'Durum'] = "Onaylandı"
-            df.to_csv(DATA_FILE, index=False); st.rerun()
+        for i, row in bekleyen.iterrows():
+            cols = st.columns([1, 8])
+            if cols[0].button("✅", key=f"onay_{row['ID']}"):
+                df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"
+                df.to_csv(DATA_FILE, index=False); st.rerun()
+            cols[1].write(f"ID: {row['ID']} | Marka: {row['Marka Adı']} | Tutar: {row['Tutar']} TL | Danışman: {row['Danışman']}")
     else: st.dataframe(df[df['Durum'] == "Onaylandı"])
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
-    df_onay = df[df['Durum'] == "Tamamlandı"].copy()
-    df_onay['Sınıf Adedi'] = df_onay['Sınıf'].apply(lambda x: len(str(x).split(',')) if pd.notnull(x) else 0)
-    rapor = df_onay.groupby('Danışman').agg({'Sınıf Adedi': 'sum', 'Tutar': 'sum'}).rename(
-        columns={'Sınıf Adedi': 'Toplam Sınıf', 'Tutar': 'Toplam Ciro (TL)'})
-    st.dataframe(rapor, use_container_width=True)
-    st.bar_chart(rapor['Toplam Ciro (TL)'])
+    rapor = df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum()
+    st.bar_chart(rapor)
 
 elif menu == "👥 Personel Yönetimi":
     st.header("👥 Personel Yönetimi")
@@ -132,8 +114,7 @@ elif menu == "👥 Personel Yönetimi":
         yeni_ad = st.text_input("Personel Adı", key="ekle_ad")
         yeni_sifre = st.text_input("Şifre Belirle", type="password", key="ekle_sifre")
         if st.button("Personel Ekle"):
-            pd.concat([users_df, pd.DataFrame({"İsim": [yeni_ad], "Şifre": [yeni_sifre]})], ignore_index=True).to_csv(USER_FILE, index=False)
-            st.rerun()
+            pd.concat([users_df, pd.DataFrame({"İsim": [yeni_ad], "Şifre": [yeni_sifre]})], ignore_index=True).to_csv(USER_FILE, index=False); st.rerun()
     with tab2:
         secilen_p = st.selectbox("Personel Seçin", users_df["İsim"].tolist(), key="guncelle_sec")
         yeni_sifre_g = st.text_input("Yeni Şifre", type="password", key="guncelle_sifre")
