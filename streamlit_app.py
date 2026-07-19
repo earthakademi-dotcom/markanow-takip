@@ -22,7 +22,6 @@ def load_data():
 def say_ana_siniflar(sinif_listesi_str):
     if pd.isna(sinif_listesi_str): return 0
     siniflar = str(sinif_listesi_str).split(',')
-    # Sadece 35/ ile başlamayan ana sınıfları say
     return len([s for s in siniflar if not s.startswith('35/')])
 
 # --- GİRİŞ VE OTURUM ---
@@ -49,12 +48,17 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 st.sidebar.write("---")
 
 menu_options = []
-if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN"]:
+# Satış Danışmanı Menüleri
+if st.session_state.kullanici not in ["ALİ OSMAN YELBEY", "SELEN AKCAN", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📝 Satış Girişi", "📊 Satışlarım", "📊 Aylık Raporum"])
-if st.session_state.kullanici == "SELEN AKCAN":
-    menu_options.append("💰 Muhasebe Onayı")
+
+# Yetkili Menüleri (Muhasebe + Admin + Deniz)
+if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "SELEN AKCAN", "DENİZ TELLİ GÜRLEYENDAĞ"]:
+    menu_options.extend(["💰 Muhasebe Onayı", "💰 Satış Danışmanları Prim"])
+
+# Admin/Müdür Menüleri
 if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
-    menu_options.extend(["💰 Muhasebe Onayı", "📊 Performans Raporu", "👥 Personel Yönetimi"])
+    menu_options.extend(["📊 Performans Raporu", "👥 Personel Yönetimi"])
 
 menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
@@ -103,7 +107,7 @@ elif menu == "📊 Aylık Raporum":
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Faturalandırma Paneli")
-    if st.session_state.kullanici == "SELEN AKCAN" or st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
+    if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
         st.subheader("Onay Bekleyen Satışlar")
         bekleyen = df[df['Durum'] == "Muhasebe Onayı Bekliyor"]
         for i, row in bekleyen.iterrows():
@@ -122,6 +126,14 @@ elif menu == "💰 Muhasebe Onayı":
             df.loc[df['ID'] == id_f, ['Fatura No', 'Durum']] = [f_no, "Tamamlandı"]
             df.to_csv(DATA_FILE, index=False); st.rerun()
     else: st.dataframe(df[df['Durum'] == "Tamamlandı"])
+
+elif menu == "💰 Satış Danışmanları Prim":
+    st.header("💰 Satış Danışmanları Prim Raporu")
+    ay_prim = st.selectbox("Rapor Ayı", range(1, 13), index=datetime.now().month-1)
+    yil_prim = st.selectbox("Rapor Yılı", sorted(df['Satış Tarihi_dt'].dt.year.dropna().unique(), reverse=True))
+    prim_df = df[(df['Satış Tarihi_dt'].dt.month == ay_prim) & (df['Satış Tarihi_dt'].dt.year == yil_prim) & (df['Durum'] == "Tamamlandı")]
+    ozet = prim_df.groupby('Danışman').agg({'Tutar': 'sum', 'Sınıf': lambda x: sum(x.apply(say_ana_siniflar))}).rename(columns={'Tutar': 'Toplam Ciro', 'Sınıf': 'Toplam Ana Sınıf'})
+    st.dataframe(ozet, use_container_width=True)
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Kurumsal Performans Paneli")
