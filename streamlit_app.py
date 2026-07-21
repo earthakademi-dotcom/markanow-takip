@@ -159,7 +159,7 @@ elif menu == "📥 Excel'den Yükle":
             else:
                 yeni_data = pd.read_excel(uploaded_file)
             
-            # Sütun isimlerindeki bozuklukları (Yl -> İl vb.) ve eksik sütunları otomatik düzeltme
+            # Sütun isimlerindeki bozulmaları otomatik düzeltme
             sutun_duzeltme = {}
             for col in yeni_data.columns:
                 col_clean = str(col).strip().lower()
@@ -173,7 +173,6 @@ elif menu == "📥 Excel'den Yükle":
 
             st.write("Önizleme:", yeni_data.head())
             if st.button("Tümünü Sisteme Ekle"):
-                # Eğer yüklenen veride Danışman sütunu yoksa aktif kullanıcıyı ata
                 if 'Danışman' not in yeni_data.columns:
                     yeni_data['Danışman'] = st.session_state.kullanici
                 if 'Durum' not in yeni_data.columns:
@@ -193,9 +192,37 @@ elif menu == "💰 Muhasebe Onayı":
             row = df[df['ID'] == secili_id].iloc[0]
             with st.form("tam_duzenleme_formu"):
                 c1, c2 = st.columns(2)
-                v_m, v_a, v_t, v_tl = c1.text_input("Marka", value=row['Marka Adı']), c1.text_input("İsim", value=row['Ad Soyad']), c1.text_input("TC", value=row['TC']), c1.text_input("Tel", value=row['Telefon'])
-                v_d, v_i, v_s = c2.text_input("Doğum", value=row['Doğum Tarihi']), c2.selectbox("İl", ILLER, index=ILLER.index(row['İl']) if row['İl'] in ILLER else 0), c2.text_input("Sınıf", value=row['Sınıf'])
-                v_o, v_tu, v_du, v_f = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"], index=["EFT", "Kredi Kartı"].index(row['Ödeme'])), c2.number_input("Tutar", value=float(row['Tutar'])), c1.selectbox("Durum", ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"], index=["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"].index(row['Durum'])), c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) else "")
+                v_m = c1.text_input("Marka", value=str(row['Marka Adı']) if pd.notna(row['Marka Adı']) else "")
+                v_a = c1.text_input("İsim", value=str(row['Ad Soyad']) if pd.notna(row['Ad Soyad']) else "")
+                v_t = c1.text_input("TC", value=str(row['TC']) if pd.notna(row['TC']) else "")
+                v_tl = c1.text_input("Tel", value=str(row['Telefon']) if pd.notna(row['Telefon']) else "")
+                
+                v_d = c2.text_input("Doğum", value=str(row['Doğum Tarihi']) if pd.notna(row['Doğum Tarihi']) else "")
+                
+                # İl alanındaki hatalı/NaN değerleri güvenli şekilde yakalama
+                mevcut_il = str(row['İl']).strip() if pd.notna(row['İl']) else ""
+                il_index = ILLER.index(mevcut_il) if mevcut_il in ILLER else 0
+                v_i = c2.selectbox("İl", ILLER, index=il_index)
+                
+                # Sınıf alanındaki NaN veya geçersiz değerleri string'e çevirip güvenli işleme
+                mevcut_sinif = str(row['Sınıf']) if pd.notna(row['Sınıf']) and str(row['Sınıf']).lower() != 'nan' else ""
+                v_s = c2.text_input("Sınıf", value=mevcut_sinif)
+                
+                # Ödeme alanındaki olası hataları önleme
+                mevcut_odeme = str(row['Ödeme']).strip() if pd.notna(row['Ödeme']) else "EFT"
+                odeme_secenekleri = ["EFT", "Kredi Kartı"]
+                odeme_index = odeme_secenekleri.index(mevcut_odeme) if mevcut_odeme in odeme_secenekleri else 0
+                v_o = c2.selectbox("Ödeme", odeme_secenekleri, index=odeme_index)
+                
+                v_tu = c2.number_input("Tutar", value=float(row['Tutar']) if pd.notna(row['Tutar']) else 0.0)
+                
+                durum_secenekleri = ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"]
+                mevcut_durum = str(row['Durum']).strip() if pd.notna(row['Durum']) else "Muhasebe Onayı Bekliyor"
+                durum_index = durum_secenekleri.index(mevcut_durum) if mevcut_durum in durum_secenekleri else 0
+                v_du = c1.selectbox("Durum", durum_secenekleri, index=durum_index)
+                
+                v_f = c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) and str(row['Fatura No']).lower() != 'nan' else "")
+                
                 if st.form_submit_button("TÜMÜNÜ GÜNCELLE"):
                     df.loc[df['ID'] == secili_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar', 'Durum', 'Fatura No']] = [v_m, v_a, v_t, v_tl, v_d, v_i, v_s, v_o, v_tu, v_du, v_f]
                     df.to_csv(DATA_FILE, index=False); st.success("Güncellendi!"); st.rerun()
