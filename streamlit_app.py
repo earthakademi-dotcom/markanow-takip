@@ -2,17 +2,22 @@ import streamlit as st
 import pandas as pd
 import os
 import json
-import base64
 from datetime import datetime
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (SOL MENÜ BORDO, YAZILAR BEYAZ) ---
+# --- GLOBAL CSS (BORDO MENÜ VE DÜZ ANTRASİT ARKA PLAN - GÖRSEL YOK) ---
 st.markdown(
     """
     <style>
-    /* Ana içerik form etiketleri ve başlıkları beyaz */
+    /* Ana uygulama arka planını düz antrasit yapar, görsel yüklemez */
+    .stApp {
+        background-color: #222222 !important;
+        background-image: none !important;
+    }
+
+    /* Tüm başlıkları, etiketleri ve form yazılarını beyaz yapar */
     h1, h2, h3, h4, h5, h6, 
     .stTextInput label, 
     .stSelectbox label, 
@@ -54,44 +59,6 @@ def load_data():
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
-logo_path = "sosyalmedya-2.jpg.jpg"
-
-if os.path.exists(logo_path):
-    with open(logo_path, "rb") as f:
-        bin_str = base64.b64encode(f.read()).decode()
-    
-    page_bg_img = f'''
-    <style>
-    .stApp {{
-        background: linear-gradient(rgba(30, 30, 30, 0.8), rgba(30, 30, 30, 0.8)), url("data:image/jpeg;base64,{bin_str}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }}
-    .stSelectbox label, .stTextInput label {{
-        color: #FFFFFF !important;
-        font-weight: bold;
-    }}
-    </style>
-    '''
-    st.markdown(page_bg_img, unsafe_allow_html=True)
-else:
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background-color: #222222;
-        }
-        .stSelectbox label, .stTextInput label {
-            color: #FFFFFF !important;
-            font-weight: bold;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
 if "kullanici" not in st.session_state: 
     st.session_state.kullanici = None
 
