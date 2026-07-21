@@ -90,16 +90,6 @@ if not st.session_state.kullanici:
     st.stop()
 
 # --- MENÜ ---
-st.sidebar.markdown(
-    """
-    <div style="border: 2px solid red; padding: 10px; border-radius: 5px; text-align: center; background-color: rgba(255, 0, 0, 0.05); margin-bottom: 10px;">
-        <span style="height: 12px; width: 12px; background-color: red; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px red;"></span>
-        <span style="color: red; font-weight: bold; margin-left: 8px;">Kırmızı Işık Aktif</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
