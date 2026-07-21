@@ -5,6 +5,18 @@ import json
 import base64
 from datetime import datetime
 
+# Otomatik openpyxl kontrolü
+try:
+    import openpyxl
+except ImportError:
+    import subprocess
+    import sys
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl"])
+        import openpyxl
+    except Exception:
+        pass
+
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
@@ -147,14 +159,18 @@ elif menu == "📥 Excel'den Yükle":
     if uploaded_file:
         try:
             if uploaded_file.name.endswith('.csv'):
-                yeni_data = pd.read_csv(uploaded_file)
-            else:
+                # Farklı karakter kodlamalarını sırayla deneyerek hatayı engeller
                 try:
-                    yeni_data = pd.read_excel(uploaded_file, engine='openpyxl')
-                except ImportError:
-                    st.warning("⚠️ 'openpyxl' kütüphanesi eksik olduğu için pandas ile okunamadı. Alternatif olarak CSV formatı kullanabilirsiniz veya terminale `pip install openpyxl` yazarak kurabilirsiniz.")
-                    # Alternatif olarak yerleşik kütüphanelerle excel okumayı dener veya hata mesajını gösterir
-                    raise Exception("openpyxl kütüphanesi yüklü değil. Lütfen CSV formatında yükleyin veya terminale 'pip install openpyxl' komutunu yazın.")
+                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8')
+                except UnicodeDecodeError:
+                    uploaded_file.seek(0)
+                    try:
+                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1')
+                    except UnicodeDecodeError:
+                        uploaded_file.seek(0)
+                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254')
+            else:
+                yeni_data = pd.read_excel(uploaded_file)
             
             st.write("Önizleme:", yeni_data.head())
             if st.button("Tümünü Sisteme Ekle"):
