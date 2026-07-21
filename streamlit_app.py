@@ -26,9 +26,9 @@ import os
 import base64
 
 USER_FILE = "users.csv"
-logo_path = "sosyalmedya-2.jpg"
+logo_path = "sosyalmedya-2.jpg"  # Görselin tam yolunu buraya yazabilirsiniz (örn: "C:/Kullanicilar/.../sosyalmedya-2.jpg")
 
-# Logo dosyasını doğrudan HTML içinde base64 olarak kullanarak arka plana sabitliyoruz
+# Antrasit arkaplan ve logoyu arka plana yerleştirme
 if os.path.exists(logo_path):
     with open(logo_path, "rb") as f:
         bin_str = base64.b64encode(f.read()).decode()
@@ -50,8 +50,7 @@ if os.path.exists(logo_path):
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
 else:
-    # Eğer dosya bulunamazsa alternatif olarak doğrudan görseli ekranda gösterip test edebilirsiniz
-    st.error(f"'{logo_path}' dosyası bulunamadı! Lütfen dosyanın script ile aynı klasörde olduğundan emin olun.")
+    # Dosya bulunamazsa sadece antrasit arka plan uygular ve uyarı verir
     st.markdown(
         """
         <style>
@@ -66,6 +65,7 @@ else:
         """,
         unsafe_allow_html=True
     )
+    st.warning(f"⚠️ '{logo_path}' dosyası bulunamadı! Lütfen görseli Python kodunuzla aynı klasöre koyun.")
 
 if "kullanici" not in st.session_state: 
     st.session_state.kullanici = None
