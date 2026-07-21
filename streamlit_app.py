@@ -8,18 +8,17 @@ from datetime import datetime
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# Logo dosyasını base64 formatına çevirme (Giriş ekranı ve antrasit arka plan için)
+# Logo dosyasını base64 formatına çevirme
 logo_path = "sosyalmedya-2.jpg.jpg"
 logo_base64 = ""
 if os.path.exists(logo_path):
     with open(logo_path, "rb") as f:
         logo_base64 = base64.b64encode(f.read()).decode()
 
-# --- GLOBAL CSS (BORDO MENÜ, GİRİŞ VE ÇIKIŞ BUTONLARI BORDO, BEYAZ YAZILAR, LOGO ARKA PLAN) ---
+# --- GLOBAL CSS ---
 st.markdown(
     f"""
     <style>
-    /* Ana uygulama arka planına logoyu ve antrasit tonu yarı saydam katmanla yerleştirme */
     .stApp {{
         background: linear-gradient(rgba(34, 34, 34, 0.85), rgba(34, 34, 34, 0.85)), url("data:image/jpeg;base64,{logo_base64}") !important;
         background-size: cover !important;
@@ -28,7 +27,6 @@ st.markdown(
         background-attachment: fixed !important;
     }}
 
-    /* Tüm başlıkları, etiketleri ve form yazılarını beyaz yapar */
     h1, h2, h3, h4, h5, h6, 
     .stTextInput label, 
     .stSelectbox label, 
@@ -39,12 +37,10 @@ st.markdown(
         color: #FFFFFF !important;
     }}
     
-    /* Sol menü (Sidebar) arka planını bordo yapar */
     [data-testid="stSidebar"] {{
         background-color: #6b1d2f !important;
     }}
     
-    /* Sol menü içerisindeki tüm yazı ve etiketleri beyaz yapar */
     [data-testid="stSidebar"] span, 
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] label, 
@@ -53,7 +49,6 @@ st.markdown(
         color: #FFFFFF !important;
     }}
 
-    /* Tüm ana butonları (Giriş Yap ve Güvenli Çıkış dahil) bordo yapar */
     div.stButton > button:first-child {{
         background-color: #6b1d2f !important;
         color: #FFFFFF !important;
@@ -68,6 +63,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # --- TANIMLAMALAR ---
 DATA_FILE = "marka_takip.csv"
 USER_FILE = "users.csv"
@@ -149,10 +145,19 @@ elif menu == "📥 Excel'den Yükle":
     st.header("📥 Excel/CSV ile Toplu Satış Girişi")
     uploaded_file = st.file_uploader("Dosya Seçin", type=["csv", "xlsx"])
     if uploaded_file:
-        yeni_data = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-        if st.button("Tümünü Sisteme Ekle"):
-            pd.concat([df, yeni_data], ignore_index=True).to_csv(DATA_FILE, index=False)
-            st.success("Tüm satışlar başarıyla aktarıldı!"); st.rerun()
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                yeni_data = pd.read_csv(uploaded_file)
+            else:
+                yeni_data = pd.read_excel(uploaded_file, engine='openpyxl')
+            
+            st.write("Önizleme:", yeni_data.head())
+            if st.button("Tümünü Sisteme Ekle"):
+                pd.concat([df, yeni_data], ignore_index=True).to_csv(DATA_FILE, index=False)
+                st.success("Tüm satışlar başarıyla aktarıldı!")
+                st.rerun()
+        except Exception as e:
+            st.error(f"Dosya okuma hatası: {e}")
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Tam Düzenleme Paneli")
