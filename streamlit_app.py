@@ -105,12 +105,12 @@ df = load_data()
 
 # --- MODÜLLER ---
 if menu == "📝 Satış Girişi":
-    st.header("📝 Yeni Satış Girişi")
+    st.markdown("📝 Yeni Satış Girişi", unsafe_allow_html=True)
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı"); ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
-        st.write("Doğum Tarihi")
+        st.markdown("Doğum Tarihi", unsafe_allow_html=True)
         d1, d2, d3 = st.columns(3)
         gun, ay, yil = d1.selectbox("Gün", range(1, 32)), d2.selectbox("Ay", range(1, 13)), d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
         il = c2.selectbox("İl", ILLER)
@@ -123,7 +123,6 @@ if menu == "📝 Satış Girişi":
                        "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("Satış kaydedildi.")
-
 elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
     st.dataframe(df[df['Danışman'] == st.session_state.kullanici], use_container_width=True)
