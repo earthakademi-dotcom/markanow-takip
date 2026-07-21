@@ -147,7 +147,6 @@ elif menu == "📥 Excel'den Yükle":
     if uploaded_file:
         try:
             if uploaded_file.name.endswith('.csv'):
-                # Farklı ayraçları ve kodlamaları otomatik test eden yapı
                 try:
                     yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python')
                 except Exception:
@@ -160,8 +159,26 @@ elif menu == "📥 Excel'den Yükle":
             else:
                 yeni_data = pd.read_excel(uploaded_file)
             
+            # Sütun isimlerindeki bozuklukları (Yl -> İl vb.) ve eksik sütunları otomatik düzeltme
+            sutun_duzeltme = {}
+            for col in yeni_data.columns:
+                col_clean = str(col).strip().lower()
+                if 'yl' in col_clean or 'ýl' in col_clean or col_clean == 'il':
+                    sutun_duzeltme[col] = 'İl'
+                elif 'sýnýf' in col_clean or 'sınıf' in col_clean or col_clean == 'sinif':
+                    sutun_duzeltme[col] = 'Sınıf'
+            
+            if sutun_duzeltme:
+                yeni_data = yeni_data.rename(columns=sutun_duzeltme)
+
             st.write("Önizleme:", yeni_data.head())
             if st.button("Tümünü Sisteme Ekle"):
+                # Eğer yüklenen veride Danışman sütunu yoksa aktif kullanıcıyı ata
+                if 'Danışman' not in yeni_data.columns:
+                    yeni_data['Danışman'] = st.session_state.kullanici
+                if 'Durum' not in yeni_data.columns:
+                    yeni_data['Durum'] = 'Muhasebe Onayı Bekliyor'
+                
                 pd.concat([df, yeni_data], ignore_index=True).to_csv(DATA_FILE, index=False)
                 st.success("Tüm satışlar başarıyla aktarıldı!")
                 st.rerun()
