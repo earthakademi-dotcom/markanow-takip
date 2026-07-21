@@ -5,18 +5,6 @@ import json
 import base64
 from datetime import datetime
 
-# Otomatik openpyxl kontrolü
-try:
-    import openpyxl
-except ImportError:
-    import subprocess
-    import sys
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl"])
-        import openpyxl
-    except Exception:
-        pass
-
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
@@ -159,16 +147,16 @@ elif menu == "📥 Excel'den Yükle":
     if uploaded_file:
         try:
             if uploaded_file.name.endswith('.csv'):
-                # Farklı karakter kodlamalarını sırayla deneyerek hatayı engeller
+                # Farklı ayraçları ve kodlamaları otomatik test eden yapı
                 try:
-                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8')
-                except UnicodeDecodeError:
+                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python')
+                except Exception:
                     uploaded_file.seek(0)
                     try:
-                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1')
-                    except UnicodeDecodeError:
+                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python')
+                    except Exception:
                         uploaded_file.seek(0)
-                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254')
+                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python')
             else:
                 yeni_data = pd.read_excel(uploaded_file)
             
