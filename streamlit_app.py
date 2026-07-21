@@ -8,11 +8,11 @@ from datetime import datetime
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (SİDEBAR BEYAZ, YAZILARI SİYAH) ---
+# --- GLOBAL CSS (SOL MENÜ BORDO, YAZILAR BEYAZ) ---
 st.markdown(
     """
     <style>
-    /* Tüm başlıkları, etiketleri ve form yazılarını beyaz yapar */
+    /* Ana içerik form etiketleri ve başlıkları beyaz */
     h1, h2, h3, h4, h5, h6, 
     .stTextInput label, 
     .stSelectbox label, 
@@ -23,12 +23,18 @@ st.markdown(
         color: #FFFFFF !important;
     }
     
-    /* Sol menü (Sidebar) arka planını açık renk, üzerindeki yazı ve elemanları siyah yapar */
+    /* Sol menü (Sidebar) arka planını bordo yapar */
     [data-testid="stSidebar"] {
-        background-color: #f0f2f6 !important;
+        background-color: #6b1d2f !important;
     }
-    [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] div, [data-testid="stSidebar"] .stRadio label {
-        color: #000000 !important;
+    
+    /* Sol menü içerisindeki tüm yazı ve etiketleri beyaz yapar */
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] div, 
+    [data-testid="stSidebar"] .stRadio label {
+        color: #FFFFFF !important;
     }
     </style>
     """,
