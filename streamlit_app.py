@@ -2,14 +2,34 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+import base64
 from datetime import datetime
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
+# --- GLOBAL CSS (TÜM BAŞLIK VE ETİKETLERİ BEYAZ YAPMA) ---
+st.markdown(
+    """
+    <style>
+    /* Tüm başlıkları, etiketleri ve form yazılarını beyaz yapar */
+    h1, h2, h3, h4, h5, h6, 
+    .stTextInput label, 
+    .stSelectbox label, 
+    .stDateInput label, 
+    .stNumberInput label, 
+    .stMultiSelect label,
+    div[data-testid="stMarkdownContainer"] p {
+        color: #FFFFFF !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- TANIMLAMALAR ---
 DATA_FILE = "marka_takip.csv"
-USER_FILE = "kullanicilar.csv"
+USER_FILE = "users.csv"
 PRIM_FILE = "prim_tablosu.json"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
@@ -20,12 +40,6 @@ def load_data():
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
-import streamlit as st
-import pandas as pd
-import os
-import base64
-
-USER_FILE = "users.csv"
 logo_path = "sosyalmedya-2.jpg.jpg"  # Dosya adı güncellendi
 
 # Antrasit arkaplan ve logoyu arka plana yerleştirme
@@ -87,6 +101,7 @@ if not st.session_state.kullanici:
             st.error("Hatalı Şifre!")
             
     st.stop()
+
 # --- MENÜ ---
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
@@ -105,12 +120,12 @@ df = load_data()
 
 # --- MODÜLLER ---
 if menu == "📝 Satış Girişi":
-    st.markdown("📝 Yeni Satış Girişi", unsafe_allow_html=True)
+    st.markdown("<h2>📝 Yeni Satış Girişi</h2>", unsafe_allow_html=True)
     with st.form("yeni_satis", clear_on_submit=True):
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı"); ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)"); tel = c1.text_input("Telefon")
-        st.markdown("Doğum Tarihi", unsafe_allow_html=True)
+        st.markdown("<p style='color: white; font-weight: bold; margin-bottom: 0px;'>Doğum Tarihi</p>", unsafe_allow_html=True)
         d1, d2, d3 = st.columns(3)
         gun, ay, yil = d1.selectbox("Gün", range(1, 32)), d2.selectbox("Ay", range(1, 13)), d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
         il = c2.selectbox("İl", ILLER)
@@ -123,6 +138,7 @@ if menu == "📝 Satış Girişi":
                        "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("Satış kaydedildi.")
+
 elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
     st.dataframe(df[df['Danışman'] == st.session_state.kullanici], use_container_width=True)
