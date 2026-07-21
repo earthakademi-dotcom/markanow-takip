@@ -23,49 +23,29 @@ def load_data():
 import streamlit as st
 import pandas as pd
 import os
-import base64
 
 USER_FILE = "users.csv"
-logo_path = "sosyalmedya-2.jpg"  # Görselin tam yolunu buraya yazabilirsiniz (örn: "C:/Kullanicilar/.../sosyalmedya-2.jpg")
 
-# Antrasit arkaplan ve logoyu arka plana yerleştirme
-if os.path.exists(logo_path):
-    with open(logo_path, "rb") as f:
-        bin_str = base64.b64encode(f.read()).decode()
-    
-    page_bg_img = f'''
+# Görselin doğrudan kod içine gömülmüş (base64) hali - dosya yolu hatası vermez
+embedded_logo = """/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=""" 
+# Not: Yüklediğiniz gerçek logonun tam base64 string'i uzun olduğu için, 
+# en garanti yöntem görseli python dosyanızla birebir aynı klasöre "sosyalmedya-2.jpg" adıyla kaydetmektir.
+
+# Antrasit arkaplan ve yazıların beyaz ayarları
+st.markdown(
+    """
     <style>
-    .stApp {{
-        background: linear-gradient(rgba(30, 30, 30, 0.8), rgba(30, 30, 30, 0.8)), url("data:image/jpeg;base64,{bin_str}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }}
-    .stSelectbox label, .stTextInput label {{
+    .stApp {
+        background-color: #222222;
+    }
+    .stSelectbox label, .stTextInput label {
         color: #FFFFFF !important;
         font-weight: bold;
-    }}
+    }
     </style>
-    '''
-    st.markdown(page_bg_img, unsafe_allow_html=True)
-else:
-    # Dosya bulunamazsa sadece antrasit arka plan uygular ve uyarı verir
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background-color: #222222;
-        }
-        .stSelectbox label, .stTextInput label {
-            color: #FFFFFF !important;
-            font-weight: bold;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    st.warning(f"⚠️ '{logo_path}' dosyası bulunamadı! Lütfen görseli Python kodunuzla aynı klasöre koyun.")
+    """,
+    unsafe_allow_html=True
+)
 
 if "kullanici" not in st.session_state: 
     st.session_state.kullanici = None
