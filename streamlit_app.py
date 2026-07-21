@@ -2,16 +2,17 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+import base64
 from datetime import datetime
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (BORDO MENÜ VE DÜZ ANTRASİT ARKA PLAN - GÖRSEL YOK) ---
+# --- GLOBAL CSS (BORDO MENÜ, GİRİŞ VE ÇIKIŞ BUTONLARI BORDO, BEYAZ YAZILAR) ---
 st.markdown(
     """
     <style>
-    /* Ana uygulama arka planını düz antrasit yapar, görsel yüklemez */
+    /* Ana uygulama arka planını antrasit yapar ve beyazlaşmayı önler */
     .stApp {
         background-color: #222222 !important;
         background-image: none !important;
@@ -41,11 +42,22 @@ st.markdown(
     [data-testid="stSidebar"] .stRadio label {
         color: #FFFFFF !important;
     }
+
+    /* Tüm ana butonları (Giriş Yap ve Güvenli Çıkış dahil) bordo yapar */
+    div.stButton > button:first-child {
+        background-color: #6b1d2f !important;
+        color: #FFFFFF !important;
+        border: 1px solid #85243b !important;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #85243b !important;
+        color: #FFFFFF !important;
+        border: 1px solid #9e2a45 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
-
 # --- TANIMLAMALAR ---
 DATA_FILE = "marka_takip.csv"
 USER_FILE = "users.csv"
