@@ -149,7 +149,12 @@ elif menu == "📥 Excel'den Yükle":
             if uploaded_file.name.endswith('.csv'):
                 yeni_data = pd.read_csv(uploaded_file)
             else:
-                yeni_data = pd.read_excel(uploaded_file, engine='openpyxl')
+                try:
+                    yeni_data = pd.read_excel(uploaded_file, engine='openpyxl')
+                except ImportError:
+                    st.warning("⚠️ 'openpyxl' kütüphanesi eksik olduğu için pandas ile okunamadı. Alternatif olarak CSV formatı kullanabilirsiniz veya terminale `pip install openpyxl` yazarak kurabilirsiniz.")
+                    # Alternatif olarak yerleşik kütüphanelerle excel okumayı dener veya hata mesajını gösterir
+                    raise Exception("openpyxl kütüphanesi yüklü değil. Lütfen CSV formatında yükleyin veya terminale 'pip install openpyxl' komutunu yazın.")
             
             st.write("Önizleme:", yeni_data.head())
             if st.button("Tümünü Sisteme Ekle"):
