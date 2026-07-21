@@ -28,7 +28,7 @@ import base64
 USER_FILE = "users.csv"
 logo_path = "sosyalmedya-2.jpg"
 
-# Antrasit arkaplan ve logonun tam ekran ortalanmış şekilde arka plana yerleştirilmesi
+# Antrasit arkaplan, logoyu arka plana yerleştirme ve etiket yazılarını beyaz yapma
 if os.path.exists(logo_path):
     with open(logo_path, "rb") as f:
         bin_str = base64.b64encode(f.read()).decode()
@@ -36,22 +36,30 @@ if os.path.exists(logo_path):
     page_bg_img = f'''
     <style>
     .stApp {{
-        background: linear-gradient(rgba(30, 30, 30, 0.7), rgba(30, 30, 30, 0.7)), url("data:image/jpg;base64,{bin_str}");
+        background: linear-gradient(rgba(30, 30, 30, 0.75), rgba(30, 30, 30, 0.75)), url("data:image/jpg;base64,{bin_str}");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         background-attachment: fixed;
     }}
+    /* Streamlit selectbox ve text_input etiketlerini beyaz yapar */
+    .stSelectbox label, .stTextInput label {{
+        color: #FFFFFF !important;
+        font-weight: bold;
+    }}
     </style>
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
 else:
-    # Resim bulunamazsa düz antrasit renk uygulanır
     st.markdown(
         """
         <style>
         .stApp {
             background-color: #222222;
+        }
+        .stSelectbox label, .stTextInput label {
+            color: #FFFFFF !important;
+            font-weight: bold;
         }
         </style>
         """,
@@ -80,7 +88,6 @@ if not st.session_state.kullanici:
             st.error("Hatalı Şifre!")
             
     st.stop()
-
 # --- MENÜ ---
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
