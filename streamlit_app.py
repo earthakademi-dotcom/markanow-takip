@@ -8,15 +8,25 @@ from datetime import datetime
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (BORDO MENÜ, GİRİŞ VE ÇIKIŞ BUTONLARI BORDO, BEYAZ YAZILAR) ---
+# Logo dosyasını base64 formatına çevirme (Giriş ekranı ve antrasit arka plan için)
+logo_path = "sosyalmedya-2.jpg.jpg"
+logo_base64 = ""
+if os.path.exists(logo_path):
+    with open(logo_path, "rb") as f:
+        logo_base64 = base64.b64encode(f.read()).decode()
+
+# --- GLOBAL CSS (BORDO MENÜ, GİRİŞ VE ÇIKIŞ BUTONLARI BORDO, BEYAZ YAZILAR, LOGO ARKA PLAN) ---
 st.markdown(
-    """
+    f"""
     <style>
-    /* Ana uygulama arka planını antrasit yapar ve beyazlaşmayı önler */
-    .stApp {
-        background-color: #222222 !important;
-        background-image: none !important;
-    }
+    /* Ana uygulama arka planına logoyu ve antrasit tonu yarı saydam katmanla yerleştirme */
+    .stApp {{
+        background: linear-gradient(rgba(34, 34, 34, 0.85), rgba(34, 34, 34, 0.85)), url("data:image/jpeg;base64,{logo_base64}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-attachment: fixed !important;
+    }}
 
     /* Tüm başlıkları, etiketleri ve form yazılarını beyaz yapar */
     h1, h2, h3, h4, h5, h6, 
@@ -25,35 +35,35 @@ st.markdown(
     .stDateInput label, 
     .stNumberInput label, 
     .stMultiSelect label,
-    div[data-testid="stMarkdownContainer"] p {
+    div[data-testid="stMarkdownContainer"] p {{
         color: #FFFFFF !important;
-    }
+    }}
     
     /* Sol menü (Sidebar) arka planını bordo yapar */
-    [data-testid="stSidebar"] {
+    [data-testid="stSidebar"] {{
         background-color: #6b1d2f !important;
-    }
+    }}
     
     /* Sol menü içerisindeki tüm yazı ve etiketleri beyaz yapar */
     [data-testid="stSidebar"] span, 
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] div, 
-    [data-testid="stSidebar"] .stRadio label {
+    [data-testid="stSidebar"] .stRadio label {{
         color: #FFFFFF !important;
-    }
+    }}
 
     /* Tüm ana butonları (Giriş Yap ve Güvenli Çıkış dahil) bordo yapar */
-    div.stButton > button:first-child {
+    div.stButton > button:first-child {{
         background-color: #6b1d2f !important;
         color: #FFFFFF !important;
         border: 1px solid #85243b !important;
-    }
-    div.stButton > button:first-child:hover {
+    }}
+    div.stButton > button:first-child:hover {{
         background-color: #85243b !important;
         color: #FFFFFF !important;
         border: 1px solid #9e2a45 !important;
-    }
+    }}
     </style>
     """,
     unsafe_allow_html=True
