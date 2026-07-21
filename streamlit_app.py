@@ -94,6 +94,33 @@ st.sidebar.markdown(
 )
 
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
+
+# Güvenli Çıkış butonunu siyah arka plan ve beyaz yazı olacak şekilde şekillendiren özel CSS
+st.sidebar.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444444 !important;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #333333 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #666666 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
+    st.session_state.kullanici = None
+    st.rerun()
+
+st.sidebar.write("---")
+
+st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
     st.rerun()
