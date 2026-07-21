@@ -26,22 +26,17 @@ import os
 import base64
 
 USER_FILE = "users.csv"
-
-# Arka plan görüntüsünü base64'e çevirme (Streamlit'te arka plan resmi olarak kullanmak için)
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
-# Görüntü dosyası yolu
 logo_path = "sosyalmedya-2.jpg"
 
+# Antrasit arkaplan ve logonun tam ekran ortalanmış şekilde arka plana yerleştirilmesi
 if os.path.exists(logo_path):
-    bin_str = get_base64_of_bin_file(logo_path)
+    with open(logo_path, "rb") as f:
+        bin_str = base64.b64encode(f.read()).decode()
+    
     page_bg_img = f'''
     <style>
     .stApp {{
-        background-image: url("data:image/jpg;base64,{bin_str}");
+        background: linear-gradient(rgba(30, 30, 30, 0.7), rgba(30, 30, 30, 0.7)), url("data:image/jpg;base64,{bin_str}");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
@@ -50,35 +45,40 @@ if os.path.exists(logo_path):
     </style>
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
-
-if "kullanici" not in st.session_state:
-    st.session_state.kullanici = None
-
-if not st.session_state.kullanici:
-    # Arka planın antrasit rengini koruyan bir kutu içinde başlık
+else:
+    # Resim bulunamazsa düz antrasit renk uygulanır
     st.markdown(
         """
-        <div style="background-color: #36454F; padding: 20px; border-radius: 10px;">
-            <h1 style='text-align: center; color: #FFFFFF;'>Markanow Patent Satış Takip ERP</h1>
-        </div>
+        <style>
+        .stApp {
+            background-color: #222222;
+        }
+        </style>
         """,
         unsafe_allow_html=True
     )
 
+if "kullanici" not in st.session_state: 
+    st.session_state.kullanici = None
+
+if not st.session_state.kullanici:
+    st.markdown("<h1 style='text-align: center; color: #FFFFFF;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
+    
     if not os.path.exists(USER_FILE):
         pd.DataFrame({"İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN"],
                       "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123"]}).to_csv(USER_FILE, index=False)
-
+    
     user_df = pd.read_csv(USER_FILE)
     secili = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
     sifre = st.text_input("Şifre", type="password")
-
+    
     if st.button("Giriş Yap", use_container_width=True):
         if str(sifre).strip() == str(user_df[user_df["İsim"] == secili].iloc[0]["Şifre"]).strip():
             st.session_state.kullanici = secili
             st.rerun()
         else:
-            st.error("Hatalı şifre!")
+            st.error("Hatalı Şifre!")
+            
     st.stop()
 
 # --- MENÜ ---
