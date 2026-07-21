@@ -28,7 +28,7 @@ import base64
 USER_FILE = "users.csv"
 logo_path = "sosyalmedya-2.jpg"
 
-# Antrasit arkaplan, logoyu arka plana yerleştirme ve etiket yazılarını beyaz yapma
+# Logo dosyasını doğrudan HTML içinde base64 olarak kullanarak arka plana sabitliyoruz
 if os.path.exists(logo_path):
     with open(logo_path, "rb") as f:
         bin_str = base64.b64encode(f.read()).decode()
@@ -36,13 +36,12 @@ if os.path.exists(logo_path):
     page_bg_img = f'''
     <style>
     .stApp {{
-        background: linear-gradient(rgba(30, 30, 30, 0.75), rgba(30, 30, 30, 0.75)), url("data:image/jpg;base64,{bin_str}");
+        background: linear-gradient(rgba(30, 30, 30, 0.8), rgba(30, 30, 30, 0.8)), url("data:image/jpeg;base64,{bin_str}");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         background-attachment: fixed;
     }}
-    /* Streamlit selectbox ve text_input etiketlerini beyaz yapar */
     .stSelectbox label, .stTextInput label {{
         color: #FFFFFF !important;
         font-weight: bold;
@@ -51,6 +50,8 @@ if os.path.exists(logo_path):
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
 else:
+    # Eğer dosya bulunamazsa alternatif olarak doğrudan görseli ekranda gösterip test edebilirsiniz
+    st.error(f"'{logo_path}' dosyası bulunamadı! Lütfen dosyanın script ile aynı klasörde olduğundan emin olun.")
     st.markdown(
         """
         <style>
