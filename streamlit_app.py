@@ -8,7 +8,7 @@ from datetime import datetime
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (BORDO MENÜ, SİYAH ÇIKIŞ BUTONU, BEYAZ YAZILAR) ---
+# --- GLOBAL CSS (SOL MENÜ BORDO, YAZILAR BEYAZ) ---
 st.markdown(
     """
     <style>
@@ -36,18 +36,6 @@ st.markdown(
     [data-testid="stSidebar"] .stRadio label {
         color: #FFFFFF !important;
     }
-
-    /* Güvenli Çıkış butonunu siyah arka plan ve beyaz yazı yapma */
-    div.stButton > button:first-child {
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #444444 !important;
-    }
-    div.stButton > button:first-child:hover {
-        background-color: #333333 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #666666 !important;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -66,6 +54,44 @@ def load_data():
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
+logo_path = "sosyalmedya-2.jpg.jpg"
+
+if os.path.exists(logo_path):
+    with open(logo_path, "rb") as f:
+        bin_str = base64.b64encode(f.read()).decode()
+    
+    page_bg_img = f'''
+    <style>
+    .stApp {{
+        background: linear-gradient(rgba(30, 30, 30, 0.8), rgba(30, 30, 30, 0.8)), url("data:image/jpeg;base64,{bin_str}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    .stSelectbox label, .stTextInput label {{
+        color: #FFFFFF !important;
+        font-weight: bold;
+    }}
+    </style>
+    '''
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+else:
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background-color: #222222;
+        }
+        .stSelectbox label, .stTextInput label {
+            color: #FFFFFF !important;
+            font-weight: bold;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 if "kullanici" not in st.session_state: 
     st.session_state.kullanici = None
 
@@ -90,16 +116,6 @@ if not st.session_state.kullanici:
     st.stop()
 
 # --- MENÜ ---
-st.sidebar.markdown(
-    """
-    <div style="border: 2px solid red; padding: 10px; border-radius: 5px; text-align: center; background-color: rgba(255, 0, 0, 0.05); margin-bottom: 10px;">
-        <span style="height: 12px; width: 12px; background-color: red; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px red;"></span>
-        <span style="color: red; font-weight: bold; margin-left: 8px;">Kırmızı Işık Aktif</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
