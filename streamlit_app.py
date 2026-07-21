@@ -8,7 +8,7 @@ from datetime import datetime
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (TÜM BAŞLIK VE ETİKETLERİ BEYAZ YAPMA) ---
+# --- GLOBAL CSS (SİDEBAR VE YAZI RENKLERİ) ---
 st.markdown(
     """
     <style>
@@ -20,6 +20,14 @@ st.markdown(
     .stNumberInput label, 
     .stMultiSelect label,
     div[data-testid="stMarkdownContainer"] p {
+        color: #FFFFFF !important;
+    }
+    
+    /* Sidebar (Menü) arka planını koyu antrasit yapar ve yazılarını beyaz yapar */
+    [data-testid="stSidebar"] {
+        background-color: #1a1a1a !important;
+    }
+    [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] div {
         color: #FFFFFF !important;
     }
     </style>
@@ -40,9 +48,8 @@ def load_data():
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
-logo_path = "sosyalmedya-2.jpg.jpg"  # Dosya adı güncellendi
+logo_path = "sosyalmedya-2.jpg.jpg"
 
-# Antrasit arkaplan ve logoyu arka plana yerleştirme
 if os.path.exists(logo_path):
     with open(logo_path, "rb") as f:
         bin_str = base64.b64encode(f.read()).decode()
