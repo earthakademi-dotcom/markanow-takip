@@ -2,22 +2,17 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+import base64
 from datetime import datetime
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL CSS (BORDO MENÜ VE DÜZ ANTRASİT ARKA PLAN - GÖRSEL YOK) ---
+# --- GLOBAL CSS (BORDO MENÜ, SİYAH ÇIKIŞ BUTONU, BEYAZ YAZILAR) ---
 st.markdown(
     """
     <style>
-    /* Ana uygulama arka planını düz antrasit yapar, görsel yüklemez */
-    .stApp {
-        background-color: #222222 !important;
-        background-image: none !important;
-    }
-
-    /* Tüm başlıkları, etiketleri ve form yazılarını beyaz yapar */
+    /* Ana içerik form etiketleri ve başlıkları beyaz */
     h1, h2, h3, h4, h5, h6, 
     .stTextInput label, 
     .stSelectbox label, 
@@ -40,6 +35,18 @@ st.markdown(
     [data-testid="stSidebar"] div, 
     [data-testid="stSidebar"] .stRadio label {
         color: #FFFFFF !important;
+    }
+
+    /* Güvenli Çıkış butonunu siyah arka plan ve beyaz yazı yapma */
+    div.stButton > button:first-child {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444444 !important;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #333333 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #666666 !important;
     }
     </style>
     """,
@@ -94,37 +101,11 @@ st.sidebar.markdown(
 )
 
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
-
-# Güvenli Çıkış butonunu siyah arka plan ve beyaz yazı olacak şekilde şekillendiren özel CSS
-st.sidebar.markdown(
-    """
-    <style>
-    div.stButton > button:first-child {
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #444444 !important;
-    }
-    div.stButton > button:first-child:hover {
-        background-color: #333333 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #666666 !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
-    st.session_state.kullanici = None
-    st.rerun()
-
-st.sidebar.write("---")
-
-st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
     st.rerun()
 st.sidebar.write("---")
+
 menu_options = ["📝 Satış Girişi", "📊 Satışlarım"]
 if st.session_state.kullanici in ["SELEN AKCAN", "ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ"]:
     menu_options.extend(["📥 Excel'den Yükle", "💰 Muhasebe Onayı"])
