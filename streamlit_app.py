@@ -20,42 +20,30 @@ def load_data():
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
-if "kullanici" not in st.session_state:
-    st.session_state.kullanici = None
 
-if "sifre_hatirlatma_aktif" not in st.session_state:
-    st.session_state.sifre_hatirlatma_aktif = False
+if "kullanici" not in st.session_state: st.session_state.kullanici = None
 
 if not st.session_state.kullanici:
+
     st.markdown("<h1 style='text-align: center; color: #1f77b4;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
-    
+
     if not os.path.exists(USER_FILE):
+
         pd.DataFrame({"İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN"],
+
                       "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123"]}).to_csv(USER_FILE, index=False)
-    
+
     user_df = pd.read_csv(USER_FILE)
+
     secili = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
+
     sifre = st.text_input("Şifre", type="password")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        giris_basildi = st.button("Giriş Yap", use_container_width=True)
-    with col2:
-        hatirlat_basildi = st.button("Şifremi Unuttum", use_container_width=True)
 
-    if hatirlat_basildi:
-        st.session_state.sifre_hatirlatma_aktif = True
+    if st.button("Giriş Yap", use_container_width=True):
 
-    if st.session_state.sifre_hatirlatma_aktif:
-        st.info("ℹ️ Şifrenizi hatırlamak için sistem yöneticinizle iletişime geçebilir veya varsayılan şifre olan **MARKA123**'ü deneyebilirsiniz.")
-
-    if giris_basildi:
         if str(sifre).strip() == str(user_df[user_df["İsim"] == secili].iloc[0]["Şifre"]).strip():
-            st.session_state.kullanici = secili
-            st.session_state.sifre_hatirlatma_aktif = False
-            st.rerun()
-        else:
-            st.error("Hatalı şifre!")
+
+            st.session_state.kullanici = secili; st.rerun()
 
     st.stop()
 
