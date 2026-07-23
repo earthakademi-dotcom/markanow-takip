@@ -81,12 +81,20 @@ if not os.path.exists(USER_FILE):
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE, dtype=str)
-    return pd.DataFrame(columns=[
-        "ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
-        "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
-        "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
-    ])
+        d_temp = pd.read_csv(DATA_FILE, dtype=str)
+    else:
+        d_temp = pd.DataFrame(columns=[
+            "ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
+            "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
+            "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
+        ])
+    
+    # Eksik kolonları otomatik ekleme (KeyError önlemi)
+    zorunlu_kolonlar = ["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"]
+    for col in zorunlu_kolonlar:
+        if col not in d_temp.columns:
+            d_temp[col] = ""
+    return d_temp
 
 # --- GİRİŞ KONTROLÜ ---
 if "kullanici" not in st.session_state: 
@@ -141,7 +149,7 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 
 st.sidebar.write("---")
 
-# Menü Yönlendirmeleri (Role Göre Kesin Ayrım)
+# Menü Yönlendirmeleri
 if not is_muhasebe:
     if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
         sayfa_degistir("Yeni Satış Giriş")
@@ -151,10 +159,26 @@ if not is_muhasebe:
         sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
-    if st.sidebar.button("💰 Muhasebe Onay & Tescil Takibi", use_container_width=True):
-        sayfa_degistir("Muhasebe Onay")
+    st.sidebar.markdown("### 📋 Marka Tescil Aşamaları")
+    if st.sidebar.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
+        sayfa_degistir("Muhasebe Onayı Bekliyor")
+    if st.sidebar.button("⏳ Başvuru Beklemede", use_container_width=True):
+        sayfa_degistir("Başvuru Beklemede")
+    if st.sidebar.button("🔍 Kurum İncelemesinde", use_container_width=True):
+        sayfa_degistir("Kurum İncelemesinde")
+    if st.sidebar.button("📰 Yayında", use_container_width=True):
+        sayfa_degistir("Yayında")
+    if st.sidebar.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True):
+        sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
+    if st.sidebar.button("📄 Tescil Tebliğ Beklemede", use_container_width=True):
+        sayfa_degistir("Tescil Tebliğ Beklemede")
+    if st.sidebar.button("🎉 Tescillendi", use_container_width=True):
+        sayfa_degistir("Tescillendi")
+    if st.sidebar.button("❌ Reddedildi", use_container_width=True):
+        sayfa_degistir("Reddedildi")
 
 if is_admin:
+    st.sidebar.write("---")
     if st.sidebar.button("👥 Personel Yönetimi", use_container_width=True):
         sayfa_degistir("Personel Yönetimi")
 
@@ -194,25 +218,10 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         if st.form_submit_button("Satışı Kaydet"):
             yeni_id = str(int(df['ID'].astype(float).max()) + 1) if not df.empty and 'ID' in df.columns and not df['ID'].isna().all() else "1"
             new_row = {
-                "ID": yeni_id, 
-                "Marka Adı": m_adi, 
-                "Ad Soyad": ad_soyad, 
-                "TC": tc, 
-                "Telefon": tel, 
-                "Doğum Tarihi": f"{gun:02d}/{ay:02d}/{yil}", 
-                "İl": il, 
-                "Sınıf": ",".join(sinif), 
-                "Ödeme": odeme, 
-                "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), 
-                "Tutar": str(tutar), 
-                "Durum": "Muhasebe Onayı Bekliyor", 
-                "Danışman": aktif_kullanici_ad, 
-                "Fatura No": "",
-                "Fatura Tarihi": "",
-                "Başvuru No": "",
-                "Başvuru Tarihi": "",
-                "Yayın Tarihi": "",
-                "Tescil Tebliğ Tarihi": ""
+                "ID": yeni_id, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
+                "Doğum Tarihi": f"{gun:02d}/{ay:02d}/{yil}", "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
+                "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), "Tutar": str(tutar), "Durum": "Muhasebe Onayı Bekliyor", 
+                "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
             }
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi.")
@@ -223,7 +232,6 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
         
     mevcut_ay = datetime.now().strftime("%m")
     mevcut_yil = str(datetime.now().year)
-    
     st.markdown(f"<h2>📅 Satışlarım (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
     
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
@@ -232,26 +240,21 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
     def bu_ay_faturalanan(row):
         try:
             f_tarih = row.get('Fatura Tarihi', '')
-            if pd.isna(f_tarih) or str(f_tarih).strip() == '' or str(f_tarih).lower() == 'none':
-                return False
+            if pd.isna(f_tarih) or str(f_tarih).strip() == '' or str(f_tarih).lower() == 'none': return False
             dt = pd.to_datetime(f_tarih, format='%d/%m/%Y', errors='coerce')
             if pd.isna(dt): dt = pd.to_datetime(f_tarih, errors='coerce')
             if pd.isna(dt): return False
             return f"{dt.month:02d}" == mevcut_ay and str(dt.year) == mevcut_yil
-        except:
-            return False
+        except: return False
             
     if not danisman_df.empty:
-        mask = danisman_df.apply(bu_ay_faturalanan, axis=1)
-        danisman_df = danisman_df[mask]
-        
+        danisman_df = danisman_df[danisman_df.apply(bu_ay_faturalanan, axis=1)]
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
     
     toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
     c1, c2 = st.columns(2)
     c1.metric("Bu Ay Satış Adedi", len(danisman_df))
     c2.metric("Bu Ay Toplam Ciro (TL)", f"{toplam_ciro:,.2f} TL")
-    
     st.dataframe(danisman_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
@@ -259,13 +262,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>📊 Genel Satışlarım (Filtreleme)</h2>", unsafe_allow_html=True)
-    
-    aylar = {
-        "Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04",
-        "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08",
-        "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"
-    }
-    
+    aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     col_f1, col_f2 = st.columns(2)
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()))
     secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year))
@@ -277,80 +274,52 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     def genel_filtrele(row):
         try:
             f_tarih = row.get('Fatura Tarihi', '')
-            if pd.isna(f_tarih) or str(f_tarih).strip() == '' or str(f_tarih).lower() == 'none':
-                return False
+            if pd.isna(f_tarih) or str(f_tarih).strip() == '' or str(f_tarih).lower() == 'none': return False
             dt = pd.to_datetime(f_tarih, format='%d/%m/%Y', errors='coerce')
             if pd.isna(dt): dt = pd.to_datetime(f_tarih, errors='coerce')
             if pd.isna(dt): return False
-            
             ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
             yil_eslesir = True if not secilen_yil.strip() else (str(dt.year) == secilen_yil.strip())
             return ay_eslesir and yil_eslesir
-        except:
-            return False
+        except: return False
             
     if not danisman_df.empty:
-        mask = danisman_df.apply(genel_filtrele, axis=1)
-        danisman_df = danisman_df[mask]
-        
+        danisman_df = danisman_df[danisman_df.apply(genel_filtrele, axis=1)]
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
     
     toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
     c1, c2 = st.columns(2)
     c1.metric("Filtrelenen Satış Adedi", len(danisman_df))
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
-
     st.dataframe(danisman_df, use_container_width=True)
 
-elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Onay":
-    if st.button("⬅️ Geri Çık"):
-        sayfa_degistir("Ana Sayfa")
-        
-    st.markdown("<h2>💰 Muhasebe Onay ve Marka Süreç Takip Paneli</h2>", unsafe_allow_html=True)
+# --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
+elif is_muhasebe and st.session_state.aktif_sayfa in [
+    "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
+    "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
+    "Tescillendi", "Reddedildi"
+]:
+    secilen_asama = st.session_state.aktif_sayfa
+    st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
     
-    tab1, tab2 = st.tabs(["📋 Onay Bekleyenler & Fatura", "🔄 Süreç ve Aşamalar Güncelle"])
+    asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
     
-    with tab1:
-        bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
-        st.subheader("📋 Yeni Satışlar (Fatura Kesimi Bekleyenler)")
+    if asama_df.empty:
+        st.info(f"'{secilen_asama}' aşamasında kayıt bulunmuyor.")
+    else:
+        st.dataframe(asama_df, use_container_width=True)
+        st.write("---")
+        st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
         
-        if bekleyen_df.empty:
-            st.info("Onay bekleyen satış bulunmuyor.")
-        else:
-            for i, row in bekleyen_df.iterrows():
-                with st.container():
-                    st.markdown(f"**ID: {row['ID']}** | Marka: **{row['Marka Adı']}** | Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
-                    c1, c2, c3 = st.columns(3)
-                    f_no = c1.text_input("Fatura No", key=f"f_no_{row['ID']}")
-                    f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['ID']}")
-                    
-                    if c3.button("✅ Fatura Kes & Başvuru Beklemede Yap", key=f"onay_btn_{row['ID']}"):
-                        if f_no.strip():
-                            idx = df.index[df['ID'].astype(str) == str(row['ID'])][0]
-                            df.at[idx, 'Durum'] = "Başvuru Beklemede"
-                            df.at[idx, 'Fatura No'] = f_no.strip()
-                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
-                            df.to_csv(DATA_FILE, index=False)
-                            st.success(f"✅ ID {row['ID']} faturalandırıldı ve 'Başvuru Beklemede' aşamasına alındı!")
-                            st.rerun()
-                        else:
-                            st.warning("Lütfen bir Fatura No girin.")
-                    st.write("---")
-                    
-    with tab2:
-        st.subheader("🔄 Aktif Marka Süreç Takibi ve Güncelleme")
-        aktif_surec_df = df[df['Durum'].astype(str).str.strip() != "Muhasebe Onayı Bekliyor"]
-        if aktif_surec_df.empty:
-            st.info("Süreçte aktif dosya bulunmuyor.")
-        else:
-            st.dataframe(aktif_surec_df[["ID", "Marka Adı", "Ad Soyad", "Danışman", "Durum", "Fatura No", "Başvuru No", "Yayın Tarihi"]], use_container_width=True)
+        sec_id = st.text_input("Güncellenecek Satış ID'sini Girin", key=f"inp_{secilen_asama}")
+        if sec_id.strip() and sec_id.strip() in df['ID'].astype(str).values:
+            s_row = df[df['ID'].astype(str) == sec_id.strip()].iloc[0]
+            st.markdown(f"**Marka:** {s_row['Marka Adı']} | **Danışman:** {s_row['Danışman']}")
             
-            sec_id = st.text_input("Güncellenecek Satış ID'sini Girin")
-            if sec_id.strip() and sec_id.strip() in df['ID'].astype(str).values:
-                s_row = df[df['ID'].astype(str) == sec_id.strip()].iloc[0]
-                st.markdown(f"**Seçilen Marka:** {s_row['Marka Adı']} | **Mevcut Durum:** {s_row['Durum']}")
-                
-                yeni_durum = st.selectbox("Yeni Durum Seçin", [
+            with st.form(f"form_guncelle_{sec_id}"):
+                c1, c2 = st.columns(2)
+                yeni_durum = c1.selectbox("Yeni Durum / Aşama", [
+                    "Muhasebe Onayı Bekliyor",
                     "Başvuru Beklemede",
                     "Kurum İncelemesinde",
                     "Yayında",
@@ -358,20 +327,22 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Onay":
                     "Tescil Tebliğ Beklemede",
                     "Tescillendi 🎉",
                     "Reddedildi ❌"
-                ], index=0)
+                ], index=["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"].index(secilen_asama) if secilen_asama in ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"] else 0)
                 
-                b_no = st.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                y_tar = st.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
-                t_tar = st.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
+                b_no = c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
+                y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
+                t_tar = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                 
-                if st.button("💾 Süreç Bilgilerini Güncelle"):
+                if st.form_submit_button("💾 Kaydı Güncelle"):
                     idx = df.index[df['ID'].astype(str) == sec_id.strip()][0]
                     df.at[idx, 'Durum'] = yeni_durum
+                    df.at[idx, 'Fatura No'] = f_no.strip()
                     df.at[idx, 'Başvuru No'] = b_no.strip()
                     df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                     df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("✅ Marka tescil süreci başarıyla güncellendi!")
+                    st.success("✅ Kayıt başarıyla güncellendi!")
                     st.rerun()
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
