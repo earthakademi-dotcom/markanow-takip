@@ -211,7 +211,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown("<h2>📝 Yeni Satış Girişi</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>📝 Yeni Satış Girişi (Danışman: {aktif_kullanici_ad})</h2>", unsafe_allow_html=True)
     
     with st.form("yeni_satis_formu", clear_on_submit=True):
         c1, c2 = st.columns(2)
@@ -394,7 +394,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         b_tarih_parsed = datetime.now()
                     b_tarih = c2.date_input("Başvuru Tarihi", value=b_tarih_parsed, key=f"form_b_tar_{secilen_marka}")
                     
-                    # Eğer seçilen aşama "Başvuru Beklemede" ise Yayın ve Tescil Tebliğ Tarihi gösterilmez
                     if secilen_asama == "Başvuru Beklemede":
                         y_tar = str(s_row.get('Yayın Tarihi', ''))
                         t_tar = str(s_row.get('Tescil Tebliğ Tarihi', ''))
