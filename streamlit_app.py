@@ -531,11 +531,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             else:
                                 final_durum = "Yayında"
 
-                        if secilen_asama == "Yayında" and sonraki_asama:
-                            if sonraki_asama == "İtiraz Tebliğ Beklemede":
-                                final_durum = "İtiraz Geldi - Savunma Bekliyor"
-                            elif sonraki_asama == "Tescil Tebliğ Beklemede":
-                                final_durum = "Tescil Tebliğ Beklemede"
+                        if sonraki_asama == "İtiraz Tebliğ Beklemede":
+                            final_durum = "İtiraz Geldi - Savunma Bekliyor"
+                        elif sonraki_asama == "Tescil Tebliğ Beklemede":
+                            final_durum = "Tescil Tebliğ Beklemede"
 
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
@@ -560,13 +559,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             
                         df.to_csv(DATA_FILE, index=False)
                         
-                        success_msg = f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!"
-                        if sonraki_asama == "İtiraz Tebliğ Beklemede" and itiraz_tar.strip():
-                            success_msg += " İtiraz tarihi girildi ve marka 'İtiraz Geldi - Savunma Bekliyor' aşamasına geçti!"
-                        elif sonraki_asama == "Tescil Tebliğ Beklemede" and tescil_tar.strip():
-                            success_msg += " Tescil tebliğ tarihi girildi ve aşama güncellendi!"
-
-                        st.success(success_msg)
+                        st.success(f"✅ Eksiksiz Güncellendi! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
                         st.rerun()
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
