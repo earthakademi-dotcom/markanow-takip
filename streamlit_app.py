@@ -157,7 +157,7 @@ if menu == "📝 Satış Girişi":
 
 elif menu == "📊 Satışlarım":
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
-    st.dataframe(df[df['Danışman'] == st.session_state.kullanici], use_container_width=True)
+    st.dataframe(df[df['Danışman'].astype(str).str.strip().str.upper() == str(st.session_state.kullanici).strip().upper()], use_container_width=True)
 
 elif menu == "📥 Excel'den Yükle":
     st.header("📥 Excel/CSV ile Toplu Satış Girişi (Geçmiş Satışlar)")
@@ -260,7 +260,7 @@ elif menu == "💰 Muhasebe Onayı":
                     str_ids = [str(i) for i in toplu_secim_idleri]
                     df.loc[df['ID'].astype(str).isin(str_ids), 'Durum'] = "Onaylandı"
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("Seçilen kayıtlar onaylandı!")
+                    st.success("Seçilen kayıtlar Onaylandı!")
                     st.rerun()
                 else:
                     st.warning("Lütfen en az bir ID seçin.")
@@ -270,7 +270,7 @@ elif menu == "💰 Muhasebe Onayı":
                     str_ids = [str(i) for i in toplu_secim_idleri]
                     df.loc[df['ID'].astype(str).isin(str_ids), 'Durum'] = "Tamamlandı"
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("Seçilen kayıtlar tamamlandı olarak güncellendi!")
+                    st.success("Seçilen kayıtlar Tamamlandı!")
                     st.rerun()
                 else:
                     st.warning("Lütfen en az bir ID seçin.")
@@ -345,9 +345,21 @@ elif menu == "💰 Muhasebe Onayı":
     st.subheader("📋 Tüm Satış Listesi ve Onay Bekleyenler")
     st.dataframe(df, use_container_width=True)
     
-    for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
-        if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
-            df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"; df.to_csv(DATA_FILE, index=False); st.rerun()
+    col_onay1, col_onay2 = st.columns(2)
+    with col_onay1:
+        for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
+            if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
+                df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"
+                df.to_csv(DATA_FILE, index=False)
+                st.success(f"'{row['Marka Adı']}' satış onaylandı!")
+                st.rerun()
+    with col_onay2:
+        for i, row in df[df['Durum'] == "Onaylandı"].iterrows():
+            if st.button(f"🎯 Tamamla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"tamamla_{row['ID']}"):
+                df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Tamamlandı"
+                df.to_csv(DATA_FILE, index=False)
+                st.success(f"'{row['Marka Adı']}' satış tamamlandı!")
+                st.rerun()
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Performans")
