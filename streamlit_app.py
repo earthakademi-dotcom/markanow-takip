@@ -40,8 +40,9 @@ st.markdown(
         color: #FFFFFF !important;
     }
 
-    /* Tüm Butonlar: Normalde Mavi, Yazısı Beyaz */
-    div.stButton > button {
+    /* Tüm Normal Butonlar ve Form Submit Butonları: Mavi, Yazısı Beyaz */
+    div.stButton > button, 
+    div.stFormSubmitButton > button {
         background-color: #007BFF !important;
         color: #FFFFFF !important;
         border: 1px solid #0056b3 !important;
@@ -52,7 +53,10 @@ st.markdown(
     /* Butona Basıldığında (Active / Hover) Sarı Renk ve Siyah Yazı */
     div.stButton > button:hover,
     div.stButton > button:active,
-    div.stButton > button:focus {
+    div.stButton > button:focus,
+    div.stFormSubmitButton > button:hover,
+    div.stFormSubmitButton > button:active,
+    div.stFormSubmitButton > button:focus {
         background-color: #FFC107 !important;
         color: #000000 !important;
         border: 1px solid #E0A800 !important;
@@ -62,7 +66,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- TANIMLAMALAR DAN VERİ YÜKLEME ---
+# --- TANIMLAMALAR VE VERİ YÜKLEME ---
 USER_FILE = "users.csv"
 DATA_FILE = "marka_takip.csv"
 
