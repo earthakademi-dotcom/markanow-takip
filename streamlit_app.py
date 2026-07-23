@@ -170,19 +170,26 @@ elif menu == "📥 Excel'den Yükle":
         try:
             if uploaded_file.name.endswith('.csv'):
                 try:
-                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python')
+                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python', mangle_dup_cols=True)
                 except Exception:
                     uploaded_file.seek(0)
                     try:
-                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python')
+                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python', mangle_dup_cols=True)
                     except Exception:
                         uploaded_file.seek(0)
-                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python')
+                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python', mangle_dup_cols=True)
             else:
                 yeni_data = pd.read_excel(uploaded_file)
             
-            # Sütun isimlerindeki boşlukları ve olası karakter bozulmalarını düzeltme
+            # Sütun isimlerindeki boşlukları temizleme
             yeni_data.columns = [str(col).strip() for col in yeni_data.columns]
+            
+            # Yinelenen sütun isimleri varsa benzersizleştirme
+            cols = pd.Series(yeni_data.columns)
+            for dup in cols[cols.duplicated()].unique(): 
+                cols[cols == dup] = [dup + '_' + str(i) if i != 0 else dup for i in range(sum(cols == dup))]
+            yeni_data.columns = cols
+
             sutun_duzeltme = {}
             for col in yeni_data.columns:
                 col_clean = col.lower()
@@ -196,7 +203,7 @@ elif menu == "📥 Excel'den Yükle":
                     sutun_duzeltme[col] = 'Ad Soyad'
                 elif 'tutar' in col_clean or 'fiyat' in col_clean:
                     sutun_duzeltme[col] = 'Tutar'
-                elif 'tarih' in col_clean:
+                elif 'tarih' in col_clean and 'satış' in col_clean:
                     sutun_duzeltme[col] = 'Satış Tarihi'
                 elif 'danışman' in col_clean or 'danisman' in col_clean:
                     sutun_duzeltme[col] = 'Danışman'
@@ -205,7 +212,7 @@ elif menu == "📥 Excel'den Yükle":
                 yeni_data = yeni_data.rename(columns=sutun_duzeltme)
 
             st.write("📋 **Önizleme:**", yeni_data.head())
-            st.write(f"Toplam Satır Sayısı: **{len(yeni_data)}**")
+            st.write(f"Toplam Satış Sayısı: **{len(yeni_data)}**")
             
             if st.button("🚀 Tümünü Sisteme Ekle", use_container_width=True):
                 # ID atama
@@ -222,6 +229,10 @@ elif menu == "📥 Excel'den Yükle":
                 for kol in ["Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Fatura No"]:
                     if kol not in yeni_data.columns:
                         yeni_data[kol] = ""
+
+                # Sadece geçerli ana sütunları dahil etme
+                ana_kolonlar = ["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"]
+                yeni_data = yeni_data[[c for c in yeni_data.columns if c in ana_kolonlar]]
 
                 pd.concat([df, yeni_data], ignore_index=True).to_csv(DATA_FILE, index=False)
                 st.success("🎉 Tüm geçmiş satışlar başarıyla sisteme aktarıldı!")
