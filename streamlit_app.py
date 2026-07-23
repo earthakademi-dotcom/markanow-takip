@@ -40,6 +40,33 @@ st.markdown(
         color: #FFFFFF !important;
     }
 
+    /* Expander Kapalı Durumda: Mavi Renk, Beyaz Yazı */
+    div[data-testid="stExpander"] details {
+        background-color: #007BFF !important;
+        border: 1px solid #0056b3 !important;
+        border-radius: 4px;
+    }
+    div[data-testid="stExpander"] details summary p {
+        color: #FFFFFF !important;
+        font-weight: bold;
+    }
+    div[data-testid="stExpander"] details summary svg {
+        fill: #FFFFFF !important;
+    }
+
+    /* Expander Açık Durumda: Sarı Renk, Beyaz Yazı */
+    div[data-testid="stExpander"] details[open] {
+        background-color: #FFC107 !important;
+        border: 1px solid #E0A800 !important;
+    }
+    div[data-testid="stExpander"] details[open] summary p {
+        color: #FFFFFF !important;
+        font-weight: bold;
+    }
+    div[data-testid="stExpander"] details[open] summary svg {
+        fill: #FFFFFF !important;
+    }
+
     /* Tüm Normal Butonlar ve Form Submit Butonları: Mavi, Yazısı Beyaz */
     div.stButton > button, 
     div.stFormSubmitButton > button {
