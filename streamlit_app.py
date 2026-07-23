@@ -110,7 +110,8 @@ def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
-        "Başvuru No", "Başvuru Tarihi", "Kurum İnceleme Bitiş Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", "Tescil Tebliğ Tarihi"
+        "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
+        "Sonraki Aşama Seçimi", "İtiraz Tebliğ Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -273,7 +274,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), 
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Kurum İnceleme Bitiş Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Tescil Tebliğ Tarihi": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tebliğ Tarihi": "", "Tescil Tebliğ Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
@@ -371,7 +372,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
         st.info(f"'{secilen_asama}' aşamasında aramanızla eşleşen kayıt bulunmuyor.")
     else:
         if secilen_asama == "Kurum İncelemesinde":
-            gosterge_df = asama_df[['Marka Adı', 'Başvuru No', 'Kurum İnceleme Bitiş Tarihi']].copy()
+            gosterge_df = asama_df[['Marka Adı', 'Başvuru No', 'Başvuru Tarihi']].copy()
             st.dataframe(gosterge_df, use_container_width=True)
         else:
             st.dataframe(asama_df, use_container_width=True)
@@ -435,34 +436,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     mevcut_b_no = str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else ""
                     mevcut_b_tar = str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else ""
-                    mevcut_kurum_bitis = str(s_row.get('Kurum İnceleme Bitiş Tarihi', '')) if pd.notna(s_row.get('Kurum İnceleme Bitiş Tarihi')) else ""
 
                     b_no_disabled = bool(mevcut_b_no.strip() and mevcut_b_no != 'nan')
                     b_tar_disabled = bool(mevcut_b_tar.strip() and mevcut_b_tar != 'nan')
-                    kurum_bitis_disabled = bool(mevcut_kurum_bitis.strip() and mevcut_kurum_bitis != 'nan')
 
                     b_no = c1.text_input("Başvuru No", value=mevcut_b_no if mevcut_b_no != 'nan' else "", disabled=b_no_disabled)
                     b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=mevcut_b_tar if mevcut_b_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), disabled=b_tar_disabled, key=f"form_b_tar_{secilen_marka}")
                     
-                    default_bitis = ""
-                    if b_tarih.strip():
-                        try:
-                            parsed_b_tar = datetime.strptime(b_tarih.strip(), "%d/%m/%Y")
-                            default_bitis = (parsed_b_tar + timedelta(days=30)).strftime("%d/%m/%Y")
-                        except:
-                            default_bitis = datetime.now().strftime("%d/%m/%Y")
-
-                    final_bitis_val = mevcut_kurum_bitis if mevcut_kurum_bitis and mevcut_kurum_bitis != 'nan' else default_bitis
-
-                    kurum_bitis = c1.text_input("Kurum İnceleme Bitiş Tarihi (GG/AA/YYYY)", value=final_bitis_val, disabled=kurum_bitis_disabled, key=f"form_kurum_bitis_{secilen_marka}")
-
                     mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
                     mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
 
                     y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
                     yayin_bitis_disabled = bool(mevcut_yayin_bitis.strip() and mevcut_yayin_bitis != 'nan')
 
-                    y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
+                    y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
                     
                     default_yayin_bitis = ""
                     if y_tar.strip() and y_tar.strip().lower() != 'nan':
@@ -474,7 +461,25 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     final_yayin_bitis_val = mevcut_yayin_bitis if mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan' else default_yayin_bitis
 
-                    yayin_bitis = c1.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
+                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
+
+                    # Yayında ekranı için Sonraki Aşama Seçimi ve ilgili tarih kutusu
+                    mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
+                    secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
+                    secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
+
+                    sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
+
+                    mevcut_itiraz_tar = str(s_row.get('İtiraz Tebliğ Tarihi', '')) if pd.notna(s_row.get('İtiraz Tebliğ Tarihi')) else ""
+                    mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
+
+                    itiraz_tar = ""
+                    tescil_tar = ""
+
+                    if sonraki_asama == "İtiraz Tebliğ Beklemede":
+                        itiraz_tar = c2.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
+                    elif sonraki_asama == "Tescil Tebliğ Beklemede":
+                        tescil_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
@@ -487,6 +492,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             else:
                                 final_durum = "Yayında"
 
+                        if secilen_asama == "Yayında" and sonraki_asama:
+                            if sonraki_asama == "İtiraz Tebliğ Beklemede":
+                                final_durum = "İtiraz Geldi - Savunma Bekliyor"
+                            elif sonraki_asama == "Tescil Tebliğ Beklemede":
+                                final_durum = "Tescil Tebliğ Beklemede"
+
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
                         df.at[idx, 'Danışman'] = orijinal_danisman
@@ -495,22 +506,22 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Başvuru No'] = b_no.strip()
                         if not b_tar_disabled and b_tarih.strip():
                             df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
-                        if not kurum_bitis_disabled and kurum_bitis.strip():
-                            df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
                             
                         if not y_tar_disabled and y_tar.strip():
                             df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                             
-                        # Eğer daha önce boşsa veya otomatik hesaplanacaksa kaydet, aksi takdirde sabitle
                         if not mevcut_yayin_bitis.strip() or mevcut_yayin_bitis == 'nan':
                             df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val.strip()
+
+                        df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
+                        if itiraz_tar.strip():
+                            df.at[idx, 'İtiraz Tebliğ Tarihi'] = itiraz_tar.strip()
+                        if tescil_tar.strip():
+                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
                             
                         df.to_csv(DATA_FILE, index=False)
                         
-                        if final_durum == "Yayında" and secilen_asama == "Kurum İncelemesinde":
-                            st.success(f"✅ '{secilen_marka}' markası Yayında olarak güncellendi!")
-                        else:
-                            st.success(f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!")
+                        st.success(f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!")
                         st.rerun()
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
