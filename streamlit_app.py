@@ -133,6 +133,25 @@ if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYEND
 menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
 
+# --- SOL MENÜ AYLIK FİLTRELEME (Eğer Satışlarım sekmesindeyse) ---
+secilen_ay = None
+secilen_yil = None
+if menu == "📊 Satışlarım":
+    st.sidebar.write("---")
+    st.sidebar.subheader("📅 Ay Filtresi")
+    aylar = {
+        "Tümü": None,
+        "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04",
+        "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08",
+        "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"
+    }
+    secilen_ay_isim = st.sidebar.selectbox("Ay Seçin", list(aylar.keys()))
+    secilen_ay = aylar[secilen_ay_isim]
+    
+    # Mevcut yıllar veya varsayılan yıl seçimi
+    mevcut_yil_str = str(datetime.now().year)
+    secilen_yil = st.sidebar.text_input("Yıl (Örn: 2026)", value=mevcut_yil_str)
+
 # --- MODÜLLER ---
 if menu == "📝 Satış Girişi":
     st.markdown("<h2>📝 Yeni Satış Girişi</h2>", unsafe_allow_html=True)
@@ -156,8 +175,31 @@ if menu == "📝 Satış Girişi":
             st.success("Satış kaydedildi.")
 
 elif menu == "📊 Satışlarım":
-    st.header(f"📊 {st.session_state.kullanici} - Satışlarım")
-    st.dataframe(df[df['Danışman'].astype(str).str.strip().str.upper() == str(st.session_state.kullanici).strip().upper()], use_container_width=True)
+    st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({secilen_ay_isim})")
+    
+    # Kullanıcıya ait satışları filtreleme
+    kullanici_df = df[df['Danışman'].astype(str).str.strip().str.upper() == str(st.session_state.kullanici).strip().upper()].copy()
+    
+    # Ay ve Yıl filtresi uygulama
+    if not kullanici_df.empty and 'Satış Tarihi' in kullanici_df.columns:
+        def tarih_filtrele(tarih_str):
+            try:
+                dt = pd.to_datetime(tarih_str, format='%d/%m/%Y', errors='coerce')
+                if pd.isna(dt):
+                    dt = pd.to_datetime(tarih_str, errors='coerce')
+                if pd.isna(dt):
+                    return False
+                
+                ay_eslesir = True if secilen_ay is None else (f"{dt.month:02d}" == secilen_ay)
+                yil_eslesir = True if not secilen_yil else (str(dt.year) == str(secilen_yil).strip())
+                return ay_eslesir and yil_eslesir
+            except:
+                return False
+                
+        mask = kullanici_df['Satış Tarihi'].apply(tarih_filtrele)
+        kullanici_df = kullanici_df[mask]
+
+    st.dataframe(kullanici_df, use_container_width=True)
 
 elif menu == "📥 Excel'den Yükle":
     st.header("📥 Excel/CSV ile Toplu Satış Girişi (Geçmiş Satışlar)")
