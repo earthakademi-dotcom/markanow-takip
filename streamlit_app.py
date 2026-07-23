@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
@@ -110,7 +110,7 @@ def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
-        "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
+        "Başvuru No", "Başvuru Tarihi", "Kurum İnceleme Bitiş Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -273,7 +273,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), 
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Kurum İnceleme Bitiş Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
@@ -370,7 +370,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     if asama_df.empty:
         st.info(f"'{secilen_asama}' aşamasında aramanızla eşleşen kayıt bulunmuyor.")
     else:
-        st.dataframe(asama_df, use_container_width=True)
+        if secilen_asama == "Kurum İncelemesinde":
+            gosterge_df = asama_df[['Marka Adı', 'Başvuru No', 'Kurum İnceleme Bitiş Tarihi']].copy()
+            st.dataframe(gosterge_df, use_container_width=True)
+        else:
+            st.dataframe(asama_df, use_container_width=True)
+            
         st.write("---")
         
         if secilen_asama == "Muhasebe Onayı Bekliyor":
@@ -442,6 +447,21 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
                     b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=b_tarih_val if b_tarih_val and b_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_b_tar_{secilen_marka}")
                     
+                    # Başvuru tarihine otomatik 1 ay ekleyerek Kurum İnceleme Bitiş Tarihi hesaplama
+                    default_bitis = ""
+                    if b_tarih.strip():
+                        try:
+                            parsed_b_tar = datetime.strptime(b_tarih.strip(), "%d/%m/%Y")
+                            # 1 ay eklemek için yaklaşık 30 gün veya takvim ayı hesabı
+                            default_bitis = (parsed_b_tar + timedelta(days=30)).strftime("%d/%m/%Y")
+                        except:
+                            default_bitis = datetime.now().strftime("%d/%m/%Y")
+
+                    mevcut_bitis = str(s_row.get('Kurum İnceleme Bitiş Tarihi', ''))
+                    final_bitis_val = mevcut_bitis if mevcut_bitis and mevcut_bitis != 'nan' else default_bitis
+
+                    kurum_bitis = c1.text_input("Kurum İnceleme Bitiş Tarihi (GG/AA/YYYY)", value=final_bitis_val, key=f"form_kurum_bitis_{secilen_marka}")
+
                     if secilen_asama == "Başvuru Beklemede":
                         y_tar = str(s_row.get('Yayın Tarihi', ''))
                         t_tar = str(s_row.get('Tescil Tebliğ Tarihi', ''))
@@ -462,6 +482,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                         df.at[idx, 'Başvuru No'] = b_no.strip()
                         df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
+                        df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                         df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
                         df.to_csv(DATA_FILE, index=False)
