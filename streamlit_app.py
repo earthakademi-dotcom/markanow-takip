@@ -351,8 +351,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
                     c1, c2, c3 = st.columns(3)
                     f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
-                    
-                    # Fatura Tarihi gün/ay/yıl (GG/AA/YYYY) metin kutusu olarak güncellendi
                     f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
                     
                     if c3.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}"):
@@ -376,7 +374,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             if secilen_marka:
                 s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
                 orijinal_danisman = str(s_row.get('Danışman', '')).strip().upper()
-                st.markdown(f"**Seçilen Marka:** {s_row['Marka Adı']} | **Satışı Giren Danışman:** {orijinal_danisman} | **İşlemi Yapan Yönetici:** {aktif_kullanici_ad}")
+                
+                # Yönetici adı buradan kaldırıldı
+                st.markdown(f"**Seçilen Marka:** {s_row['Marka Adı']} | **Satışı Giren Danışman:** {orijinal_danisman}")
                 
                 with st.form(f"form_guncelle_{secilen_marka}"):
                     c1, c2 = st.columns(2)
