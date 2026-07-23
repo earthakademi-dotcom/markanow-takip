@@ -5,7 +5,7 @@ import base64
 from datetime import datetime
 
 # --- SAYFA YAPILANDIRMASI ---
-st.set_page_config(page_title="Markanow ERP - Danışman", layout="wide")
+st.set_page_config(page_title="Markanow ERP", layout="wide")
 
 # --- GLOBAL & GİRİŞ CSS STİLLERİ ---
 st.markdown(
@@ -40,7 +40,7 @@ st.markdown(
         color: #FFFFFF !important;
     }
 
-    /* Tüm Butonlar (Güvenli Çıkış, Menü, Geri Çık ve Giriş): Normalde Mavi, Yazısı Beyaz */
+    /* Tüm Butonlar: Normalde Mavi, Yazısı Beyaz */
     div.stButton > button {
         background-color: #007BFF !important;
         color: #FFFFFF !important;
@@ -69,7 +69,6 @@ DATA_FILE = "marka_takip.csv"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
-# Varsayılan kullanıcılar yoksa oluştur
 if not os.path.exists(USER_FILE):
     pd.DataFrame({
         "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN"],
@@ -79,7 +78,7 @@ if not os.path.exists(USER_FILE):
 def load_data():
     if os.path.exists(DATA_FILE):
         return pd.read_csv(DATA_FILE, dtype=str)
-    return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
+    return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi"])
 
 # --- GİRİŞ KONTROLÜ ---
 if "kullanici" not in st.session_state: 
@@ -106,8 +105,11 @@ if not st.session_state.kullanici:
                 st.error("❌ Hatalı Şifre!")
     st.stop()
 
-# --- SİSTEME GİRİŞ YAPILDIKTAN SONRAKİ KISIM ---
-# Sayfa yönlendirmesi için session state
+# --- ROL TANIMLAMALARI ---
+aktif_kullanici_ad = str(st.session_state.kullanici).strip().upper()
+is_admin = (aktif_kullanici_ad == "ALİ OSMAN YELBEY")
+is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ"])
+
 if "aktif_sayfa" not in st.session_state:
     st.session_state.aktif_sayfa = "Ana Sayfa"
 
@@ -116,7 +118,13 @@ def sayfa_degistir(sayfa_adi):
     st.rerun()
 
 # --- SOL MENÜ (SIDEBAR) ---
-st.sidebar.markdown(f"### 👤 Danışman: {st.session_state.kullanici}")
+st.sidebar.markdown(f"### 👤 Kullanıcı: {st.session_state.kullanici}")
+if is_admin:
+    st.sidebar.markdown("👑 Rol: **Admin**")
+elif is_muhasebe:
+    st.sidebar.markdown("💰 Rol: **Muhasebe / Yönetici**")
+else:
+    st.sidebar.markdown("💼 Rol: **Danışman**")
 
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
@@ -125,7 +133,7 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 
 st.sidebar.write("---")
 
-# Menü Butonları
+# Menü Yönlendirmeleri
 if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
     sayfa_degistir("Yeni Satış Giriş")
 if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
@@ -133,17 +141,22 @@ if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
 if st.sidebar.button("📊 Genel Satışlarım", use_container_width=True):
     sayfa_degistir("Genel Satışlarım")
 
+if is_muhasebe:
+    if st.sidebar.button("💰 Muhasebe Onay & Fatura", use_container_width=True):
+        sayfa_degistir("Muhasebe Onay")
+if is_admin:
+    if st.sidebar.button("👥 Personel Yönetimi", use_container_width=True):
+        sayfa_degistir("Personel Yönetimi")
+
 df = load_data()
-aktif_danisman = str(st.session_state.kullanici).strip().upper()
 
 # --- SAYFA İÇERİKLERİ ---
 
 if st.session_state.aktif_sayfa == "Ana Sayfa":
-    st.markdown("<h2>Hoş Geldiniz, {}</h2>".format(aktif_danisman), unsafe_allow_html=True)
+    st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
     st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
 
 elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
-    # Geri Çık Butonu
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
@@ -183,8 +196,9 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                 "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), 
                 "Tutar": str(tutar), 
                 "Durum": "Muhasebe Onayı Bekliyor", 
-                "Danışman": aktif_danisman, 
-                "Fatura No": ""
+                "Danışman": aktif_kullanici_ad, 
+                "Fatura No": "",
+                "Fatura Tarihi": ""
             }
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi.")
@@ -198,27 +212,30 @@ elif st.session_state.aktif_sayfa == "Satışlarım":
     
     st.markdown(f"<h2>📅 Satışlarım (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
     
-    # Sadece aktif danışmanın verileri
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
-    danisman_df = df[df['Danisman_Temp'] == aktif_danisman].copy()
+    danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     
-    # Bu aya ait filtreleme
-    def bu_ay_mi(tarih_str):
+    # Sadece Onaylanmış ve Fatura Tarihi bu aya denk gelenler
+    def bu_ay_faturalanan_ mi(row):
         try:
-            dt = pd.to_datetime(tarih_str, format='%d/%m/%Y', errors='coerce')
-            if pd.isna(dt): dt = pd.to_datetime(tarih_str, errors='coerce')
+            if str(row.get('Durum', '')).strip() != "Onaylandı":
+                return False
+            f_tarih = row.get('Fatura Tarihi', '')
+            if pd.isna(f_tarih) or str(f_tarih).strip() == '' or str(f_tarih).lower() == 'none':
+                return False
+            dt = pd.to_datetime(f_tarih, format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt): dt = pd.to_datetime(f_tarih, errors='coerce')
             if pd.isna(dt): return False
             return f"{dt.month:02d}" == mevcut_ay and str(dt.year) == mevcut_yil
         except:
             return False
             
-    if not danisman_df.empty and 'Satış Tarihi' in danisman_df.columns:
-        mask = danisman_df['Satış Tarihi'].apply(bu_ay_mi)
+    if not danisman_df.empty:
+        mask = danisman_df.apply(bu_ay_faturalanan_ mi, axis=1)
         danisman_df = danisman_df[mask]
         
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
     
-    # Özet bilgisi
     toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
     c1, c2 = st.columns(2)
     c1.metric("Bu Ay Satış Adedi", len(danisman_df))
@@ -241,20 +258,20 @@ elif st.session_state.aktif_sayfa == "Genel Satışlarım":
     col_f1, col_f2 = st.columns(2)
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()))
     secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year))
-    
     secilen_ay_kod = aylar[secilen_ay_isim]
     
-    # Sadece aktif danışmanın verileri
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
-    danisman_df = df[df['Danisman_Temp'] == aktif_danisman].copy()
+    danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     
-    # Filtreleme
-    def tarih_filtrele(tarih_str):
+    def genel_filtrele(row):
         try:
-            if pd.isna(tarih_str) or str(tarih_str).strip() == '' or str(tarih_str).lower() == 'none':
-                return secilen_ay_kod is None
-            dt = pd.to_datetime(tarih_str, format='%d/%m/%Y', errors='coerce')
-            if pd.isna(dt): dt = pd.to_datetime(tarih_str, errors='coerce')
+            if str(row.get('Durum', '')).strip() != "Onaylandı":
+                return False
+            f_tarih = row.get('Fatura Tarihi', '')
+            if pd.isna(f_tarih) or str(f_tarih).strip() == '' or str(f_tarih).lower() == 'none':
+                return False
+            dt = pd.to_datetime(f_tarih, format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt): dt = pd.to_datetime(f_tarih, errors='coerce')
             if pd.isna(dt): return False
             
             ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
@@ -263,16 +280,87 @@ elif st.session_state.aktif_sayfa == "Genel Satışlarım":
         except:
             return False
             
-    if not danisman_df.empty and 'Satış Tarihi' in danisman_df.columns:
-        mask = danisman_df['Satış Tarihi'].apply(tarih_filtrele)
+    if not danisman_df.empty:
+        mask = danisman_df.apply(genel_filtrele, axis=1)
         danisman_df = danisman_df[mask]
         
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
     
-    # Özet bilgisi
     toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
     c1, c2 = st.columns(2)
     c1.metric("Filtrelenen Satış Adedi", len(danisman_df))
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
 
     st.dataframe(danisman_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Onay":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>💰 Muhasebe Onay ve Faturalandırma Paneli</h2>", unsafe_allow_html=True)
+    
+    bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
+    st.subheader("📋 Onay Bekleyen Satışlar")
+    
+    if bekleyen_df.empty:
+        st.info("Onay bekleyen satış bulunmuyor.")
+    else:
+        for i, row in bekleyen_df.iterrows():
+            with st.container():
+                st.markdown(f"**ID: {row['ID']}** | Marka: **{row['Marka Adı']}** | Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
+                c1, c2, c3 = st.columns(3)
+                f_no = c1.text_input("Fatura No", key=f"f_no_{row['ID']}")
+                f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['ID']}")
+                
+                if c3.button("✅ Onayla ve Faturalandır", key=f"onay_ btn_{row['ID']}"):
+                    if f_no.strip():
+                        idx = df.index[df['ID'].astype(str) == str(row['ID'])][0]
+                        df.at[idx, 'Durum'] = "Onaylandı"
+                        df.at[idx, 'Fatura No'] = f_no.strip()
+                        df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
+                        df.to_csv(DATA_FILE, index=False)
+                        st.success(f"✅ ID {row['ID']} onaylandı ve faturalandırıldı!")
+                        st.rerun()
+                    else:
+                        st.warning("Lütfen bir Fatura No girin.")
+                st.write("---")
+
+elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>👥 Personel ve Danışman Yönetimi</h2>", unsafe_allow_html=True)
+    if os.path.exists(USER_FILE):
+        st.dataframe(pd.read_csv(USER_FILE), use_container_width=True)
+    
+    t1, t2, t3 = st.tabs(["➕ Danışman Ekle", "🔑 Şifre Değiştir", "❌ Danışman Sil"])
+    with t1:
+        n, s = st.text_input("Personel / Danışman Adı", key="ekle"), st.text_input("Şifre", type="password", key="sifre")
+        if st.button("Danışman Ekle"):
+            if n.strip():
+                u_df = pd.read_csv(USER_FILE) if os.path.exists(USER_FILE) else pd.DataFrame(columns=["İsim", "Şifre"])
+                yeni_kisi = pd.DataFrame({"İsim": [n.strip().upper()], "Şifre": [s.strip()]})
+                pd.concat([u_df, yeni_kisi], ignore_index=True).to_csv(USER_FILE, index=False)
+                st.success(f"🎉 '{n.strip().upper()}' başarıyla eklendi!")
+                st.rerun()
+            else:
+                st.warning("Lütfen bir isim girin.")
+    with t2:
+        if os.path.exists(USER_FILE):
+            u_df = pd.read_csv(USER_FILE)
+            p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel")
+            s2 = st.text_input("Yeni Şifre", type="password", key="new")
+            if st.button("Şifreyi Güncelle"):
+                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
+                u_df.to_csv(USER_FILE, index=False)
+                st.success("✅ Şifre güncellendi!")
+                st.rerun()
+    with t3:
+        if os.path.exists(USER_FILE):
+            u_df = pd.read_csv(USER_FILE)
+            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="del")
+            if st.button("Danışmanı Sil"):
+                u_df = u_df[u_df["İsim"] != s3]
+                u_df.to_csv(USER_FILE, index=False)
+                st.success(f"❌ '{s3}' sistemden silindi!")
+                st.rerun(
