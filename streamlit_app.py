@@ -410,7 +410,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=f_tarih_val if f_tarih_val and f_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"))
 
                     b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                    
                     b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
                     b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=b_tarih_val if b_tarih_val and b_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_b_tar_{secilen_marka}")
                     
@@ -423,6 +422,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         final_durum = yeni_durum
+                        # Başvuru Beklemede aşamasındayken Başvuru No ve Başvuru Tarihi girildiyse Kurum İncelemesinde'ye otomatik geçir
                         if secilen_asama == "Başvuru Beklemede" and b_no.strip() and b_tarih.strip():
                             final_durum = "Kurum İncelemesinde"
 
@@ -439,7 +439,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.to_csv(DATA_FILE, index=False)
                         
                         if final_durum == "Kurum İncelemesinde" and secilen_asama != "Kurum İncelemesinde":
-                            st.success(f"✅ Başvuru No ve Tarihi girildiği için '{secilen_marka}' otomatik olarak 'Kurum İncelemesinde' aşamasına taşındı!")
+                            st.success(f"✅ Başvuru No ve Başvuru Tarihi girildiği için '{secilen_marka}' otomatik olarak 'Kurum İncelemesinde' aşamasına taşındı!")
                         else:
                             st.success(f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!")
                         st.rerun()
