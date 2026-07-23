@@ -374,8 +374,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             if secilen_marka:
                 s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
                 orijinal_danisman = str(s_row.get('Danışman', '')).strip().upper()
-                
-                # Yönetici adı buradan kaldırıldı
                 st.markdown(f"**Seçilen Marka:** {s_row['Marka Adı']} | **Satışı Giren Danışman:** {orijinal_danisman}")
                 
                 with st.form(f"form_guncelle_{secilen_marka}"):
@@ -412,12 +410,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=f_tarih_val if f_tarih_val and f_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"))
 
                     b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
+                    
                     b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
-                    try:
-                        b_tarih_parsed = datetime.strptime(b_tarih_val, "%d/%m/%Y") if b_tarih_val and b_tarih_val != 'nan' else datetime.now()
-                    except:
-                        b_tarih_parsed = datetime.now()
-                    b_tarih = c2.date_input("Başvuru Tarihi", value=b_tarih_parsed, key=f"form_b_tar_{secilen_marka}")
+                    b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=b_tarih_val if b_tarih_val and b_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_b_tar_{secilen_marka}")
                     
                     if secilen_asama == "Başvuru Beklemede":
                         y_tar = str(s_row.get('Yayın Tarihi', ''))
@@ -428,7 +423,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         final_durum = yeni_durum
-                        if secilen_asama == "Başvuru Beklemede" and b_no.strip() and b_tarih:
+                        if secilen_asama == "Başvuru Beklemede" and b_no.strip() and b_tarih.strip():
                             final_durum = "Kurum İncelemesinde"
 
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
@@ -438,7 +433,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                         df.at[idx, 'Başvuru No'] = b_no.strip()
-                        df.at[idx, 'Başvuru Tarihi'] = b_tarih.strftime("%d/%m/%Y")
+                        df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                         df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
                         df.to_csv(DATA_FILE, index=False)
