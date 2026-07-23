@@ -84,12 +84,16 @@ def load_data():
         d_temp = pd.read_csv(DATA_FILE, dtype=str)
     else:
         d_temp = pd.DataFrame(columns=[
-            "ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
+            "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
             "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
             "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
         ])
     
-    zorunlu_kolonlar = ["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"]
+    # Eski ID kolonu varsa temizle
+    if "ID" in d_temp.columns:
+        d_temp = d_temp.drop(columns=["ID"])
+
+    zorunlu_kolonlar = ["Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"]
     for col in zorunlu_kolonlar:
         if col not in d_temp.columns:
             d_temp[col] = ""
@@ -224,9 +228,8 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         
         if st.form_submit_button("Satışı Kaydet"):
-            yeni_id = str(int(df['ID'].astype(float).max()) + 1) if not df.empty and 'ID' in df.columns and not df['ID'].isna().all() else "1"
             new_row = {
-                "ID": yeni_id, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
+                "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
                 "Doğum Tarihi": f"{gun:02d}/{ay:02d}/{yil}", "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                 "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), "Tutar": str(tutar), "Durum": "Muhasebe Onayı Bekliyor", 
                 "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
@@ -335,12 +338,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 with st.container():
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
                     c1, c2, c3 = st.columns(3)
-                    f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}_{row['ID']}")
-                    f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['Marka Adı']}_{row['ID']}")
+                    f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
+                    f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['Marka Adı']}")
                     
-                    if c3.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}_{row['ID']}"):
+                    if c3.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}"):
                         if f_no.strip():
-                            idx = df.index[df['ID'].astype(str) == str(row['ID'])][0]
+                            idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
                             df.at[idx, 'Durum'] = "Başvuru Beklemede"
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
