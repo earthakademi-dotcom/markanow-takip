@@ -159,7 +159,12 @@ elif menu == "📊 Satışlarım":
     st.dataframe(df[df['Danışman'] == st.session_state.kullanici], use_container_width=True)
 
 elif menu == "📥 Excel'den Yükle":
-    st.header("📥 Excel/CSV ile Toplu Satış Girişi")
+    st.header("📥 Excel/CSV ile Toplu Satış Girişi (Geçmiş Satışlar)")
+    st.info(
+        "💡 **İpucu:** Yükleyeceğiniz dosyanın sütun başlıkları şu isimleri içerebilir: "
+        "`Marka Adı`, `Ad Soyad`, `TC`, `Telefon`, `Doğum Tarihi`, `İl`, `Sınıf`, `Ödeme`, `Satış Tarihi`, `Tutar`, `Danışman`, `Fatura No`"
+    )
+    
     uploaded_file = st.file_uploader("Dosya Seçin", type=["csv", "xlsx"])
     if uploaded_file:
         try:
@@ -176,30 +181,53 @@ elif menu == "📥 Excel'den Yükle":
             else:
                 yeni_data = pd.read_excel(uploaded_file)
             
-            # Sütun isimlerindeki bozulmaları otomatik düzeltme
+            # Sütun isimlerindeki boşlukları ve olası karakter bozulmalarını düzeltme
+            yeni_data.columns = [str(col).strip() for col in yeni_data.columns]
             sutun_duzeltme = {}
             for col in yeni_data.columns:
-                col_clean = str(col).strip().lower()
+                col_clean = col.lower()
                 if 'yl' in col_clean or 'ýl' in col_clean or col_clean == 'il':
                     sutun_duzeltme[col] = 'İl'
                 elif 'sýnýf' in col_clean or 'sınıf' in col_clean or col_clean == 'sinif':
                     sutun_duzeltme[col] = 'Sınıf'
+                elif 'marka' in col_clean:
+                    sutun_duzeltme[col] = 'Marka Adı'
+                elif 'ad soyad' in col_clean or 'isim' in col_clean:
+                    sutun_duzeltme[col] = 'Ad Soyad'
+                elif 'tutar' in col_clean or 'fiyat' in col_clean:
+                    sutun_duzeltme[col] = 'Tutar'
+                elif 'tarih' in col_clean:
+                    sutun_duzeltme[col] = 'Satış Tarihi'
+                elif 'danışman' in col_clean or 'danisman' in col_clean:
+                    sutun_duzeltme[col] = 'Danışman'
             
             if sutun_duzeltme:
                 yeni_data = yeni_data.rename(columns=sutun_duzeltme)
 
-            st.write("Önizleme:", yeni_data.head())
-            if st.button("Tümünü Sisteme Ekle"):
-                if 'Danışman' not in yeni_data.columns:
-                    yeni_data['Danışman'] = st.session_state.kullanici
-                if 'Durum' not in yeni_data.columns:
-                    yeni_data['Durum'] = 'Muhasebe Onayı Bekliyor'
+            st.write("📋 **Önizleme:**", yeni_data.head())
+            st.write(f"Toplam Satır Sayısı: **{len(yeni_data)}**")
+            
+            if st.button("🚀 Tümünü Sisteme Ekle", use_container_width=True):
+                # ID atama
+                baslangic_id = int(df['ID'].max() + 1) if not df.empty and 'ID' in df.columns else 1
+                yeni_data['ID'] = range(baslangic_id, baslangic_id + len(yeni_data))
                 
+                if 'Danışman' not in yeni_data.columns or yeni_data['Danışman'].isna().all():
+                    yeni_data['Danışman'] = st.session_state.kullanici
+                
+                if 'Durum' not in yeni_data.columns:
+                    yeni_data['Durum'] = 'Tamamlandı' # Geçmiş satışlar için doğrudan tamamlandı/onaylı kabul edilebilir
+                
+                # Eksik olabilecek standart kolonları doldurma
+                for kol in ["Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Fatura No"]:
+                    if kol not in yeni_data.columns:
+                        yeni_data[kol] = ""
+
                 pd.concat([df, yeni_data], ignore_index=True).to_csv(DATA_FILE, index=False)
-                st.success("Tüm satışlar başarıyla aktarıldı!")
+                st.success("🎉 Tüm geçmiş satışlar başarıyla sisteme aktarıldı!")
                 st.rerun()
         except Exception as e:
-            st.error(f"Dosya okuma hatası: {e}")
+            st.error(f"❌ Dosya okuma hatası: {e}")
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Tam Düzenleme Paneli")
@@ -216,16 +244,13 @@ elif menu == "💰 Muhasebe Onayı":
                 
                 v_d = c2.text_input("Doğum", value=str(row['Doğum Tarihi']) if pd.notna(row['Doğum Tarihi']) else "")
                 
-                # İl alanındaki hatalı/NaN değerleri güvenli şekilde yakalama
                 mevcut_il = str(row['İl']).strip() if pd.notna(row['İl']) else ""
                 il_index = ILLER.index(mevcut_il) if mevcut_il in ILLER else 0
                 v_i = c2.selectbox("İl", ILLER, index=il_index)
                 
-                # Sınıf alanındaki NaN veya geçersiz değerleri string'e çevirip güvenli işleme
                 mevcut_sinif = str(row['Sınıf']) if pd.notna(row['Sınıf']) and str(row['Sınıf']).lower() != 'nan' else ""
                 v_s = c2.text_input("Sınıf", value=mevcut_sinif)
                 
-                # Ödeme alanındaki olası hataları önleme
                 mevcut_odeme = str(row['Ödeme']).strip() if pd.notna(row['Ödeme']) else "EFT"
                 odeme_secenekleri = ["EFT", "Kredi Kartı"]
                 odeme_index = odeme_secenekleri.index(mevcut_odeme) if mevcut_odeme in odeme_secenekleri else 0
