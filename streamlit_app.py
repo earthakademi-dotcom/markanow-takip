@@ -86,9 +86,30 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
-    # Veritabanını kod ile tamamen sıfırlıyoruz
-    d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-    d_temp.to_csv(DATA_FILE, index=False)
+    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
+        d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
+        d_temp.to_csv(DATA_FILE, index=False)
+    else:
+        try:
+            d_temp = pd.read_csv(DATA_FILE, dtype=str)
+        except pd.errors.EmptyDataError:
+            d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
+            d_temp.to_csv(DATA_FILE, index=False)
+            
+    if "ID" in d_temp.columns:
+        d_temp = d_temp.drop(columns=["ID"])
+
+    for col in zorunlu_kolonlar:
+        if col not in d_temp.columns:
+            d_temp[col] = ""
+            
+    d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
+    gecerli_durumlar = [
+        "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
+        "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
+        "Tescillendi 🎉", "Reddedildi ❌"
+    ]
+    d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
 
 # --- GİRİŞ KONTROLÜ ---
@@ -183,7 +204,7 @@ df = load_data()
 
 if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
-    st.write("Veritabanı sıfırlandı. Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
+    st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
@@ -197,6 +218,9 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)")
         tel = c1.text_input("Telefon")
+        
+        # Telefonun hemen altına Danışman alanı eklendi (kilitli/sabit)
+        c1.text_input("Danışman", value=aktif_kullanici_ad, disabled=True)
         
         st.markdown("<p style='color: white; font-weight: bold; margin-bottom: 0px;'>Doğum Tarihi</p>", unsafe_allow_html=True)
         d1, d2, d3 = st.columns(3)
