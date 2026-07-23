@@ -86,7 +86,6 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
-    # Dosya yoksa veya boyutu 0 (boş) ise sıfırdan oluştur
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
         d_temp.to_csv(DATA_FILE, index=False)
@@ -395,8 +394,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         b_tarih_parsed = datetime.now()
                     b_tarih = c2.date_input("Başvuru Tarihi", value=b_tarih_parsed, key=f"form_b_tar_{secilen_marka}")
                     
-                    y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
-                    t_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                    # Eğer seçilen aşama "Başvuru Beklemede" ise Yayın ve Tescil Tebliğ Tarihi gösterilmez
+                    if secilen_asama == "Başvuru Beklemede":
+                        y_tar = str(s_row.get('Yayın Tarihi', ''))
+                        t_tar = str(s_row.get('Tescil Tebliğ Tarihi', ''))
+                    else:
+                        y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
+                        t_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
