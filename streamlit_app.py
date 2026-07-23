@@ -115,6 +115,7 @@ is_admin = (aktif_kullanici_ad == "ALİ OSMAN YELBEY")
 is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN"])
 
 if "aktif_sayfa" not in st.session_state:
+    # Muhasebe personeli direkt ana sayfa yerine onay sayfasiyla da baslayabilir veya ana sayfada kalabilir
     st.session_state.aktif_sayfa = "Ana Sayfa"
 
 def sayfa_degistir(sayfa_adi):
@@ -137,18 +138,23 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 
 st.sidebar.write("---")
 
-# Menü Yönlendirmeleri
-if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
-    sayfa_degistir("Yeni Satış Giriş")
-if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
-    sayfa_degistir("Satışlarım")
-if st.sidebar.button("📊 Genel Satışlarım", use_container_width=True):
-    sayfa_degistir("Genel Satışlarım")
+# Menü Yönlendirmeleri (Role Göre Ayrıldı)
+if not is_muhasebe:
+    # Sadece Danışmanlar Görebilir
+    if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
+        sayfa_degistir("Yeni Satış Giriş")
+    if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
+        sayfa_degistir("Satışlarım")
+    if st.sidebar.button("📊 Genel Satışlarım", use_container_width=True):
+        sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
+    # Muhasebe ve Admin Görebilir
     if st.sidebar.button("💰 Muhasebe Onay & Fatura", use_container_width=True):
         sayfa_degistir("Muhasebe Onay")
+
 if is_admin:
+    # Sadece Admin Görebilir
     if st.sidebar.button("👥 Personel Yönetimi", use_container_width=True):
         sayfa_degistir("Personel Yönetimi")
 
@@ -160,7 +166,7 @@ if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
     st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
 
-elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
+elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
@@ -207,7 +213,7 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi.")
 
-elif st.session_state.aktif_sayfa == "Satışlarım":
+elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
@@ -246,7 +252,7 @@ elif st.session_state.aktif_sayfa == "Satışlarım":
     
     st.dataframe(danisman_df, use_container_width=True)
 
-elif st.session_state.aktif_sayfa == "Genel Satışlarım":
+elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
@@ -297,6 +303,7 @@ elif st.session_state.aktif_sayfa == "Genel Satışlarım":
     st.dataframe(danisman_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Onay":
+    # Muhasebe kullanıcısında geri çık butonu opsiyoneldir, ana sayfaya döner
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
@@ -315,7 +322,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Onay":
                 f_no = c1.text_input("Fatura No", key=f"f_no_{row['ID']}")
                 f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['ID']}")
                 
-                if c3.button("✅ Onayla ve Faturalandır", key=f"onay_ btn_{row['ID']}"):
+                if c3.button("✅ Onayla ve Faturalandır", key=f"onay_btn_{row['ID']}"):
                     if f_no.strip():
                         idx = df.index[df['ID'].astype(str) == str(row['ID'])][0]
                         df.at[idx, 'Durum'] = "Onaylandı"
