@@ -86,30 +86,9 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
-    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
-        d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-        d_temp.to_csv(DATA_FILE, index=False)
-    else:
-        try:
-            d_temp = pd.read_csv(DATA_FILE, dtype=str)
-        except pd.errors.EmptyDataError:
-            d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-            d_temp.to_csv(DATA_FILE, index=False)
-            
-    if "ID" in d_temp.columns:
-        d_temp = d_temp.drop(columns=["ID"])
-
-    for col in zorunlu_kolonlar:
-        if col not in d_temp.columns:
-            d_temp[col] = ""
-            
-    d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
-    gecerli_durumlar = [
-        "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
-        "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-        "Tescillendi 🎉", "Reddedildi ❌"
-    ]
-    d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
+    # Veritabanını kod ile tamamen sıfırlıyoruz
+    d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
+    d_temp.to_csv(DATA_FILE, index=False)
     return d_temp
 
 # --- GİRİŞ KONTROLÜ ---
@@ -204,7 +183,7 @@ df = load_data()
 
 if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
-    st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
+    st.write("Veritabanı sıfırlandı. Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
@@ -349,7 +328,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Durum'] = "Başvuru Beklemede"
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
-                            # Danışman (Merve vb.) ilk kaydeden kişi olarak kesinlikle değiştirilmez
                             df.to_csv(DATA_FILE, index=False)
                             st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
                             st.rerun()
@@ -384,8 +362,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     if secilen_asama == "Başvuru Beklemede":
                         c1.text_input("Yeni Durum / Aşama", value="Başvuru Beklemede", disabled=True)
                         yeni_durum = "Başvuru Beklemede"
-                        
-                        # Danışman alanı sadece bilgi amaçlı orijinal satışı girenin adını gösterir ve değiştirilemez
                         c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
                         
                         mevcut_f_no = str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else ""
@@ -396,7 +372,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     else:
                         mevcut_durum_index = tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0
                         yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=mevcut_durum_index)
-                        
                         c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
 
                         f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
@@ -407,7 +382,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             f_tarih_parsed = datetime.now()
                         f_tarih = c2.date_input("Fatura Tarihi", value=f_tarih_parsed, key=f"form_f_tar_{secilen_marka}")
 
-                    # Başvuru No ve Başvuru Tarihi her zaman girilebilir/güncellenebilir
                     b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
                     b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
                     try:
@@ -430,7 +404,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
-                        df.at[idx, 'Danışman'] = orijinal_danisman  # Danışman kimliği kesinlikle korunur
+                        df.at[idx, 'Danışman'] = orijinal_danisman
                         if secilen_asama != "Başvuru Beklemede":
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
