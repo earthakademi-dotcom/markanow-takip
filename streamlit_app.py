@@ -80,19 +80,26 @@ if not os.path.exists(USER_FILE):
     }).to_csv(USER_FILE, index=False)
 
 def load_data():
-    if os.path.exists(DATA_FILE):
-        d_temp = pd.read_csv(DATA_FILE, dtype=str)
+    zorunlu_kolonlar = [
+        "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
+        "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
+        "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
+    ]
+    
+    # Dosya yoksa veya boyutu 0 (boş) ise sıfırdan oluştur
+    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
+        d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
+        d_temp.to_csv(DATA_FILE, index=False)
     else:
-        d_temp = pd.DataFrame(columns=[
-            "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
-            "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
-            "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
-        ])
+        try:
+            d_temp = pd.read_csv(DATA_FILE, dtype=str)
+        except pd.errors.EmptyDataError:
+            d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
+            d_temp.to_csv(DATA_FILE, index=False)
     
     if "ID" in d_temp.columns:
         d_temp = d_temp.drop(columns=["ID"])
 
-    zorunlu_kolonlar = ["Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"]
     for col in zorunlu_kolonlar:
         if col not in d_temp.columns:
             d_temp[col] = ""
@@ -311,7 +318,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 ]:
     secilen_asama = st.session_state.aktif_sayfa
     
-    # Başlık ve Sağ Üste Arama Çubuğu Düzeni
     top_col1, top_col2 = st.columns([2, 1])
     with top_col1:
         st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
@@ -320,7 +326,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
     
-    # Arama filtresi uygulama
     if arama_metni.strip():
         asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
     
@@ -330,7 +335,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
         st.dataframe(asama_df, use_container_width=True)
         st.write("---")
         
-        # Eğer "Muhasebe Onayı Bekliyor" sayfasındaysak özel onaylama arayüzü
         if secilen_asama == "Muhasebe Onayı Bekliyor":
             st.subheader("✅ Onay Bekleyen Satışları Faturalandır ve Başvuru Beklemede'ye Al")
             for i, row in asama_df.iterrows():
@@ -353,7 +357,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             st.warning("Lütfen bir Fatura No girin.")
                     st.write("---")
         else:
-            # Diğer aşamalar için marka adı seçerek güncelleme paneli
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             
             marka_listesi = asama_df['Marka Adı'].astype(str).tolist()
