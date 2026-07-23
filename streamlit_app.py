@@ -1,4 +1,4 @@
-import streamlit as st
+mport streamlit as st
 import pandas as pd
 import os
 import base64
@@ -215,8 +215,7 @@ elif st.session_state.aktif_sayfa == "Satışlarım":
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
     danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     
-    # Sadece Onaylanmış ve Fatura Tarihi bu aya denk gelenler
-    def bu_ay_faturalanan_ mi(row):
+    def bu_ay_faturalanan(row):
         try:
             if str(row.get('Durum', '')).strip() != "Onaylandı":
                 return False
@@ -231,7 +230,7 @@ elif st.session_state.aktif_sayfa == "Satışlarım":
             return False
             
     if not danisman_df.empty:
-        mask = danisman_df.apply(bu_ay_faturalanan_ mi, axis=1)
+        mask = danisman_df.apply(bu_ay_faturalanan, axis=1)
         danisman_df = danisman_df[mask]
         
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
