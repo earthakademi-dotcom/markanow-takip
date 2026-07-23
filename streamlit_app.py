@@ -486,7 +486,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
 
                     y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
-                    yayin_bitis_disabled = bool(mevcut_yayin_bitis.strip() and mevcut_yayin_bitis != 'nan')
 
                     y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
                     
@@ -502,13 +501,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     final_yayin_bitis_val = mevcut_yayin_bitis if mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan' else default_yayin_bitis
 
-                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
+                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=False, key=f"form_yayin_bitis_{secilen_marka}")
 
                     mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
                     secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
                     secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
 
-                    # Sadece Yayında aşamasındayken göster veya aktif tut
                     sonraki_asama = st.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
 
                     mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
@@ -551,8 +549,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if not y_tar_disabled and y_tar.strip():
                             df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                             
-                        if not mevcut_yayin_bitis.strip() or mevcut_yayin_bitis == 'nan':
-                            df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val.strip()
+                        if yayin_bitis.strip():
+                            df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis.strip()
 
                         df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
                         if itiraz_tar.strip():
