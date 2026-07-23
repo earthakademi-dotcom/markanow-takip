@@ -402,23 +402,24 @@ elif menu == "💰 Muhasebe Onayı":
                     st.rerun()
                     
     st.write("---")
-    st.subheader("📋 Onay Bekleyen Satışlar")
+    st.subheader("📋 Tüm Satış Listesi ve Onay Bekleyenler")
+    st.dataframe(df, use_container_width=True)
     
-    # Sadece onayı bekleyenleri filtreleyip gösteriyoruz ki onaylandığında tablodan gitsin
-    bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
-    st.dataframe(bekleyen_df, use_container_width=True)
-    
-    if not bekleyen_df.empty:
-        for i, row in bekleyen_df.iterrows():
-            col_b1, col_b2 = st.columns([3, 1])
-            with col_b1:
-                st.write(f"**ID: {row['ID']}** - {row['Marka Adı']} ({row['Tutar']} TL) - *{row['Danışman']}*")
-            with col_b2:
-                if st.button(f"✅ Onayla", key=f"onay_tek_{row['ID']}"):
-                    df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"
-                    df.to_csv(DATA_FILE, index=False)
-                    st.success(f"✅ '{row['Marka Adı']}' satış Onaylandı!")
-                    st.rerun()
+    col_onay1, col_onay2 = st.columns(2)
+    with col_onay1:
+        for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
+            if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
+                df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"
+                df.to_csv(DATA_FILE, index=False)
+                st.success(f"✅ '{row['Marka Adı']}' satış Onaylandı!")
+                st.rerun()
+    with col_onay2:
+        for i, row in df[df['Durum'] == "Onaylandı"].iterrows():
+            if st.button(f"🎯 Tamamla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"tamamla_{row['ID']}"):
+                df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Tamamlandı"
+                df.to_csv(DATA_FILE, index=False)
+                st.success(f"🎯 '{row['Marka Adı']}' satış Tamamlandı!")
+                st.rerun()
 
 elif menu == "📊 Performans Raporu":
     st.header("📊 Performans")
