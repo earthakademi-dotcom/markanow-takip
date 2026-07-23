@@ -456,10 +456,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     kurum_bitis = c1.text_input("Kurum İnceleme Bitiş Tarihi (GG/AA/YYYY)", value=final_bitis_val, disabled=kurum_bitis_disabled, key=f"form_kurum_bitis_{secilen_marka}")
 
-                    y_tar_val = str(s_row.get('Yayın Tarihi', ''))
-                    y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=y_tar_val if y_tar_val and y_tar_val != 'nan' else "", key=f"form_y_tar_{secilen_marka}")
+                    # Yayın Tarihi ve Yayın Bitiş Tarihi Mevcut Değerleri ve Kilit Kontrolü
+                    mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
+                    mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
+
+                    y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
+                    yayin_bitis_disabled = bool(mevcut_yayin_bitis.strip() and mevcut_yayin_bitis != 'nan')
+
+                    y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
                     
-                    # Yayın tarihine otomatik 2 ay (60 gün) ekleyerek Yayın Bitiş Tarihi hesaplama
                     default_yayin_bitis = ""
                     if y_tar.strip() and y_tar.strip().lower() != 'nan':
                         try:
@@ -468,10 +473,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         except:
                             pass
 
-                    mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', ''))
                     final_yayin_bitis_val = mevcut_yayin_bitis if mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan' else default_yayin_bitis
 
-                    yayin_bitis = c1.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, key=f"form_yayin_bitis_{secilen_marka}")
+                    yayin_bitis = c1.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=yayin_bitis_disabled, key=f"form_yayin_bitis_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
@@ -495,8 +499,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if not kurum_bitis_disabled and kurum_bitis.strip():
                             df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
                             
-                        df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
-                        df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis.strip()
+                        if not y_tar_disabled and y_tar.strip():
+                            df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
+                        if not yayin_bitis_disabled and yayin_bitis.strip():
+                            df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis.strip()
+                            
                         df.to_csv(DATA_FILE, index=False)
                         
                         if final_durum == "Yayında" and secilen_asama == "Kurum İncelemesinde":
