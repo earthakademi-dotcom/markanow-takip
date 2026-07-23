@@ -308,12 +308,22 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     "Tescillendi", "Reddedildi"
 ]:
     secilen_asama = st.session_state.aktif_sayfa
-    st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
+    
+    # Başlık ve Sağ Üste Arama Çubuğu Düzeni
+    top_col1, top_col2 = st.columns([2, 1])
+    with top_col1:
+        st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
+    with top_col2:
+        arama_metni = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...", key=f"arama_{secilen_asama}")
     
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
     
+    # Arama filtresi uygulama
+    if arama_metni.strip():
+        asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
+    
     if asama_df.empty:
-        st.info(f"'{secilen_asama}' aşamasında kayıt bulunmuyor.")
+        st.info(f"'{secilen_asama}' aşamasında aramanızla eşleşen kayıt bulunmuyor.")
     else:
         st.dataframe(asama_df, use_container_width=True)
         st.write("---")
