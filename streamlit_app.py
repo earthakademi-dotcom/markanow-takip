@@ -250,7 +250,9 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
-                st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi.")
+                st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi. Ana sayfaya yönlendiriliyorsunuz...")
+                st.session_state.aktif_sayfa = "Ana Sayfa"
+                st.rerun()
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
     if st.button("⬅️ Geri Çık"):
@@ -475,7 +477,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                 st.rerun()
     with t3:
         if os.path.exists(USER_FILE):
-            u_df = pd.read_excel if os.path.exists(USER_FILE) else None # fallback handled
             u_df = pd.read_csv(USER_FILE)
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="del")
             if st.button("Danışmanı Sil"):
