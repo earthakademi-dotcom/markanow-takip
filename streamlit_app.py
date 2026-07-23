@@ -86,7 +86,7 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
-    # Dosya yoksa veya boşsa yeni oluştur, varsa oku (artık her yenilemede silinmez)
+    # Dosya yoksa veya boşsa yeni oluştur, varsa mevcut verileri oku (Asla sıfırlanmaz)
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
         d_temp.to_csv(DATA_FILE, index=False)
