@@ -135,7 +135,7 @@ if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYEND
 menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
 
-# --- SOL MENÜ AYLIK FİLTRELEME (Göster Butonlu ve Uyarı Eklenmiş) ---
+# --- SOL MENÜ AYLIK FİLTRELEME ---
 if menu == "📊 Satışlarım":
     st.sidebar.write("---")
     st.sidebar.subheader("📅 Ay Filtresi")
@@ -195,10 +195,8 @@ elif menu == "📊 Satışlarım":
 
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({gosterilen_ay} {gosterilen_yil})")
     
-    # Kullanıcıya ait tüm satışları çek (Durum bağımsız)
     kullanici_df = df[df['Danışman'].astype(str).str.strip().str.upper() == str(st.session_state.kullanici).strip().upper()].copy()
     
-    # Ay ve Yıl filtresi uygulama
     if not kullanici_df.empty and 'Satış Tarihi' in kullanici_df.columns:
         def tarih_filtrele(tarih_str):
             try:
@@ -243,10 +241,8 @@ elif menu == "📥 Excel'den Yükle":
             else:
                 yeni_data = pd.read_excel(uploaded_file, dtype=str)
             
-            # Sütun isimlerindeki boşlukları temizleme
             yeni_data.columns = [str(col).strip() for col in yeni_data.columns]
             
-            # Yinelenen sütun isimleri varsa benzersizleştirme (manuel)
             cols = pd.Series(yeni_data.columns)
             for dup in cols[cols.duplicated()].unique(): 
                 cols[cols == dup] = [dup + '_' + str(i) if i != 0 else dup for i in range(sum(cols == dup))]
@@ -277,11 +273,9 @@ elif menu == "📥 Excel'den Yükle":
             st.write(f"Toplam Satış Sayısı: **{len(yeni_data)}**")
             
             if st.button("🚀 Tümünü Sisteme Ekle", use_container_width=True):
-                # ID atama
                 baslangic_id = int(df['ID'].astype(float).max() + 1) if not df.empty and 'ID' in df.columns and not df['ID'].isna().all() else 1
                 yeni_data['ID'] = [str(i) for i in range(baslangic_id, baslangic_id + len(yeni_data))]
                 
-                # Danışman sütunu tespiti ve satırdaki isimlerin atanması
                 if 'Danışman' not in yeni_data.columns:
                     yeni_data['Danışman'] = st.session_state.kullanici
                 else:
@@ -291,12 +285,10 @@ elif menu == "📥 Excel'den Yükle":
                 if 'Durum' not in yeni_data.columns:
                     yeni_data['Durum'] = 'Tamamlandı'
                 
-                # Eksik olabilecek standart kolonları doldurma
                 for kol in ["Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Fatura No"]:
                     if kol not in yeni_data.columns:
                         yeni_data[kol] = ""
 
-                # Sadece geçerli ana sütunları dahil etme
                 ana_kolonlar = ["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"]
                 yeni_data = yeni_data[[c for c in yeni_data.columns if c in ana_kolonlar]]
 
@@ -320,7 +312,7 @@ elif menu == "💰 Muhasebe Onayı":
                     str_ids = [str(i) for i in toplu_secim_idleri]
                     df.loc[df['ID'].astype(str).isin(str_ids), 'Durum'] = "Onaylandı"
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("Seçilen kayıtlar Onaylandı!")
+                    st.success("✅ Seçilen kayıtlar Onaylandı!")
                     st.rerun()
                 else:
                     st.warning("Lütfen en az bir ID seçin.")
@@ -330,7 +322,7 @@ elif menu == "💰 Muhasebe Onayı":
                     str_ids = [str(i) for i in toplu_secim_idleri]
                     df.loc[df['ID'].astype(str).isin(str_ids), 'Durum'] = "Tamamlandı"
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("Seçilen kayıtlar Tamamlandı!")
+                    st.success("🎯 Seçilen kayıtlar Tamamlandı!")
                     st.rerun()
                 else:
                     st.warning("Lütfen en az bir ID seçin.")
@@ -340,7 +332,7 @@ elif menu == "💰 Muhasebe Onayı":
                     str_ids = [str(i) for i in toplu_secim_idleri]
                     df = df[~df['ID'].astype(str).isin(str_ids)]
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("Seçilen kayıtlar silindi!")
+                    st.success("❌ Seçilen kayıtlar Silindi!")
                     st.rerun()
                 else:
                     st.warning("Lütfen en az bir ID seçin.")
@@ -398,7 +390,7 @@ elif menu == "💰 Muhasebe Onayı":
                     df.at[idx, 'Durum'] = str(v_du)
                     df.at[idx, 'Fatura No'] = str(v_f)
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("Güncellendi!")
+                    st.success("✅ Güncellendi!")
                     st.rerun()
                     
     st.write("---")
@@ -411,14 +403,14 @@ elif menu == "💰 Muhasebe Onayı":
             if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
                 df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"
                 df.to_csv(DATA_FILE, index=False)
-                st.success(f"'{row['Marka Adı']}' satış onaylandı!")
+                st.success(f"✅ '{row['Marka Adı']}' satış Onaylandı!")
                 st.rerun()
     with col_onay2:
         for i, row in df[df['Durum'] == "Onaylandı"].iterrows():
             if st.button(f"🎯 Tamamla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"tamamla_{row['ID']}"):
                 df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Tamamlandı"
                 df.to_csv(DATA_FILE, index=False)
-                st.success(f"'{row['Marka Adı']}' satış tamamlandı!")
+                st.success(f"🎯 '{row['Marka Adı']}' satış Tamamlandı!")
                 st.rerun()
 
 elif menu == "📊 Performans Raporu":
