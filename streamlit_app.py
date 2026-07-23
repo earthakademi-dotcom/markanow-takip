@@ -86,7 +86,6 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
-    # Dosya yoksa veya boşsa yeni oluştur, varsa mevcut verileri oku (Asla sıfırlanmaz)
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
         d_temp.to_csv(DATA_FILE, index=False)
@@ -369,16 +368,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 
                 with st.form(f"form_guncelle_{secilen_marka}"):
                     c1, c2 = st.columns(2)
-                    yeni_durum = c1.selectbox("Yeni Durum / Aşama", [
-                        "Muhasebe Onayı Bekliyor",
-                        "Başvuru Beklemede",
-                        "Kurum İncelemesinde",
-                        "Yayında",
-                        "İtiraz Geldi - Savunma Bekliyor",
-                        "Tescil Tebliğ Beklemede",
-                        "Tescillendi 🎉",
-                        "Reddedildi ❌"
-                    ], index=["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"].index(secilen_asama) if secilen_asama in ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"] else 0)
+                    
+                    # Durum alanını o anki aşamada sabit tutuyoruz (değiştirilemez)
+                    c1.text_input("Yeni Durum / Aşama", value=secilen_asama, disabled=True)
+                    yeni_durum = secilen_asama
                     
                     if os.path.exists(USER_FILE):
                         u_df = pd.read_csv(USER_FILE)
