@@ -171,21 +171,21 @@ elif menu == "📥 Excel'den Yükle":
         try:
             if uploaded_file.name.endswith('.csv'):
                 try:
-                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python', mangle_dup_cols=True)
+                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python')
                 except Exception:
                     uploaded_file.seek(0)
                     try:
-                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python', mangle_dup_cols=True)
+                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python')
                     except Exception:
                         uploaded_file.seek(0)
-                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python', mangle_dup_cols=True)
+                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python')
             else:
                 yeni_data = pd.read_excel(uploaded_file)
             
             # Sütun isimlerindeki boşlukları temizleme
             yeni_data.columns = [str(col).strip() for col in yeni_data.columns]
             
-            # Yinelenen sütun isimleri varsa benzersizleştirme
+            # Yinelenen sütun isimleri varsa benzersizleştirme (manuel)
             cols = pd.Series(yeni_data.columns)
             for dup in cols[cols.duplicated()].unique(): 
                 cols[cols == dup] = [dup + '_' + str(i) if i != 0 else dup for i in range(sum(cols == dup))]
@@ -224,7 +224,6 @@ elif menu == "📥 Excel'den Yükle":
                 if 'Danışman' not in yeni_data.columns:
                     yeni_data['Danışman'] = st.session_state.kullanici
                 else:
-                    # Boş olan satırlar varsa oturum açan kullanıcıyı yaz, dolu olanlarda satırdaki ismi koru ve büyük harfe çevir
                     yeni_data['Danışman'] = yeni_data['Danışman'].fillna(st.session_state.kullanici)
                     yeni_data['Danışman'] = yeni_data['Danışman'].astype(str).str.strip().str.upper()
                 
