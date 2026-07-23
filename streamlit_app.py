@@ -219,21 +219,21 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         tc = c1.text_input("TC (11 Hane)")
         tel = c1.text_input("Telefon")
         c1.text_input("Danışman", value=aktif_kullanici_ad, disabled=True)
+        dogru_tarihi = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="")
         
-        # Doğum Tarihi Gün/Ay/Yıl metin girişi olarak ayarlandı
-        dogum_tarihi = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="01/01/1990")
-        
-        il = c2.selectbox("İl", ILLER)
+        il = c2.selectbox("Il", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
         odeme = c2.selectbox("Ödeme Türü", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
-        tutar = c2.number_input("Tutar (TL)", min_value=0.0)
+        
+        # Tutar boş bırakılarak doğrudan metin/sayı girişi olarak ayarlandı
+        tutar = c2.text_input("Tutar (TL)", value="")
         
         if st.form_submit_button("Satışı Kaydet"):
             new_row = {
                 "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
-                "Doğum Tarihi": dogum_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
-                "Satış Tarihi": s_tarihi.strip(), "Tutar": str(tutar), "Durum": "Muhasebe Onayı Bekliyor", 
+                "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
+                "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
                 "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
             }
             guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
