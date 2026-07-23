@@ -89,7 +89,6 @@ def load_data():
             "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
         ])
     
-    # Eski ID kolonu varsa temizle
     if "ID" in d_temp.columns:
         d_temp = d_temp.drop(columns=["ID"])
 
@@ -378,15 +377,31 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     ], index=["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"].index(secilen_asama) if secilen_asama in ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"] else 0)
                     
                     f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
-                    b_no = c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                    y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
-                    t_tar = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                    f_tarih_val = str(s_row.get('Fatura Tarihi', ''))
+                    try:
+                        f_tarih_parsed = datetime.strptime(f_tarih_val, "%d/%m/%Y") if f_tarih_val and f_tarih_val != 'nan' else datetime.now()
+                    except:
+                        f_tarih_parsed = datetime.now()
+                    f_tarih = c2.date_input("Fatura Tarihi", value=f_tarih_parsed, key=f"form_f_tar_{secilen_marka}")
+                    
+                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
+                    b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
+                    try:
+                        b_tarih_parsed = datetime.strptime(b_tarih_val, "%d/%m/%Y") if b_tarih_val and b_tarih_val != 'nan' else datetime.now()
+                    except:
+                        b_tarih_parsed = datetime.now()
+                    b_tarih = c2.date_input("Başvuru Tarihi", value=b_tarih_parsed, key=f"form_b_tar_{secilen_marka}")
+                    
+                    y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
+                    t_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = yeni_durum
                         df.at[idx, 'Fatura No'] = f_no.strip()
+                        df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
                         df.at[idx, 'Başvuru No'] = b_no.strip()
+                        df.at[idx, 'Başvuru Tarihi'] = b_tarih.strftime("%d/%m/%Y")
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                         df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
                         df.to_csv(DATA_FILE, index=False)
