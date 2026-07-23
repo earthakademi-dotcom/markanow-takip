@@ -86,30 +86,8 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
-    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
-        d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-        d_temp.to_csv(DATA_FILE, index=False)
-    else:
-        try:
-            d_temp = pd.read_csv(DATA_FILE, dtype=str)
-        except pd.errors.EmptyDataError:
-            d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-            d_temp.to_csv(DATA_FILE, index=False)
-    
-    if "ID" in d_temp.columns:
-        d_temp = d_temp.drop(columns=["ID"])
-
-    for col in zorunlu_kolonlar:
-        if col not in d_temp.columns:
-            d_temp[col] = ""
-            
-    d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
-    gecerli_durumlar = [
-        "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
-        "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-        "Tescillendi 🎉", "Reddedildi ❌"
-    ]
-    d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
+    # Tüm veritabanını sıfırlamak için boş DataFrame oluşturup kaydediyoruz
+    d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
     d_temp.to_csv(DATA_FILE, index=False)
     return d_temp
 
@@ -205,7 +183,7 @@ df = load_data()
 
 if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
-    st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
+    st.write("Veritabanı sıfırlandı. Sol taraftaki menüyü kullanarak yeni satış girişlerinize başlayabilirsiniz.")
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
@@ -349,6 +327,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Durum'] = "Başvuru Beklemede"
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
+                            df.at[idx, 'Danışman'] = aktif_kullanici_ad
                             df.to_csv(DATA_FILE, index=False)
                             st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
                             st.rerun()
@@ -378,6 +357,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         "Reddedildi ❌"
                     ], index=["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"].index(secilen_asama) if secilen_asama in ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"] else 0)
                     
+                    if os.path.exists(USER_FILE):
+                        u_df = pd.read_csv(USER_FILE)
+                        personel_listesi = u_df["İsim"].tolist()
+                    else:
+                        personel_listesi = [aktif_kullanici_ad]
+                    
+                    mevcut_danisman = str(s_row.get('Danışman', aktif_kullanici_ad)).strip().upper()
+                    if mevcut_danisman not in personel_listesi:
+                        personel_listesi.append(mevcut_danisman)
+                    
+                    danisman_secim = c2.selectbox("Danışman", options=personel_listesi, index=personel_listesi.index(mevcut_danisman) if mevcut_danisman in personel_listesi else 0)
+
                     f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
                     f_tarih_val = str(s_row.get('Fatura Tarihi', ''))
                     try:
@@ -404,6 +395,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = yeni_durum
+                        df.at[idx, 'Danışman'] = danisman_secim
                         df.at[idx, 'Fatura No'] = f_no.strip()
                         df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
                         df.at[idx, 'Başvuru No'] = b_no.strip()
