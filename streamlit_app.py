@@ -212,7 +212,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         
     st.markdown(f"<h2>📝 Yeni Satış Girişi (Danışman: {aktif_kullanici_ad})</h2>", unsafe_allow_html=True)
     
-    with st.form("yeni_satis_formu", clear_on_submit=True):
+    with st.form("yeni_satis_formu", clear_on_submit=False):
         c1, c2 = st.columns(2)
         m_adi = c1.text_input("Marka Adı")
         ad_soyad = c1.text_input("İsim Soyisim")
@@ -221,24 +221,37 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         c1.text_input("Danışman", value=aktif_kullanici_ad, disabled=True)
         dogru_tarihi = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="")
         
-        il = c2.selectbox("Il", ILLER)
+        il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
         odeme = c2.selectbox("Ödeme Türü", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
-        
-        # Tutar boş bırakılarak doğrudan metin/sayı girişi olarak ayarlandı
         tutar = c2.text_input("Tutar (TL)", value="")
         
-        if st.form_submit_button("Satışı Kaydet"):
-            new_row = {
-                "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
-                "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
-                "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
-            }
-            guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-            guncel_df.to_csv(DATA_FILE, index=False)
-            st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi.")
+        submitted = st.form_submit_button("Satışı Kaydet")
+        if submitted:
+            # Eksik alan kontrolü
+            eksik_alanlar = []
+            if not m_adi.strip(): eksik_alanlar.append("Marka Adı")
+            if not ad_soyad.strip(): eksik_alanlar.append("İsim Soyisim")
+            if not tc.strip(): eksik_alanlar.append("TC")
+            if not tel.strip(): eksik_alanlar.append("Telefon")
+            if not dogru_tarihi.strip(): eksik_alanlar.append("Doğum Tarihi")
+            if not sinif: eksik_alanlar.append("Sınıf Seçimi")
+            if not s_tarihi.strip(): eksik_alanlar.append("Satış Tarihi")
+            if not tutar.strip(): eksik_alanlar.append("Tutar")
+            
+            if eksik_alanlar:
+                st.error(f"❌ Lütfen boş bırakılan zorunlu alanları doldurunuz: {', '.join(eksik_alanlar)}")
+            else:
+                new_row = {
+                    "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), 
+                    "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
+                    "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
+                }
+                guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                guncel_df.to_csv(DATA_FILE, index=False)
+                st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi.")
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
     if st.button("⬅️ Geri Çık"):
