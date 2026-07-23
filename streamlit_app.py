@@ -39,6 +39,7 @@ st.markdown(
     
     [data-testid="stSidebar"] {{
         background-color: #6b1d2f !important;
+        overflow-y: auto !important;
     }}
     
     [data-testid="stSidebar"] span, 
