@@ -101,10 +101,27 @@ if not st.session_state.kullanici:
     st.stop()
 
 # --- MENÜ ---
+st.sidebar.markdown(
+    """
+    <style>
+    div.stButton > button {
+        background-color: #2C3E50;
+        color: white;
+    }
+    div.stButton > button:hover {
+        background-color: #34495E;
+        color: white;
+        border-color: #34495E;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.sidebar.write(f"👤 Aktif: **{st.session_state.kullanici}**")
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
-    st.session_state.kullanici = None
-    st.rerun()
+  st.session_state.kullanici = None
+  st.rerun()
 st.sidebar.write("---")
 
 menu_options = ["📝 Satış Girişi", "📊 Satışlarım"]
