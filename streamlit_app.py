@@ -89,7 +89,6 @@ def load_data():
             "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
         ])
     
-    # Eksik kolonları otomatik ekleme (KeyError önlemi)
     zorunlu_kolonlar = ["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"]
     for col in zorunlu_kolonlar:
         if col not in d_temp.columns:
@@ -309,41 +308,65 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     else:
         st.dataframe(asama_df, use_container_width=True)
         st.write("---")
-        st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
         
-        sec_id = st.text_input("Güncellenecek Satış ID'sini Girin", key=f"inp_{secilen_asama}")
-        if sec_id.strip() and sec_id.strip() in df['ID'].astype(str).values:
-            s_row = df[df['ID'].astype(str) == sec_id.strip()].iloc[0]
-            st.markdown(f"**Marka:** {s_row['Marka Adı']} | **Danışman:** {s_row['Danışman']}")
-            
-            with st.form(f"form_guncelle_{sec_id}"):
-                c1, c2 = st.columns(2)
-                yeni_durum = c1.selectbox("Yeni Durum / Aşama", [
-                    "Muhasebe Onayı Bekliyor",
-                    "Başvuru Beklemede",
-                    "Kurum İncelemesinde",
-                    "Yayında",
-                    "İtiraz Geldi - Savunma Bekliyor",
-                    "Tescil Tebliğ Beklemede",
-                    "Tescillendi 🎉",
-                    "Reddedildi ❌"
-                ], index=["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"].index(secilen_asama) if secilen_asama in ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"] else 0)
+        # Eğer "Muhasebe Onayı Bekliyor" sayfasındaysak özel onaylama arayüzü
+        if secilen_asama == "Muhasebe Onayı Bekliyor":
+            st.subheader("✅ Onay Bekleyen Satışları Faturalandır ve Başvuru Beklemede'ye Al")
+            for i, row in asama_df.iterrows():
+                with st.container():
+                    st.markdown(f"**ID: {row['ID']}** | Marka: **{row['Marka Adı']}** | Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
+                    c1, c2, c3 = st.columns(3)
+                    f_no = c1.text_input("Fatura No", key=f"f_no_{row['ID']}")
+                    f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['ID']}")
+                    
+                    if c3.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['ID']}"):
+                        if f_no.strip():
+                            idx = df.index[df['ID'].astype(str) == str(row['ID'])][0]
+                            df.at[idx, 'Durum'] = "Başvuru Beklemede"
+                            df.at[idx, 'Fatura No'] = f_no.strip()
+                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
+                            df.to_csv(DATA_FILE, index=False)
+                            st.success(f"✅ ID {row['ID']} onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
+                            st.rerun()
+                        else:
+                            st.warning("Lütfen bir Fatura No girin.")
+                    st.write("---")
+        else:
+            # Diğer aşamalar için genel güncelleme paneli
+            st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
+            sec_id = st.text_input("Güncellenecek Satış ID'sini Girin", key=f"inp_{secilen_asama}")
+            if sec_id.strip() and sec_id.strip() in df['ID'].astype(str).values:
+                s_row = df[df['ID'].astype(str) == sec_id.strip()].iloc[0]
+                st.markdown(f"**Marka:** {s_row['Marka Adı']} | **Danışman:** {s_row['Danışman']}")
                 
-                f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
-                b_no = c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
-                t_tar = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
-                
-                if st.form_submit_button("💾 Kaydı Güncelle"):
-                    idx = df.index[df['ID'].astype(str) == sec_id.strip()][0]
-                    df.at[idx, 'Durum'] = yeni_durum
-                    df.at[idx, 'Fatura No'] = f_no.strip()
-                    df.at[idx, 'Başvuru No'] = b_no.strip()
-                    df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
-                    df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
-                    df.to_csv(DATA_FILE, index=False)
-                    st.success("✅ Kayıt başarıyla güncellendi!")
-                    st.rerun()
+                with st.form(f"form_guncelle_{sec_id}"):
+                    c1, c2 = st.columns(2)
+                    yeni_durum = c1.selectbox("Yeni Durum / Aşama", [
+                        "Muhasebe Onayı Bekliyor",
+                        "Başvuru Beklemede",
+                        "Kurum İncelemesinde",
+                        "Yayında",
+                        "İtiraz Geldi - Savunma Bekliyor",
+                        "Tescil Tebliğ Beklemede",
+                        "Tescillendi 🎉",
+                        "Reddedildi ❌"
+                    ], index=["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"].index(secilen_asama) if secilen_asama in ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescillendi 🎉", "Reddedildi ❌"] else 0)
+                    
+                    f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
+                    b_no = c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
+                    y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
+                    t_tar = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                    
+                    if st.form_submit_button("💾 Kaydı Güncelle"):
+                        idx = df.index[df['ID'].astype(str) == sec_id.strip()][0]
+                        df.at[idx, 'Durum'] = yeni_durum
+                        df.at[idx, 'Fatura No'] = f_no.strip()
+                        df.at[idx, 'Başvuru No'] = b_no.strip()
+                        df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
+                        df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
+                        df.to_csv(DATA_FILE, index=False)
+                        st.success("✅ Kayıt başarıyla güncellendi!")
+                        st.rerun()
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     if st.button("⬅️ Geri Çık"):
