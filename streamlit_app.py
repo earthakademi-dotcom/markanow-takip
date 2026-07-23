@@ -106,12 +106,54 @@ if not os.path.exists(USER_FILE):
         "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123"]
     }).to_csv(USER_FILE, index=False)
 
+def ay_ekle(kaynak_tarih, ay_sayisi=2):
+    """Verilen tarihe tam ay ekler (Örn: 10.02.2026 -> 10.04.2026)"""
+    yil = kaynak_tarih.year + (kaynak_tarih.month + ay_sayisi - 1) // 12
+    ay = (kaynak_tarih.month + ay_sayisi - 1) % 12 + 1
+    # Ayın gün sınırını aşmamak için kontrol (örn 31 Ocak -> 28/29 Şubat)
+    gun = kaynak_tarih.day
+    while True:
+        try:
+            return datetime(yil, ay, gun)
+        except ValueError:
+            gun -= 1
+
+def resmi_tatil_ve_tatil_kontrol(dt):
+    """Hafta sonu veya resmi tatil kontrolü yapar, iş günü değilse kaydırır."""
+    resmi_tatiller = [
+        (1, 1),   # Yılbaşı
+        (23, 4),  # 23 Nisan
+        (1, 5),   # 1 Mayıs
+        (19, 5),  # 19 Mayıs
+        (15, 7),  # 15 Temmuz
+        (30, 8),  # 30 Ağustos
+        (29, 10), # 29 Ekim
+    ]
+    
+    while True:
+        haftanin_gunu = dt.weekday() # 5: Cumartesi, 6: Pazar
+        ay_gun = (dt.day, dt.month)
+        
+        is_hafta_sonu = (haftanin_gunu >= 5)
+        is_resmi_tatil = ay_gun in resmi_tatiller
+        
+        if is_hafta_sonu:
+            # Haftasonu ise ilk Pazartesi'ye at (Cumartesi +2, Pazar +1)
+            gun_ekle = 2 if haftanin_gunu == 5 else 1
+            dt += timedelta(days=gun_ekle)
+        elif is_resmi_tatil:
+            # Resmi tatilse ertesi güne at
+            dt += timedelta(days=1)
+        else:
+            break
+    return dt
+
 def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
-        "Sonraki Aşama Seçimi", "İtiraz Tebliğ Tarihi", "Tescil Tebliğ Tarihi"
+        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -274,7 +316,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), 
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tebliğ Tarihi": "", "Tescil Tebliğ Tarihi": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
@@ -455,7 +497,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     if y_tar.strip() and y_tar.strip().lower() != 'nan':
                         try:
                             parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
-                            default_yayin_bitis = (parsed_y_tar + timedelta(days=60)).strftime("%d/%m/%Y")
+                            # Tam 2 ay ekleme kuralı
+                            taslak_bitis = ay_ekle(parsed_y_tar, 2)
+                            # Hafta sonu ve resmi tatil kontrolü (Ertesi gün / İlk Pazartesi kuralı)
+                            hesaplanan_bitis = resmi_tatil_ve_tatil_kontrol(taslak_bitis)
+                            default_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
                         except:
                             pass
 
@@ -463,21 +509,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
 
-                    # Yayında ekranı için Sonraki Aşama Seçimi ve ilgili tarih kutusu
                     mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
                     secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
                     secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
 
                     sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
 
-                    mevcut_itiraz_tar = str(s_row.get('İtiraz Tebliğ Tarihi', '')) if pd.notna(s_row.get('İtiraz Tebliğ Tarihi')) else ""
+                    mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
                     mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
 
                     itiraz_tar = ""
                     tescil_tar = ""
 
                     if sonraki_asama == "İtiraz Tebliğ Beklemede":
-                        itiraz_tar = c2.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
+                        itiraz_tar = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
                     elif sonraki_asama == "Tescil Tebliğ Beklemede":
                         tescil_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
 
@@ -515,7 +560,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                         df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
                         if itiraz_tar.strip():
-                            df.at[idx, 'İtiraz Tebliğ Tarihi'] = itiraz_tar.strip()
+                            df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
                         if tescil_tar.strip():
                             df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
                             
