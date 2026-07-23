@@ -351,19 +351,21 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
                     c1, c2, c3 = st.columns(3)
                     f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
-                    f_tarih = c2.date_input("Fatura Tarihi", value=datetime.now(), key=f"f_tar_{row['Marka Adı']}")
+                    
+                    # Fatura Tarihi gün/ay/yıl (GG/AA/YYYY) metin kutusu olarak güncellendi
+                    f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
                     
                     if c3.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}"):
-                        if f_no.strip():
+                        if f_no.strip() and f_tarih.strip():
                             idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
                             df.at[idx, 'Durum'] = "Başvuru Beklemede"
                             df.at[idx, 'Fatura No'] = f_no.strip()
-                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
+                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                             df.to_csv(DATA_FILE, index=False)
                             st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
                             st.rerun()
                         else:
-                            st.warning("Lütfen bir Fatura No girin.")
+                            st.warning("Lütfen Fatura No ve Fatura Tarihi alanlarını doldurun.")
                     st.write("---")
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
@@ -407,11 +409,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                         f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
                         f_tarih_val = str(s_row.get('Fatura Tarihi', ''))
-                        try:
-                            f_tarih_parsed = datetime.strptime(f_tarih_val, "%d/%m/%Y") if f_tarih_val and f_tarih_val != 'nan' else datetime.now()
-                        except:
-                            f_tarih_parsed = datetime.now()
-                        f_tarih = c2.date_input("Fatura Tarihi", value=f_tarih_parsed, key=f"form_f_tar_{secilen_marka}")
+                        f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=f_tarih_val if f_tarih_val and f_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"))
 
                     b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
                     b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
@@ -438,7 +436,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'Danışman'] = orijinal_danisman
                         if secilen_asama != "Başvuru Beklemede":
                             df.at[idx, 'Fatura No'] = f_no.strip()
-                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
+                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                         df.at[idx, 'Başvuru No'] = b_no.strip()
                         df.at[idx, 'Başvuru Tarihi'] = b_tarih.strftime("%d/%m/%Y")
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
