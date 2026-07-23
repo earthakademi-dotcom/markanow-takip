@@ -110,7 +110,6 @@ def ay_ekle(kaynak_tarih, ay_sayisi=2):
     """Verilen tarihe tam ay ekler (Örn: 10.02.2026 -> 10.04.2026)"""
     yil = kaynak_tarih.year + (kaynak_tarih.month + ay_sayisi - 1) // 12
     ay = (kaynak_tarih.month + ay_sayisi - 1) % 12 + 1
-    # Ayın gün sınırını aşmamak için kontrol (örn 31 Ocak -> 28/29 Şubat)
     gun = kaynak_tarih.day
     while True:
         try:
@@ -131,18 +130,16 @@ def resmi_tatil_ve_tatil_kontrol(dt):
     ]
     
     while True:
-        haftanin_gunu = dt.weekday() # 5: Cumartesi, 6: Pazar
+        haftanin_gunu = dt.weekday()
         ay_gun = (dt.day, dt.month)
         
         is_hafta_sonu = (haftanin_gunu >= 5)
         is_resmi_tatil = ay_gun in resmi_tatiller
         
         if is_hafta_sonu:
-            # Haftasonu ise ilk Pazartesi'ye at (Cumartesi +2, Pazar +1)
             gun_ekle = 2 if haftanin_gunu == 5 else 1
             dt += timedelta(days=gun_ekle)
         elif is_resmi_tatil:
-            # Resmi tatilse ertesi güne at
             dt += timedelta(days=1)
         else:
             break
@@ -497,9 +494,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     if y_tar.strip() and y_tar.strip().lower() != 'nan':
                         try:
                             parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
-                            # Tam 2 ay ekleme kuralı
                             taslak_bitis = ay_ekle(parsed_y_tar, 2)
-                            # Hafta sonu ve resmi tatil kontrolü (Ertesi gün / İlk Pazartesi kuralı)
                             hesaplanan_bitis = resmi_tatil_ve_tatil_kontrol(taslak_bitis)
                             default_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
                         except:
@@ -513,7 +508,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
                     secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
 
-                    sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
+                    # Sadece Yayında aşamasındayken göster veya aktif tut
+                    sonraki_asama = st.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
 
                     mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
                     mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
@@ -522,9 +518,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     tescil_tar = ""
 
                     if sonraki_asama == "İtiraz Tebliğ Beklemede":
-                        itiraz_tar = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
+                        itiraz_tar = st.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
                     elif sonraki_asama == "Tescil Tebliğ Beklemede":
-                        tescil_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
+                        tescil_tar = st.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
