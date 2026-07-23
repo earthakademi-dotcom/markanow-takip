@@ -433,9 +433,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=mevcut_durum_index)
                         c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
 
-                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                    b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
-                    b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=b_tarih_val if b_tarih_val and b_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_b_tar_{secilen_marka}")
+                    # Mevcut Değerler (Kayıtlı Veriler)
+                    mevcut_b_no = str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else ""
+                    mevcut_b_tar = str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else ""
+                    mevcut_kurum_bitis = str(s_row.get('Kurum İnceleme Bitiş Tarihi', '')) if pd.notna(s_row.get('Kurum İnceleme Bitiş Tarihi')) else ""
+
+                    # Eğer daha önce girilmişse kilitli (disabled=True), boşsa yeni giriş için aktif tutulabilir
+                    b_no_disabled = bool(mevcut_b_no.strip() and mevcut_b_no != 'nan')
+                    b_tar_disabled = bool(mevcut_b_tar.strip() and mevcut_b_tar != 'nan')
+                    kurum_bitis_disabled = bool(mevcut_kurum_bitis.strip() and mevcut_kurum_bitis != 'nan')
+
+                    b_no = c1.text_input("Başvuru No", value=mevcut_b_no if mevcut_b_no != 'nan' else "", disabled=b_no_disabled)
+                    b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=mevcut_b_tar if mevcut_b_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), disabled=b_tar_disabled, key=f"form_b_tar_{secilen_marka}")
                     
                     default_bitis = ""
                     if b_tarih.strip():
@@ -445,32 +454,35 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         except:
                             default_bitis = datetime.now().strftime("%d/%m/%Y")
 
-                    mevcut_bitis = str(s_row.get('Kurum İnceleme Bitiş Tarihi', ''))
-                    final_bitis_val = mevcut_bitis if mevcut_bitis and mevcut_bitis != 'nan' else default_bitis
+                    final_bitis_val = mevcut_kurum_bitis if mevcut_kurum_bitis and mevcut_kurum_bitis != 'nan' else default_bitis
 
-                    kurum_bitis = c1.text_input("Kurum İnceleme Bitiş Tarihi (GG/AA/YYYY)", value=final_bitis_val, key=f"form_kurum_bitis_{secilen_marka}")
+                    kurum_bitis = c1.text_input("Kurum İnceleme Bitiş Tarihi (GG/AA/YYYY)", value=final_bitis_val, disabled=kurum_bitis_disabled, key=f"form_kurum_bitis_{secilen_marka}")
 
-                    if secilen_asama == "Başvuru Beklemede":
-                        y_tar = str(s_row.get('Yayın Tarihi', ''))
-                    else:
-                        y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
+                    y_tar_val = str(s_row.get('Yayın Tarihi', ''))
+                    y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=y_tar_val if y_tar_val and y_tar_val != 'nan' else "", key=f"form_y_tar_{secilen_marka}")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         final_durum = yeni_durum
-                        if secilen_asama == "Başvuru Beklemede" and b_no.strip() and b_tarih.strip():
-                            final_durum = "Kurum İncelemesinde"
+                        if secilen_asama == "Kurum İncelemesinde" and y_tar.strip():
+                            final_durum = "Yayında"
 
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
                         df.at[idx, 'Danışman'] = orijinal_danisman
-                        df.at[idx, 'Başvuru No'] = b_no.strip()
-                        df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
-                        df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
+                        
+                        # Sadece daha önceden boşsa güncellemelerine izin ver, doluysa sabit tut
+                        if not b_no_disabled and b_no.strip():
+                            df.at[idx, 'Başvuru No'] = b_no.strip()
+                        if not b_tar_disabled and b_tarih.strip():
+                            df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
+                        if not kurum_bitis_disabled and kurum_bitis.strip():
+                            df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
+                            
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                         df.to_csv(DATA_FILE, index=False)
                         
-                        if final_durum == "Kurum İncelemesinde" and secilen_asama != "Kurum İncelemesinde":
-                            st.success(f"✅ Başvuru No ve Başvuru Tarihi girildiği için '{secilen_marka}' otomatik olarak 'Kurum İncelemesinde' aşamasına taşındı!")
+                        if final_durum == "Yayında" and secilen_asama != "Yayında":
+                            st.success(f"✅ Yayın Tarihi girildiği için '{secilen_marka}' otomatik olarak 'Yayında' aşamasına taşındı!")
                         else:
                             st.success(f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!")
                         st.rerun()
