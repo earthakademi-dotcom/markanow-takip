@@ -1,4 +1,4 @@
-mport streamlit as st
+import streamlit as st
 import pandas as pd
 import os
 import base64
@@ -62,7 +62,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- TANIMLAMALAR VE VERİ YÜKLEME ---
+# --- TANIMLAMALAR DAN VERİ YÜKLEME ---
 USER_FILE = "users.csv"
 DATA_FILE = "marka_takip.csv"
 
