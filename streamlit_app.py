@@ -474,7 +474,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     final_yayin_bitis_val = mevcut_yayin_bitis if mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan' else default_yayin_bitis
 
-                    yayin_bitis = c1.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=yayin_bitis_disabled, key=f"form_yayin_bitis_{secilen_marka}")
+                    yayin_bitis = c1.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
@@ -500,8 +500,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             
                         if not y_tar_disabled and y_tar.strip():
                             df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
-                        if not yayin_bitis_disabled and yayin_bitis.strip():
-                            df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis.strip()
+                            
+                        # Eğer daha önce boşsa veya otomatik hesaplanacaksa kaydet, aksi takdirde sabitle
+                        if not mevcut_yayin_bitis.strip() or mevcut_yayin_bitis == 'nan':
+                            df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val.strip()
                             
                         df.to_csv(DATA_FILE, index=False)
                         
