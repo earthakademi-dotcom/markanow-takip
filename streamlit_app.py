@@ -137,9 +137,11 @@ def resmi_tatil_ve_tatil_kontrol(dt):
         is_resmi_tatil = ay_gun in resmi_tatiller
         
         if is_hafta_sonu:
+            # Cumartesi (5) veya Pazar (6) gününü ilk Pazartesiye kaydır
             gun_ekle = 2 if haftanin_gunu == 5 else 1
             dt += timedelta(days=gun_ekle)
         elif is_resmi_tatil:
+            # Resmi tatilse ertesi güne kaydır
             dt += timedelta(days=1)
         else:
             break
@@ -489,19 +491,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
                     
-                    default_yayin_bitis = ""
+                    calculated_yayin_bitis = ""
                     if y_tar.strip() and y_tar.strip().lower() != 'nan':
                         try:
                             parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
                             taslak_bitis = ay_ekle(parsed_y_tar, 2)
                             hesaplanan_bitis = resmi_tatil_ve_tatil_kontrol(taslak_bitis)
-                            default_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
+                            calculated_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
                         except:
                             pass
 
-                    final_yayin_bitis_val = mevcut_yayin_bitis if mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan' else default_yayin_bitis
+                    final_yayin_bitis_val = hesaplanan_bitis_val = mevcut_yayin_bitis if (mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan') else calculated_yayin_bitis
 
-                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=False, key=f"form_yayin_bitis_{secilen_marka}")
+                    # Yayın Bitiş Tarihi artık otomatik hesaplanır ve DEĞİŞTİRİLEMEZ (disabled=True)
+                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
 
                     mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
                     secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
@@ -549,8 +552,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if not y_tar_disabled and y_tar.strip():
                             df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                             
-                        if yayin_bitis.strip():
-                            df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis.strip()
+                        # Otomatik hesaplanan/kilitlenen Yayın Bitiş Tarihini kaydediyoruz
+                        if final_yayin_bitis_val:
+                            df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
 
                         df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
                         if itiraz_tar.strip():
