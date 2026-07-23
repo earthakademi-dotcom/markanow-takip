@@ -216,7 +216,7 @@ elif menu == "📥 Excel'den Yükle":
                     yeni_data['Danışman'] = st.session_state.kullanici
                 
                 if 'Durum' not in yeni_data.columns:
-                    yeni_data['Durum'] = 'Tamamlandı' # Geçmiş satışlar için doğrudan tamamlandı/onaylı kabul edilebilir
+                    yeni_data['Durum'] = 'Tamamlandı'
                 
                 # Eksik olabilecek standart kolonları doldurma
                 for kol in ["Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Fatura No"]:
@@ -231,6 +231,39 @@ elif menu == "📥 Excel'den Yükle":
 
 elif menu == "💰 Muhasebe Onayı":
     st.header("💰 Muhasebe Onay ve Tam Düzenleme Paneli")
+    
+    # --- Toplu Durum Güncelleme ve Silme Araçları ---
+    with st.expander("🛠️ TOPLU İŞLEMLER (Seçilenleri Onayla / Tamamla / Sil)"):
+        toplu_secim_idleri = st.multiselect("İşlem Yapılacak Satış ID'lerini Seçin veya Girin", options=df['ID'].tolist())
+        col_t1, col_t2, col_t3 = st.columns(3)
+        with col_t1:
+            if st.button("✅ Seçilenleri 'Onayla'", use_container_width=True):
+                if toplu_secim_idleri:
+                    df.loc[df['ID'].isin(toplu_secim_idleri), 'Durum'] = "Onaylandı"
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success("Seçilen kayıtlar onaylandı!")
+                    st.rerun()
+                else:
+                    st.warning("Lütfen en az bir ID seçin.")
+        with col_t2:
+            if st.button("🎯 Seçilenleri 'Tamamlandı' Yap", use_container_width=True):
+                if toplu_secim_idleri:
+                    df.loc[df['ID'].isin(toplu_secim_idleri), 'Durum'] = "Tamamlandı"
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success("Seçilen kayıtlar tamamlandı olarak güncellendi!")
+                    st.rerun()
+                else:
+                    st.warning("Lütfen en az bir ID seçin.")
+        with col_t3:
+            if st.button("❌ Seçilenleri Kalıcı Olarak Sil", use_container_width=True):
+                if toplu_secim_idleri:
+                    df = df[~df['ID'].isin(toplu_secim_idleri)]
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success("Seçilen kayıtlar silindi!")
+                    st.rerun()
+                else:
+                    st.warning("Lütfen en az bir ID seçin.")
+
     with st.expander("✏️ TÜM SATIŞ BİLGİLERİNİ TAM DÜZENLE"):
         secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
         if secili_id in df['ID'].values:
@@ -268,6 +301,11 @@ elif menu == "💰 Muhasebe Onayı":
                 if st.form_submit_button("TÜMÜNÜ GÜNCELLE"):
                     df.loc[df['ID'] == secili_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar', 'Durum', 'Fatura No']] = [v_m, v_a, v_t, v_tl, v_d, v_i, v_s, v_o, v_tu, v_du, v_f]
                     df.to_csv(DATA_FILE, index=False); st.success("Güncellendi!"); st.rerun()
+                    
+    st.write("---")
+    st.subheader("📋 Tüm Satış Listesi ve Onay Bekleyenler")
+    st.dataframe(df, use_container_width=True)
+    
     for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
         if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
             df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"; df.to_csv(DATA_FILE, index=False); st.rerun()
