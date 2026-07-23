@@ -40,6 +40,7 @@ st.markdown(
     [data-testid="stSidebar"] {{
         background-color: #6b1d2f !important;
         overflow-y: auto !important;
+        max-height: 100vh !important;
     }}
     
     [data-testid="stSidebar"] span, 
@@ -194,7 +195,7 @@ elif menu == "📊 Satışlarım":
 
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({gosterilen_ay} {gosterilen_yil})")
     
-    # Kullanıcıya ait satışları filtreleme
+    # Kullanıcıya ait tüm satışları çek (Durum bağımsız)
     kullanici_df = df[df['Danışman'].astype(str).str.strip().str.upper() == str(st.session_state.kullanici).strip().upper()].copy()
     
     # Ay ve Yıl filtresi uygulama
