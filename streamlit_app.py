@@ -419,8 +419,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         t_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
+                        # Otomatik Aşama Kontrolü: Başvuru No ve Başvuru Tarihi girildiyse ve henüz Başvuru Beklemede aşamasındaysa Kurum İncelemesinde yap
+                        final_durum = yeni_durum
+                        if secilen_asama in ["Başvuru Beklemede", "Muhasebe Onayı Bekliyor"] and b_no.strip() and b_tarih:
+                            final_durum = "Kurum İncelemesinde"
+
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                        df.at[idx, 'Durum'] = yeni_durum
+                        df.at[idx, 'Durum'] = final_durum
                         df.at[idx, 'Danışman'] = danisman_secim
                         df.at[idx, 'Fatura No'] = f_no.strip()
                         df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
@@ -429,7 +434,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                         df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
                         df.to_csv(DATA_FILE, index=False)
-                        st.success(f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!")
+                        
+                        if final_durum == "Kurum İncelemesinde" and secilen_asama != "Kurum İncelemesinde":
+                            st.success(f"✅ Başvuru No ve Tarihi girildiği için '{secilen_marka}' otomatik olarak 'Kurum İncelemesinde' aşamasına taşındı!")
+                        else:
+                            st.success(f"✅ '{secilen_marka}' markasına ait kayıt başarıyla güncellendi!")
                         st.rerun()
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
