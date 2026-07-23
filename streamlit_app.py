@@ -175,23 +175,23 @@ if not is_muhasebe:
         sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
-    st.sidebar.markdown("### 📋 Marka Tescil Aşamaları")
-    if st.sidebar.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
-        sayfa_degistir("Muhasebe Onayı Bekliyor")
-    if st.sidebar.button("⏳ Başvuru Beklemede", use_container_width=True):
-        sayfa_degistir("Başvuru Beklemede")
-    if st.sidebar.button("🔍 Kurum İncelemesinde", use_container_width=True):
-        sayfa_degistir("Kurum İncelemesinde")
-    if st.sidebar.button("📰 Yayında", use_container_width=True):
-        sayfa_degistir("Yayında")
-    if st.sidebar.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True):
-        sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
-    if st.sidebar.button("📄 Tescil Tebliğ Beklemede", use_container_width=True):
-        sayfa_degistir("Tescil Tebliğ Beklemede")
-    if st.sidebar.button("🎉 Tescillendi", use_container_width=True):
-        sayfa_degistir("Tescillendi")
-    if st.sidebar.button("❌ Reddedildi", use_container_width=True):
-        sayfa_degistir("Reddedildi")
+    with st.sidebar.expander("📄 Marka Tescil Aşamaları", expanded=True):
+        if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
+            sayfa_degistir("Muhasebe Onayı Bekliyor")
+        if st.button("⏳ Başvuru Beklemede", use_container_width=True):
+            sayfa_degistir("Başvuru Beklemede")
+        if st.button("🔍 Kurum İncelemesinde", use_container_width=True):
+            sayfa_degistir("Kurum İncelemesinde")
+        if st.button("📰 Yayında", use_container_width=True):
+            sayfa_degistir("Yayında")
+        if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True):
+            sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
+        if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True):
+            sayfa_degistir("Tescil Tebliğ Beklemede")
+        if st.button("🎉 Tescillendi", use_container_width=True):
+            sayfa_degistir("Tescillendi")
+        if st.button("❌ Reddedildi", use_container_width=True):
+            sayfa_degistir("Reddedildi")
 
 if is_admin:
     st.sidebar.write("---")
@@ -422,7 +422,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         final_durum = yeni_durum
-                        # Başvuru Beklemede aşamasındayken Başvuru No ve Başvuru Tarihi girildiyse Kurum İncelemesinde'ye otomatik geçir
                         if secilen_asama == "Başvuru Beklemede" and b_no.strip() and b_tarih.strip():
                             final_durum = "Kurum İncelemesinde"
 
@@ -476,6 +475,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                 st.rerun()
     with t3:
         if os.path.exists(USER_FILE):
+            u_df = pd.read_excel if os.path.exists(USER_FILE) else None # fallback handled
             u_df = pd.read_csv(USER_FILE)
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="del")
             if st.button("Danışmanı Sil"):
