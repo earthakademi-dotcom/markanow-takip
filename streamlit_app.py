@@ -398,25 +398,32 @@ elif menu == "💰 Muhasebe Onayı":
                     df.at[idx, 'Durum'] = str(v_du)
                     df.at[idx, 'Fatura No'] = str(v_f)
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("✅ Onaylandı")
+                    st.success("✅ Güncellendi!")
                     st.rerun()
                     
     st.write("---")
     st.subheader("📋 Onay Bekleyen Satışlar")
     
+    # Sadece "Muhasebe Onayı Bekliyor" durumunda olanları listeliyoruz ki onaylanınca ekrandan gitsin
     bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
     st.dataframe(bekleyen_df, use_container_width=True)
     
     if not bekleyen_df.empty:
         for i, row in bekleyen_df.iterrows():
-            col_b1, col_b2 = st.columns([3, 1])
+            col_b1, col_b2, col_b3 = st.columns([2, 1, 1])
             with col_b1:
                 st.write(f"**ID: {row['ID']}** - {row['Marka Adı']} ({row['Tutar']} TL) - *{row['Danışman']}*")
             with col_b2:
                 if st.button(f"✅ Onayla", key=f"onay_tek_{row['ID']}"):
                     df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"
                     df.to_csv(DATA_FILE, index=False)
-                    st.success("✅ Onaylandı")
+                    st.success(f"✅ Onaylandı")
+                    st.rerun()
+            with col_b3:
+                if st.button(f"🎯 Tamamla", key=f"tamamla_tek_{row['ID']}"):
+                    df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Tamamlandı"
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success(f"🎯 Tamamlandı")
                     st.rerun()
 
 elif menu == "📊 Performans Raporu":
