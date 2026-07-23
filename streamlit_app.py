@@ -137,11 +137,9 @@ def resmi_tatil_ve_tatil_kontrol(dt):
         is_resmi_tatil = ay_gun in resmi_tatiller
         
         if is_hafta_sonu:
-            # Cumartesi (5) veya Pazar (6) gününü ilk Pazartesiye kaydır
             gun_ekle = 2 if haftanin_gunu == 5 else 1
             dt += timedelta(days=gun_ekle)
         elif is_resmi_tatil:
-            # Resmi tatilse ertesi güne kaydır
             dt += timedelta(days=1)
         else:
             break
@@ -501,16 +499,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         except:
                             pass
 
-                    final_yayin_bitis_val = hesaplanan_bitis_val = mevcut_yayin_bitis if (mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan') else calculated_yayin_bitis
+                    final_yayin_bitis_val = mevcut_yayin_bitis if (mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan') else calculated_yayin_bitis
 
-                    # Yayın Bitiş Tarihi artık otomatik hesaplanır ve DEĞİŞTİRİLEMEZ (disabled=True)
                     yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
 
                     mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
                     secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
                     secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
 
-                    sonraki_asama = st.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
+                    sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
 
                     mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
                     mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
@@ -519,9 +516,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     tescil_tar = ""
 
                     if sonraki_asama == "İtiraz Tebliğ Beklemede":
-                        itiraz_tar = st.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
+                        itiraz_tar = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
                     elif sonraki_asama == "Tescil Tebliğ Beklemede":
-                        tescil_tar = st.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
+                        tescil_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
@@ -552,7 +549,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if not y_tar_disabled and y_tar.strip():
                             df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
                             
-                        # Otomatik hesaplanan/kilitlenen Yayın Bitiş Tarihini kaydediyoruz
                         if final_yayin_bitis_val:
                             df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
 
