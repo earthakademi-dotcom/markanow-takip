@@ -133,7 +133,7 @@ if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYEND
 menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
 
-# --- SOL MENÜ AYLIK FİLTRELEME (Göster Butonlu) ---
+# --- SOL MENÜ AYLIK FİLTRELEME (Göster Butonlu ve Uyarı Eklenmiş) ---
 if menu == "📊 Satışlarım":
     st.sidebar.write("---")
     st.sidebar.subheader("📅 Ay Filtresi")
@@ -151,11 +151,13 @@ if menu == "📊 Satışlarım":
         st.session_state.aktif_ay = "Tümü"
         st.session_state.aktif_ay_kod = None
         st.session_state.aktif_yil = mevcut_yil_str
+        st.session_state.filtre_uyari = False
 
     if st.sidebar.button("🔍 Göster", use_container_width=True):
         st.session_state.aktif_ay = secilen_ay_isim
         st.session_state.aktif_ay_kod = aylar[secilen_ay_isim]
         st.session_state.aktif_yil = secilen_yil_input
+        st.session_state.filtre_uyari = True
         st.rerun()
 
 # --- MODÜLLER ---
@@ -185,6 +187,10 @@ elif menu == "📊 Satışlarım":
     gosterilen_ay_kod = st.session_state.get("aktif_ay_kod", None)
     gosterilen_yil = st.session_state.get("aktif_yil", str(datetime.now().year))
     
+    if st.session_state.get("filtre_uyari", False):
+        st.success(f"✅ {gosterilen_ay} {gosterilen_yil} dönemi satışları başarıyla getirildi.")
+        st.session_state.filtre_uyari = False
+
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({gosterilen_ay} {gosterilen_yil})")
     
     # Kullanıcıya ait satışları filtreleme
