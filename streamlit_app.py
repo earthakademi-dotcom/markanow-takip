@@ -428,31 +428,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         c1.text_input("Yeni Durum / Aşama", value="Başvuru Beklemede", disabled=True)
                         yeni_durum = "Başvuru Beklemede"
                         c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
-                        
-                        mevcut_f_no = str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else ""
-                        c1.text_input("Fatura No", value=mevcut_f_no, disabled=True)
-                        
-                        mevcut_f_tar = str(s_row.get('Fatura Tarihi', '')) if pd.notna(s_row.get('Fatura Tarihi')) else ""
-                        c2.text_input("Fatura Tarihi", value=mevcut_f_tar, disabled=True)
                     else:
                         mevcut_durum_index = tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0
                         yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=mevcut_durum_index)
                         c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
 
-                        f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
-                        f_tarih_val = str(s_row.get('Fatura Tarihi', ''))
-                        f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=f_tarih_val if f_tarih_val and f_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"))
-
                     b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
                     b_tarih_val = str(s_row.get('Başvuru Tarihi', ''))
                     b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=b_tarih_val if b_tarih_val and b_tarih_val != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_b_tar_{secilen_marka}")
                     
-                    # Başvuru tarihine otomatik 1 ay ekleyerek Kurum İnceleme Bitiş Tarihi hesaplama
                     default_bitis = ""
                     if b_tarih.strip():
                         try:
                             parsed_b_tar = datetime.strptime(b_tarih.strip(), "%d/%m/%Y")
-                            # 1 ay eklemek için yaklaşık 30 gün veya takvim ayı hesabı
                             default_bitis = (parsed_b_tar + timedelta(days=30)).strftime("%d/%m/%Y")
                         except:
                             default_bitis = datetime.now().strftime("%d/%m/%Y")
@@ -464,10 +452,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     if secilen_asama == "Başvuru Beklemede":
                         y_tar = str(s_row.get('Yayın Tarihi', ''))
-                        t_tar = str(s_row.get('Tescil Tebliğ Tarihi', ''))
                     else:
-                        y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
-                        t_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                        y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         final_durum = yeni_durum
@@ -477,14 +463,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
                         df.at[idx, 'Danışman'] = orijinal_danisman
-                        if secilen_asama != "Başvuru Beklemede":
-                            df.at[idx, 'Fatura No'] = f_no.strip()
-                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                         df.at[idx, 'Başvuru No'] = b_no.strip()
                         df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
                         df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
-                        df.at[idx, 'Tescil Tebliğ Tarihi'] = t_tar.strip()
                         df.to_csv(DATA_FILE, index=False)
                         
                         if final_durum == "Kurum İncelemesinde" and secilen_asama != "Kurum İncelemesinde":
