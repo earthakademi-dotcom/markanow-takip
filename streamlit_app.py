@@ -363,4 +363,4 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ '{s3}' sistemden silindi!")
-                st.rerun(
+                st.rerun()
