@@ -220,25 +220,19 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         tel = c1.text_input("Telefon")
         c1.text_input("Danışman", value=aktif_kullanici_ad, disabled=True)
         
-        st.markdown("<p style='color: white; font-weight: bold; margin-bottom: 0px;'>Doğum Tarihi</p>", unsafe_allow_html=True)
-        d1, d2, d3 = st.columns(3)
-        gun = d1.selectbox("Gün", range(1, 32))
-        ay = d2.selectbox("Ay", range(1, 13))
-        yil = d3.selectbox("Yıl", range(datetime.now().year, 1919, -1))
+        # Doğum Tarihi Gün/Ay/Yıl metin girişi olarak ayarlandı
+        dogum_tarihi = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="01/01/1990")
         
         il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
         odeme = c2.selectbox("Ödeme Türü", ["EFT", "Kredi Kartı"])
-        
-        # Satış Tarihi Gün/Ay/Yıl metin girişi olarak ayarlandı
         s_tarihi = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
-        
         tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         
         if st.form_submit_button("Satışı Kaydet"):
             new_row = {
                 "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
-                "Doğum Tarihi": f"{gun:02d}/{ay:02d}/{yil}", "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
+                "Doğum Tarihi": dogum_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                 "Satış Tarihi": s_tarihi.strip(), "Tutar": str(tutar), "Durum": "Muhasebe Onayı Bekliyor", 
                 "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
             }
