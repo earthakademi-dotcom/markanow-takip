@@ -456,7 +456,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     kurum_bitis = c1.text_input("Kurum İnceleme Bitiş Tarihi (GG/AA/YYYY)", value=final_bitis_val, disabled=kurum_bitis_disabled, key=f"form_kurum_bitis_{secilen_marka}")
 
-                    # Yayın Tarihi ve Yayın Bitiş Tarihi Mevcut Değerleri ve Kilit Kontrolü
                     mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
                     mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
 
