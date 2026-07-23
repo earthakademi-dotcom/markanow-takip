@@ -369,9 +369,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 with st.form(f"form_guncelle_{secilen_marka}"):
                     c1, c2 = st.columns(2)
                     
-                    # Durum alanını o anki aşamada sabit tutuyoruz (değiştirilemez)
-                    c1.text_input("Yeni Durum / Aşama", value=secilen_asama, disabled=True)
-                    yeni_durum = secilen_asama
+                    tum_durumlar = [
+                        "Muhasebe Onayı Bekliyor",
+                        "Başvuru Beklemede",
+                        "Kurum İncelemesinde",
+                        "Yayında",
+                        "İtiraz Geldi - Savunma Bekliyor",
+                        "Tescil Tebliğ Beklemede",
+                        "Tescillendi 🎉",
+                        "Reddedildi ❌"
+                    ]
+                    
+                    mevcut_durum_index = tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0
+                    yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=mevcut_durum_index)
                     
                     if os.path.exists(USER_FILE):
                         u_df = pd.read_csv(USER_FILE)
