@@ -73,7 +73,7 @@ SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
+        return pd.read_csv(DATA_FILE, dtype=str)
     return pd.DataFrame(columns=["ID", "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No"])
 
 # --- GİRİŞ ---
@@ -147,9 +147,10 @@ if menu == "📝 Satış Girişi":
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR); odeme = c2.selectbox("Ödeme", ["EFT", "Kredi Kartı"])
         s_tarihi = c2.date_input("Satış Tarihi"); tutar = c2.number_input("Tutar (TL)", min_value=0.0)
         if st.form_submit_button("Satışı Kaydet"):
-            new_row = {"ID": len(df)+1 if df.empty else df['ID'].max()+1, "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
+            new_row = {"ID": str(int(df['ID'].astype(float).max())+1) if not df.empty and 'ID' in df.columns and not df['ID'].isna().all() else "1", 
+                       "Marka Adı": m_adi, "Ad Soyad": ad_soyad, "TC": tc, "Telefon": tel, 
                        "Doğum Tarihi": f"{gun:02d}/{ay:02d}/{yil}", "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
-                       "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), "Tutar": tutar, 
+                       "Satış Tarihi": s_tarihi.strftime("%d/%m/%Y"), "Tutar": str(tutar), 
                        "Durum": "Muhasebe Onayı Bekliyor", "Danışman": st.session_state.kullanici, "Fatura No": ""}
             pd.concat([df, pd.DataFrame([new_row])], ignore_index=True).to_csv(DATA_FILE, index=False)
             st.success("Satış kaydedildi.")
@@ -171,16 +172,16 @@ elif menu == "📥 Excel'den Yükle":
         try:
             if uploaded_file.name.endswith('.csv'):
                 try:
-                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python')
+                    yeni_data = pd.read_csv(uploaded_file, encoding='utf-8', sep=None, engine='python', dtype=str)
                 except Exception:
                     uploaded_file.seek(0)
                     try:
-                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python')
+                        yeni_data = pd.read_csv(uploaded_file, encoding='latin-1', sep=None, engine='python', dtype=str)
                     except Exception:
                         uploaded_file.seek(0)
-                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python')
+                        yeni_data = pd.read_csv(uploaded_file, encoding='cp1254', sep=None, engine='python', dtype=str)
             else:
-                yeni_data = pd.read_excel(uploaded_file)
+                yeni_data = pd.read_excel(uploaded_file, dtype=str)
             
             # Sütun isimlerindeki boşlukları temizleme
             yeni_data.columns = [str(col).strip() for col in yeni_data.columns]
@@ -217,8 +218,8 @@ elif menu == "📥 Excel'den Yükle":
             
             if st.button("🚀 Tümünü Sisteme Ekle", use_container_width=True):
                 # ID atama
-                baslangic_id = int(df['ID'].max() + 1) if not df.empty and 'ID' in df.columns else 1
-                yeni_data['ID'] = range(baslangic_id, baslangic_id + len(yeni_data))
+                baslangic_id = int(df['ID'].astype(float).max() + 1) if not df.empty and 'ID' in df.columns and not df['ID'].isna().all() else 1
+                yeni_data['ID'] = [str(i) for i in range(baslangic_id, baslangic_id + len(yeni_data))]
                 
                 # Danışman sütunu tespiti ve satırdaki isimlerin atanması
                 if 'Danışman' not in yeni_data.columns:
@@ -250,12 +251,14 @@ elif menu == "💰 Muhasebe Onayı":
     
     # --- Toplu Durum Güncelleme ve Silme Araçları ---
     with st.expander("🛠️ TOPLU İŞLEMLER (Seçilenleri Onayla / Tamamla / Sil)"):
-        toplu_secim_idleri = st.multiselect("İşlem Yapılacak Satış ID'lerini Seçin veya Girin", options=df['ID'].tolist())
+        secenek_idleri = [int(float(x)) for x in df['ID'].dropna().tolist() if str(x).replace('.','',1).isdigit()]
+        toplu_secim_idleri = st.multiselect("İşlem Yapılacak Satış ID'lerini Seçin veya Girin", options=secenek_idleri)
         col_t1, col_t2, col_t3 = st.columns(3)
         with col_t1:
             if st.button("✅ Seçilenleri 'Onayla'", use_container_width=True):
                 if toplu_secim_idleri:
-                    df.loc[df['ID'].isin(toplu_secim_idleri), 'Durum'] = "Onaylandı"
+                    str_ids = [str(i) for i in toplu_secim_idleri]
+                    df.loc[df['ID'].astype(str).isin(str_ids), 'Durum'] = "Onaylandı"
                     df.to_csv(DATA_FILE, index=False)
                     st.success("Seçilen kayıtlar onaylandı!")
                     st.rerun()
@@ -264,7 +267,8 @@ elif menu == "💰 Muhasebe Onayı":
         with col_t2:
             if st.button("🎯 Seçilenleri 'Tamamlandı' Yap", use_container_width=True):
                 if toplu_secim_idleri:
-                    df.loc[df['ID'].isin(toplu_secim_idleri), 'Durum'] = "Tamamlandı"
+                    str_ids = [str(i) for i in toplu_secim_idleri]
+                    df.loc[df['ID'].astype(str).isin(str_ids), 'Durum'] = "Tamamlandı"
                     df.to_csv(DATA_FILE, index=False)
                     st.success("Seçilen kayıtlar tamamlandı olarak güncellendi!")
                     st.rerun()
@@ -273,7 +277,8 @@ elif menu == "💰 Muhasebe Onayı":
         with col_t3:
             if st.button("❌ Seçilenleri Kalıcı Olarak Sil", use_container_width=True):
                 if toplu_secim_idleri:
-                    df = df[~df['ID'].isin(toplu_secim_idleri)]
+                    str_ids = [str(i) for i in toplu_secim_idleri]
+                    df = df[~df['ID'].astype(str).isin(str_ids)]
                     df.to_csv(DATA_FILE, index=False)
                     st.success("Seçilen kayıtlar silindi!")
                     st.rerun()
@@ -282,8 +287,9 @@ elif menu == "💰 Muhasebe Onayı":
 
     with st.expander("✏️ TÜM SATIŞ BİLGİLERİNİ TAM DÜZENLE"):
         secili_id = st.number_input("Düzenlenecek Satış ID", step=1)
-        if secili_id in df['ID'].values:
-            row = df[df['ID'] == secili_id].iloc[0]
+        secili_id_str = str(int(secili_id))
+        if secili_id_str in df['ID'].astype(str).values:
+            row = df[df['ID'].astype(str) == secili_id_str].iloc[0]
             with st.form("tam_duzenleme_formu"):
                 c1, c2 = st.columns(2)
                 v_m = c1.text_input("Marka", value=str(row['Marka Adı']) if pd.notna(row['Marka Adı']) else "")
@@ -305,7 +311,11 @@ elif menu == "💰 Muhasebe Onayı":
                 odeme_index = odeme_secenekleri.index(mevcut_odeme) if mevcut_odeme in odeme_secenekleri else 0
                 v_o = c2.selectbox("Ödeme", odeme_secenekleri, index=odeme_index)
                 
-                v_tu = c2.number_input("Tutar", value=float(row['Tutar']) if pd.notna(row['Tutar']) else 0.0)
+                try:
+                    def_tutar = float(row['Tutar']) if pd.notna(row['Tutar']) and str(row['Tutar']).replace('.','',1).isdigit() else 0.0
+                except:
+                    def_tutar = 0.0
+                v_tu = c2.number_input("Tutar", value=def_tutar)
                 
                 durum_secenekleri = ["Muhasebe Onayı Bekliyor", "Onaylandı", "Tamamlandı"]
                 mevcut_durum = str(row['Durum']).strip() if pd.notna(row['Durum']) else "Muhasebe Onayı Bekliyor"
@@ -315,18 +325,18 @@ elif menu == "💰 Muhasebe Onayı":
                 v_f = c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) and str(row['Fatura No']).lower() != 'nan' else "")
                 
                 if st.form_submit_button("TÜMÜNÜ GÜNCELLE"):
-                    idx = df.index[df['ID'] == secili_id][0]
-                    df.at[idx, 'Marka Adı'] = v_m
-                    df.at[idx, 'Ad Soyad'] = v_a
-                    df.at[idx, 'TC'] = v_t
-                    df.at[idx, 'Telefon'] = v_tl
-                    df.at[idx, 'Doğum Tarihi'] = v_d
-                    df.at[idx, 'İl'] = v_i
-                    df.at[idx, 'Sınıf'] = v_s
-                    df.at[idx, 'Ödeme'] = v_o
-                    df.at[idx, 'Tutar'] = v_tu
-                    df.at[idx, 'Durum'] = v_du
-                    df.at[idx, 'Fatura No'] = v_f
+                    idx = df.index[df['ID'].astype(str) == secili_id_str][0]
+                    df.at[idx, 'Marka Adı'] = str(v_m)
+                    df.at[idx, 'Ad Soyad'] = str(v_a)
+                    df.at[idx, 'TC'] = str(v_t)
+                    df.at[idx, 'Telefon'] = str(v_tl)
+                    df.at[idx, 'Doğum Tarihi'] = str(v_d)
+                    df.at[idx, 'İl'] = str(v_i)
+                    df.at[idx, 'Sınıf'] = str(v_s)
+                    df.at[idx, 'Ödeme'] = str(v_o)
+                    df.at[idx, 'Tutar'] = str(v_tu)
+                    df.at[idx, 'Durum'] = str(v_du)
+                    df.at[idx, 'Fatura No'] = str(v_f)
                     df.to_csv(DATA_FILE, index=False)
                     st.success("Güncellendi!")
                     st.rerun()
@@ -337,10 +347,13 @@ elif menu == "💰 Muhasebe Onayı":
     
     for i, row in df[df['Durum'] == "Muhasebe Onayı Bekliyor"].iterrows():
         if st.button(f"✅ Onayla: {row['Marka Adı']} ({row['Tutar']} TL)", key=f"onay_{row['ID']}"):
-            df.loc[df['ID'] == row['ID'], 'Durum'] = "Onaylandı"; df.to_csv(DATA_FILE, index=False); st.rerun()
+            df.loc[df['ID'].astype(str) == str(row['ID']), 'Durum'] = "Onaylandı"; df.to_csv(DATA_FILE, index=False); st.rerun()
 
 elif menu == "📊 Performans Raporu":
-    st.header("📊 Performans"); st.bar_chart(df[df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum())
+    st.header("📊 Performans")
+    temp_df = df.copy()
+    temp_df['Tutar'] = pd.to_numeric(temp_df['Tutar'], errors='coerce').fillna(0)
+    st.bar_chart(temp_df[temp_df['Durum'] == "Tamamlandı"].groupby('Danışman')['Tutar'].sum())
 
 elif menu == "👥 Personel Yönetimi":
     st.header("👥 Personel ve Veri Yönetimi")
