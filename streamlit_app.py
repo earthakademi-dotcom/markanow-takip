@@ -112,7 +112,7 @@ if not st.session_state.kullanici:
 # --- ROL TANIMLAMALARI ---
 aktif_kullanici_ad = str(st.session_state.kullanici).strip().upper()
 is_admin = (aktif_kullanici_ad == "ALİ OSMAN YELBEY")
-is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ"])
+is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN"])
 
 if "aktif_sayfa" not in st.session_state:
     st.session_state.aktif_sayfa = "Ana Sayfa"
