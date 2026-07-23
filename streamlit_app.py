@@ -349,7 +349,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Durum'] = "Başvuru Beklemede"
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
-                            df.at[idx, 'Danışman'] = aktif_kullanici_ad
+                            # Danışman ilk kaydeden kişi olarak kalır (değiştirilmez)
                             df.to_csv(DATA_FILE, index=False)
                             st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
                             st.rerun()
@@ -380,16 +380,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         "Reddedildi ❌"
                     ]
                     
-                    # BAŞVURU BEKLEMEDE AŞAMASINDA ÖZEL KURAL:
+                    # BAŞVURU BEKLEMEDE AŞAMASINDA:
                     if secilen_asama == "Başvuru Beklemede":
-                        # Durum otomatik olarak Başvuru Beklemede sabit (başvuru no ve tarihi girilince Kurum İncelemesine geçecek)
                         c1.text_input("Yeni Durum / Aşama", value="Başvuru Beklemede", disabled=True)
                         yeni_durum = "Başvuru Beklemede"
                         
-                        # Danışman sabit (değiştirilemez)
-                        mevcut_danisman = str(s_row.get('Danışman', aktif_kullanici_ad)).strip().upper()
-                        c2.text_input("Danışman", value=mevcut_danisman, disabled=True)
-                        danisman_secim = mevcut_danisman
+                        # Danışman ilk giren kişinin adıyla sabit (değiştirilemez)
+                        orijinal_danisman = str(s_row.get('Danışman', '')).strip().upper()
+                        c2.text_input("Danışman", value=orijinal_danisman, disabled=True)
+                        danisman_secim = orijinal_danisman
                         
                         # Fatura No ve Fatura Tarihi sabit (değiştirilemez)
                         mevcut_f_no = str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else ""
@@ -401,17 +400,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         mevcut_durum_index = tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0
                         yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=mevcut_durum_index)
                         
-                        if os.path.exists(USER_FILE):
-                            u_df = pd.read_csv(USER_FILE)
-                            personel_listesi = u_df["İsim"].tolist()
-                        else:
-                            personel_listesi = [aktif_kullanici_ad]
-                        
-                        mevcut_danisman = str(s_row.get('Danışman', aktif_kullanici_ad)).strip().upper()
-                        if mevcut_danisman not in personel_listesi:
-                            personel_listesi.append(mevcut_danisman)
-                        
-                        danisman_secim = c2.selectbox("Danışman", options=personel_listesi, index=personel_listesi.index(mevcut_danisman) if mevcut_danisman in personel_listesi else 0)
+                        # Diğer aşamalarda da danışman orijinal kaydeden kişi olarak sabit tutulur
+                        orijinal_danisman = str(s_row.get('Danışman', '')).strip().upper()
+                        c2.text_input("Danışman", value=orijinal_danisman, disabled=True)
+                        danisman_secim = orijinal_danisman
 
                         f_no = c1.text_input("Fatura No", value=str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else "")
                         f_tarih_val = str(s_row.get('Fatura Tarihi', ''))
@@ -445,7 +437,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
-                        df.at[idx, 'Danışman'] = danisman_secim
+                        df.at[idx, 'Danışman'] = orijinal_danisman  # Danışman ilk kaydeden kişi olarak kesinlikle korunur
                         if secilen_asama != "Başvuru Beklemede":
                             df.at[idx, 'Fatura No'] = f_no.strip()
                             df.at[idx, 'Fatura Tarihi'] = f_tarih.strftime("%d/%m/%Y")
