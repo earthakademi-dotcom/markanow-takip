@@ -162,7 +162,8 @@ elif menu == "📥 Excel'den Yükle":
     st.header("📥 Excel/CSV ile Toplu Satış Girişi (Geçmiş Satışlar)")
     st.info(
         "💡 **İpucu:** Yükleyeceğiniz dosyanın sütun başlıkları şu isimleri içerebilir: "
-        "`Marka Adı`, `Ad Soyad`, `TC`, `Telefon`, `Doğum Tarihi`, `İl`, `Sınıf`, `Ödeme`, `Satış Tarihi`, `Tutar`, `Danışman`, `Fatura No`"
+        "`Marka Adı`, `Ad Soyad`, `TC`, `Telefon`, `Doğum Tarihi`, `İl`, `Sınıf`, `Ödeme`, `Satış Tarihi`, `Tutar`, `Danışman`, `Fatura No`\n\n"
+        "ℹ️ *Not: Dosyayı kim yüklerse yüklesin, Excel'deki 'Danışman' / 'Danoşman' sütununda kimin adı yazıyorsa satış o kişinin geçmiş satışlarına işlenecektir.*"
     )
     
     uploaded_file = st.file_uploader("Dosya Seçin", type=["csv", "xlsx"])
@@ -205,7 +206,7 @@ elif menu == "📥 Excel'den Yükle":
                     sutun_duzeltme[col] = 'Tutar'
                 elif 'tarih' in col_clean and 'satış' in col_clean:
                     sutun_duzeltme[col] = 'Satış Tarihi'
-                elif 'danışman' in col_clean or 'danisman' in col_clean:
+                elif 'danışman' in col_clean or 'danisman' in col_clean or 'danoşman' in col_clean:
                     sutun_duzeltme[col] = 'Danışman'
             
             if sutun_duzeltme:
@@ -219,8 +220,13 @@ elif menu == "📥 Excel'den Yükle":
                 baslangic_id = int(df['ID'].max() + 1) if not df.empty and 'ID' in df.columns else 1
                 yeni_data['ID'] = range(baslangic_id, baslangic_id + len(yeni_data))
                 
-                if 'Danışman' not in yeni_data.columns or yeni_data['Danışman'].isna().all():
+                # Danışman sütunu tespiti ve satırdaki isimlerin atanması
+                if 'Danışman' not in yeni_data.columns:
                     yeni_data['Danışman'] = st.session_state.kullanici
+                else:
+                    # Boş olan satırlar varsa oturum açan kullanıcıyı yaz, dolu olanlarda satırdaki ismi koru ve büyük harfe çevir
+                    yeni_data['Danışman'] = yeni_data['Danışman'].fillna(st.session_state.kullanici)
+                    yeni_data['Danışman'] = yeni_data['Danışman'].astype(str).str.strip().str.upper()
                 
                 if 'Durum' not in yeni_data.columns:
                     yeni_data['Durum'] = 'Tamamlandı'
@@ -235,7 +241,7 @@ elif menu == "📥 Excel'den Yükle":
                 yeni_data = yeni_data[[c for c in yeni_data.columns if c in ana_kolonlar]]
 
                 pd.concat([df, yeni_data], ignore_index=True).to_csv(DATA_FILE, index=False)
-                st.success("🎉 Tüm geçmiş satışlar başarıyla sisteme aktarıldı!")
+                st.success("🎉 Tüm geçmiş satışlar Excel'deki danışman isimlerine göre başarıyla sisteme aktarıldı!")
                 st.rerun()
         except Exception as e:
             st.error(f"❌ Dosya okuma hatası: {e}")
