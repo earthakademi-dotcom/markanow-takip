@@ -50,14 +50,14 @@ st.markdown(
     }}
 
     div.stButton > button:first-child {{
-        background-color: #6b1d2f !important;
+        background-color: #2C3E50 !important;
         color: #FFFFFF !important;
-        border: 1px solid #85243b !important;
+        border: 1px solid #34495E !important;
     }}
     div.stButton > button:first-child:hover {{
-        background-color: #85243b !important;
+        background-color: #34495E !important;
         color: #FFFFFF !important;
-        border: 1px solid #9e2a45 !important;
+        border: 1px solid #3d566e !important;
     }}
     </style>
     """,
@@ -133,9 +133,7 @@ if st.session_state.kullanici in ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYEND
 menu = st.sidebar.radio("Menü", menu_options)
 df = load_data()
 
-# --- SOL MENÜ AYLIK FİLTRELEME (Eğer Satışlarım sekmesindeyse) ---
-secilen_ay = None
-secilen_yil = None
+# --- SOL MENÜ AYLIK FİLTRELEME (Göster Butonlu) ---
 if menu == "📊 Satışlarım":
     st.sidebar.write("---")
     st.sidebar.subheader("📅 Ay Filtresi")
@@ -146,11 +144,19 @@ if menu == "📊 Satışlarım":
         "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"
     }
     secilen_ay_isim = st.sidebar.selectbox("Ay Seçin", list(aylar.keys()))
-    secilen_ay = aylar[secilen_ay_isim]
-    
-    # Mevcut yıllar veya varsayılan yıl seçimi
     mevcut_yil_str = str(datetime.now().year)
-    secilen_yil = st.sidebar.text_input("Yıl (Örn: 2026)", value=mevcut_yil_str)
+    secilen_yil_input = st.sidebar.text_input("Yıl (Örn: 2026)", value=mevcut_yil_str)
+    
+    if "aktif_ay" not in st.session_state:
+        st.session_state.aktif_ay = "Tümü"
+        st.session_state.aktif_ay_kod = None
+        st.session_state.aktif_yil = mevcut_yil_str
+
+    if st.sidebar.button("🔍 Göster", use_container_width=True):
+        st.session_state.aktif_ay = secilen_ay_isim
+        st.session_state.aktif_ay_kod = aylar[secilen_ay_isim]
+        st.session_state.aktif_yil = secilen_yil_input
+        st.rerun()
 
 # --- MODÜLLER ---
 if menu == "📝 Satış Girişi":
@@ -175,7 +181,11 @@ if menu == "📝 Satış Girişi":
             st.success("Satış kaydedildi.")
 
 elif menu == "📊 Satışlarım":
-    st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({secilen_ay_isim})")
+    gosterilen_ay = st.session_state.get("aktif_ay", "Tümü")
+    gosterilen_ay_kod = st.session_state.get("aktif_ay_kod", None)
+    gosterilen_yil = st.session_state.get("aktif_yil", str(datetime.now().year))
+    
+    st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({gosterilen_ay} {gosterilen_yil})")
     
     # Kullanıcıya ait satışları filtreleme
     kullanici_df = df[df['Danışman'].astype(str).str.strip().str.upper() == str(st.session_state.kullanici).strip().upper()].copy()
@@ -190,8 +200,8 @@ elif menu == "📊 Satışlarım":
                 if pd.isna(dt):
                     return False
                 
-                ay_eslesir = True if secilen_ay is None else (f"{dt.month:02d}" == secilen_ay)
-                yil_eslesir = True if not secilen_yil else (str(dt.year) == str(secilen_yil).strip())
+                ay_eslesir = True if gosterilen_ay_kod is None else (f"{dt.month:02d}" == gosterilen_ay_kod)
+                yil_eslesir = True if not gosterilen_yil else (str(dt.year) == str(gosterilen_yil).strip())
                 return ay_eslesir and yil_eslesir
             except:
                 return False
