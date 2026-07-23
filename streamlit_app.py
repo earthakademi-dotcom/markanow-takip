@@ -315,8 +315,21 @@ elif menu == "💰 Muhasebe Onayı":
                 v_f = c2.text_input("Fatura No", value=str(row['Fatura No']) if pd.notna(row['Fatura No']) and str(row['Fatura No']).lower() != 'nan' else "")
                 
                 if st.form_submit_button("TÜMÜNÜ GÜNCELLE"):
-                    df.loc[df['ID'] == secili_id, ['Marka Adı', 'Ad Soyad', 'TC', 'Telefon', 'Doğum Tarihi', 'İl', 'Sınıf', 'Ödeme', 'Tutar', 'Durum', 'Fatura No']] = [v_m, v_a, v_t, v_tl, v_d, v_i, v_s, v_o, v_tu, v_du, v_f]
-                    df.to_csv(DATA_FILE, index=False); st.success("Güncellendi!"); st.rerun()
+                    idx = df.index[df['ID'] == secili_id][0]
+                    df.at[idx, 'Marka Adı'] = v_m
+                    df.at[idx, 'Ad Soyad'] = v_a
+                    df.at[idx, 'TC'] = v_t
+                    df.at[idx, 'Telefon'] = v_tl
+                    df.at[idx, 'Doğum Tarihi'] = v_d
+                    df.at[idx, 'İl'] = v_i
+                    df.at[idx, 'Sınıf'] = v_s
+                    df.at[idx, 'Ödeme'] = v_o
+                    df.at[idx, 'Tutar'] = v_tu
+                    df.at[idx, 'Durum'] = v_du
+                    df.at[idx, 'Fatura No'] = v_f
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success("Güncellendi!")
+                    st.rerun()
                     
     st.write("---")
     st.subheader("📋 Tüm Satış Listesi ve Onay Bekleyenler")
