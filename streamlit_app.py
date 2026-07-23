@@ -195,17 +195,15 @@ elif menu == "📊 Satışlarım":
 
     st.header(f"📊 {st.session_state.kullanici} - Satışlarım ({gosterilen_ay} {gosterilen_yil})")
     
-    # Danışman adını güvenli şekilde eşleştirme (büyük/küçük harf ve boşluk duyarsız)
     aktif_kullanici_temiz = str(st.session_state.kullanici).strip().upper()
     df['Danışman_Temiz'] = df['Danışman'].astype(str).str.strip().str.upper()
     kullanici_df = df[df['Danışman_Temiz'] == aktif_kullanici_temiz].copy()
     
-    # Ay ve Yıl filtresi uygulama
     if not kullanici_df.empty and 'Satış Tarihi' in kullanici_df.columns:
         def tarih_filtrele(tarih_str):
             try:
                 if pd.isna(tarih_str) or str(tarih_str).lower() == 'none' or str(tarih_str).strip() == '':
-                    return gosterilen_ay_kod is None # Tarihi olmayanları sadece "Tümü" seçiliyse göster
+                    return gosterilen_ay_kod is None
                 
                 dt = pd.to_datetime(tarih_str, format='%d/%m/%Y', errors='coerce')
                 if pd.isna(dt):
@@ -222,7 +220,6 @@ elif menu == "📊 Satışlarım":
         mask = kullanici_df['Satış Tarihi'].apply(tarih_filtrele)
         kullanici_df = kullanici_df[mask]
 
-    # Geçici eklenen sütunu temizle
     if 'Danışman_Temiz' in kullanici_df.columns:
         kullanici_df = kullanici_df.drop(columns=['Danışman_Temiz'])
 
