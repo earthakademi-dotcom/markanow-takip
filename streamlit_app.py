@@ -110,7 +110,7 @@ def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
-        "Başvuru No", "Başvuru Tarihi", "Kurum İnceleme Bitiş Tarihi", "Yayın Tarihi", "Tescil Tebliğ Tarihi"
+        "Başvuru No", "Başvuru Tarihi", "Kurum İnceleme Bitiş Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", "Tescil Tebliğ Tarihi"
     ]
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -273,7 +273,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), 
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Kurum İnceleme Bitiş Tarihi": "", "Yayın Tarihi": "", "Tescil Tebliğ Tarihi": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Kurum İnceleme Bitiş Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Tescil Tebliğ Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
@@ -459,11 +459,24 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     y_tar_val = str(s_row.get('Yayın Tarihi', ''))
                     y_tar = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value=y_tar_val if y_tar_val and y_tar_val != 'nan' else "", key=f"form_y_tar_{secilen_marka}")
                     
+                    # Yayın tarihine otomatik 2 ay (60 gün) ekleyerek Yayın Bitiş Tarihi hesaplama
+                    default_yayin_bitis = ""
+                    if y_tar.strip() and y_tar.strip().lower() != 'nan':
+                        try:
+                            parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
+                            default_yayin_bitis = (parsed_y_tar + timedelta(days=60)).strftime("%d/%m/%Y")
+                        except:
+                            pass
+
+                    mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', ''))
+                    final_yayin_bitis_val = mevcut_yayin_bitis if mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan' else default_yayin_bitis
+
+                    yayin_bitis = c1.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, key=f"form_yayin_bitis_{secilen_marka}")
+
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
                         final_durum = yeni_durum
                         
-                        # Kurum İncelemesindeyken Yayın Tarihi kontrolü
                         if secilen_asama == "Kurum İncelemesinde":
                             if not y_tar.strip() or y_tar.strip().lower() == 'nan':
                                 st.error("❌ Hata: Yayın Tarihi girmeden kaydı güncelleyemezsiniz!")
@@ -483,6 +496,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Kurum İnceleme Bitiş Tarihi'] = kurum_bitis.strip()
                             
                         df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
+                        df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis.strip()
                         df.to_csv(DATA_FILE, index=False)
                         
                         if final_durum == "Yayında" and secilen_asama == "Kurum İncelemesinde":
