@@ -93,6 +93,16 @@ def load_data():
     for col in zorunlu_kolonlar:
         if col not in d_temp.columns:
             d_temp[col] = ""
+            
+    # Durumu boş olan veya bilinmeyen eski kayıtları otomatik "Muhasebe Onayı Bekliyor" yap
+    d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
+    gecerli_durumlar = [
+        "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
+        "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
+        "Tescillendi 🎉", "Reddedildi ❌"
+    ]
+    d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
+    d_temp.to_csv(DATA_FILE, index=False)
     return d_temp
 
 # --- GİRİŞ KONTROLÜ ---
@@ -260,7 +270,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown("<h2>📊 Genel Satışlarım (Filtreleme)</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>📊 Genel Satışlarım (Filtreleme)</h2>", unsafe_allow_html=True)
     aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     col_f1, col_f2 = st.columns(2)
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()))
