@@ -499,21 +499,24 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             for i, row in asama_df.iterrows():
                 with st.container():
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
-                    c1, c2, c3 = st.columns(3)
+                    # Hizalama düzeltildi: Fatura No, Fatura Tarihi ve Buton oranlı sütunlara bölündü
+                    c1, c2, c3 = st.columns([1.5, 1.5, 1])
                     f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
                     f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
                     
-                    if c3.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}"):
-                        if f_no.strip() and f_tarih.strip():
-                            idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
-                            df.at[idx, 'Durum'] = "Başvuru Beklemede"
-                            df.at[idx, 'Fatura No'] = f_no.strip()
-                            df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
-                            df.to_csv(DATA_FILE, index=False)
-                            st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
-                            st.rerun()
-                        else:
-                            st.warning("Lütfen Fatura No ve Fatura Tarihi alanlarını doldurun.")
+                    with c3:
+                        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                        if st.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}"):
+                            if f_no.strip() and f_tarih.strip():
+                                idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
+                                df.at[idx, 'Durum'] = "Başvuru Beklemede"
+                                df.at[idx, 'Fatura No'] = f_no.strip()
+                                df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
+                                df.to_csv(DATA_FILE, index=False)
+                                st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
+                                st.rerun()
+                            else:
+                                st.warning("Lütfen Fatura No ve Fatura Tarihi alanlarını doldurun.")
                     st.write("---")
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
