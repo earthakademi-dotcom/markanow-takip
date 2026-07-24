@@ -174,7 +174,7 @@ def load_data():
     gecerli_durumlar = [
         "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
         "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-        "Tescillendi 🎉", "Reddedildi ❌"
+        "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
     ]
     d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
@@ -255,8 +255,10 @@ if is_muhasebe:
             sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True):
             sayfa_degistir("Tescil Tebliğ Beklemede")
-        if st.button("💳 Tescil Tebliğ Ödeme", use_container_width=True):
-            sayfa_degistir("Tescil Tebliğ Ödeme")
+        if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True):
+            sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
+        if st.button("📄 Tescil Kuruma Ödendi", use_container_width=True):
+            sayfa_degistir("Tescil Kuruma Ödendi")
         if st.button("🎉 Tescillendi", use_container_width=True):
             sayfa_degistir("Tescillendi")
         if st.button("❌ Reddedildi", use_container_width=True):
@@ -466,26 +468,26 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         st.success(f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt başarıyla silindi!")
                         st.rerun()
 
-# --- TESCİL TEBLİĞ ÖDEME EKRANI (ÖZEL MENÜ) ---
-elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
+# --- TESCİL TEBLİĞ EDİLDİ MÜŞTERİ ARANDI EKRANI ---
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Müşteri Arandı":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown("<h2>💳 Tescil Tebliğ Ödeme Ekranı</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>💳 Tescil Tebliğ Edildi Müşteri Arandı Ekranı</h2>", unsafe_allow_html=True)
     
     tescil_df = df[(df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede") & 
                    (df['Tescil Tebliğ Tarihi'].astype(str).str.strip() != "") & 
                    (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() != "nan")]
     
     if tescil_df.empty:
-        st.info("Tescil Tebliğ Tarihi girilmiş ve ödeme bekleyen marka bulunmuyor.")
+        st.info("Tescil Tebliğ Tarihi girilmiş ve işlem bekleyen marka bulunmuyor.")
     else:
         arama_tescil = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...", key="arama_tescil_odeme_input")
         if arama_tescil.strip():
             tescil_df = tescil_df[tescil_df['Marka Adı'].astype(str).str.contains(arama_tescil.strip(), case=False, na=False)]
             
         if tescil_df.empty:
-            st.warning("Aramanızla eşleşen ödeme bekleyen marka bulunamadı.")
+            st.warning("Aramanızla eşleşen marka bulunamadı.")
         else:
             marka_listesi_tescil = tescil_df['Marka Adı'].astype(str).tolist()
             secilen_tescil_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi_tescil, key="sel_tescil_odeme_marka")
@@ -496,7 +498,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
                 tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '-')
                 son_odeme_tarihi_str = t_row.get('Tescil Son Ödeme Tarihi', '-')
                 
-                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** **{tescil_tarihi_str}** | **Tescil Ödeme Son Günü:** **{son_odeme_tarihi_str}** | **Danışman:** *{t_row['Danışman']}*")
+                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** **{tescil_tarihi_str}** | **Tescil Tebliğ Son Günü:** **{son_odeme_tarihi_str}** | **Danışman:** *{t_row['Danışman']}*")
                 
                 c1, c2, c3, c4 = st.columns([1.2, 1.2, 1.2, 1])
                 tescil_fatura_no = c1.text_input("Tescil Fatura No", key="ozel_tescil_f_no")
@@ -505,13 +507,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
                 
                 with c4:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                    if st.button("🎉 Tescil Ödemesini Onayla ve Tescillendi Yap", key="ozel_tescil_onay_btn"):
+                    if st.button("🎉 Tescil Kuruma Ödendi Yap", key="ozel_tescil_onay_btn"):
                         if tescil_fatura_no.strip() and odeme_gunu.strip():
                             idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
-                            df.at[idx, 'Durum'] = "Tescillendi 🎉"
+                            df.at[idx, 'Durum'] = "Tescil Kuruma Ödendi"
                             df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                             df.to_csv(DATA_FILE, index=False)
-                            st.success(f"🎉 '{secilen_tescil_marka}' başarıyla tescillendi ve arşive alındı!")
+                            st.success(f"🎉 '{secilen_tescil_marka}' başarıyla 'Tescil Kuruma Ödendi' aşamasına taşındı!")
                             st.rerun()
                         else:
                             st.warning("Lütfen Fatura No ve Ödeme Günü alanlarını doldurunuz.")
@@ -520,7 +522,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
 elif is_muhasebe and st.session_state.aktif_sayfa in [
     "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
     "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-    "Tescillendi", "Reddedildi"
+    "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kuruma Ödendi", "Tescillendi", "Reddedildi"
 ]:
     secilen_asama = st.session_state.aktif_sayfa
     
@@ -594,6 +596,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         "Yayında",
                         "İtiraz Geldi - Savunma Bekliyor",
                         "Tescil Tebliğ Beklemede",
+                        "Tescil Tebliğ Edildi Müşteri Arandı",
+                        "Tescil Kuruma Ödendi",
                         "Tescillendi 🎉",
                         "Reddedildi ❌"
                     ]
