@@ -594,17 +594,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 st.write("")
                 if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn"):
                     odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
-                    if tescil_fatura_no.strip() and odeme_gunu.strip():
+                    if odeme_gunu.strip():
                         idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                         df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
-                        df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
+                        if tescil_fatura_no.strip():
+                            df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                         df.to_csv(DATA_FILE, index=False)
                         st.success(f"⏳ '{secilen_tescil_marka}' başarıyla 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı!")
                         sayfa_degistir("Tescil Kurum Ödemesi Bekleyen")
                     else:
-                        st.warning("Lütfen Tescil Fatura No ve Ödeme Günü alanlarını doldurunuz.")
+                        st.warning("Lütfen Ödeme Günü alanını doldurunuz.")
 
 # --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
