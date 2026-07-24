@@ -112,7 +112,7 @@ st.markdown(
                     input.dataset.slashFixed = "true";
                     
                     const formatValue = (el) => {
-                        let val = el.value.replace(/\\D/g, "");
+                        let val = el.value.replace(/\D/g, "");
                         if (val.length > 8) val = val.slice(0, 8);
                         let formatted = "";
                         if (val.length > 0) {
@@ -601,7 +601,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                         df.to_csv(DATA_FILE, index=False)
-                        st.success(f"⏳ '{secilen_tescil_marka}' başarıyla 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı!")
+                        st.success(f"⏳ '{secilen_tescil_marka}' başarıyla 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı! İlgili menüye yönlendiriliyorsunuz...")
+                        st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
                         st.rerun()
                     else:
                         st.warning("Lütfen Tescil Fatura No ve Ödeme Günü alanlarını doldurunuz.")
