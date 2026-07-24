@@ -245,9 +245,14 @@ def load_data():
     d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
 
-# --- GİRİŞ KONTROLÜ ---
+# --- GİRİŞ KONTROLÜ VE OTURUM KORUMA (URL PARAMETRE DESTEĞİ) ---
 if "kullanici" not in st.session_state: 
     st.session_state.kullanici = None
+
+# URL'de kullanıcı bilgisi varsa oturumu otomatik kurtar
+query_params = st.query_params
+if not st.session_state.kullanici and "user" in query_params:
+    st.session_state.kullanici = query_params["user"]
 
 if not st.session_state.kullanici:
     st.markdown("<h1 style='text-align: center; color: #FFFFFF;'>Markanow Patent Satış Takip ERP</h1>", unsafe_allow_html=True)
@@ -264,6 +269,7 @@ if not st.session_state.kullanici:
             dogru_sifre = str(user_df[user_df["İsim"] == secili_kullanici].iloc[0]["Şifre"]).strip()
             if str(sifre_input).strip() == dogru_sifre:
                 st.session_state.kullanici = secili_kullanici
+                st.query_params["user"] = secili_kullanici  # URL'ye yazarak yenilemede atılmasını önle
                 st.success("Giriş başarılı! Yönlendiriliyorsunuz...")
                 st.rerun()
             else:
@@ -293,6 +299,8 @@ else:
 
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.kullanici = None
+    if "user" in st.query_params:
+        del st.query_params["user"]
     st.session_state.aktif_sayfa = "Ana Sayfa"
     st.rerun()
 
@@ -791,7 +799,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if itiraz_tar.strip():
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
                         if tescil_tar.strip():
-                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.script if hasattr(tescil_tar, 'script') else tescil_tar.strip()
+                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
                             
                             try:
                                 parsed_tescil_tar = datetime.strptime(tescil_tar.strip(), "%d/%m/%Y")
@@ -841,7 +849,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             u_df = pd.read_csv(USER_FILE)
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="del")
             if st.button("Danışmanı Sil"):
-                u_df = u_df[u_df["İsim != s3"] if "İsim != s3" in u_df.columns else (u_df["İsim"] != s3)]
+                u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ '{s3}' sistemden silindi!")
                 st.rerun()
