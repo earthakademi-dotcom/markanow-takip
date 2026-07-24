@@ -495,9 +495,24 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
             if secilen_tescil_marka:
                 t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
                 
-                tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '-')
-                son_odeme_tarihi_str = t_row.get('Tescil Son Ödeme Tarihi', '-')
+                tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '')
+                son_odeme_tarihi_str = t_row.get('Tescil Son Ödeme Tarihi', '')
                 
+                # Eğer kayıtlı son ödeme tarihi yoksa veya boşsa, otomatik hesaplayıp gösterelim ve kaydedelim
+                if not son_odeme_tarihi_str or son_odeme_tarihi_str == 'nan':
+                    try:
+                        parsed_t_tar = datetime.strptime(tescil_tarihi_str.strip(), "%d/%m/%Y")
+                        taslak_son = ay_ekle(parsed_t_tar, 2)
+                        hesaplanan_son = resmi_tatil_ve_tatil_kontrol(taslak_son)
+                        son_odeme_tarihi_str = hesaplanan_son.strftime("%d/%m/%Y")
+                        
+                        # DataFrame içine güncelleyelim
+                        idx_temp = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
+                        df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
+                        df.to_csv(DATA_FILE, index=False)
+                    except:
+                        son_odeme_tarihi_str = "-"
+
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** **{tescil_tarihi_str}** | **Tescil Tebliğ Son Günü:** **{son_odeme_tarihi_str}** | **Danışman:** *{t_row['Danışman']}*")
                 
                 c1, c2, c3, c4 = st.columns([1.2, 1.2, 1.2, 1])
