@@ -513,10 +513,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
 
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 
-                # Tarih ve diğer alanları kutucuklar (input) haline getirdik
+                # Tarihleri değiştirilemez bilgi alanı (markdown), diğerlerini fatura/ödeme giriş kutucukları yaptık
                 c1, c2, c3, c4, c5 = st.columns([1.1, 1.1, 1.1, 1.1, 1])
-                girilen_tescil_tar = c1.text_input("Tescil Tebliğ Tarihi", value=tescil_tarihi_str, key="ozel_tescil_tar_input")
-                girilen_son_tar = c2.text_input("Tescil Tebliğ Son Günü", value=son_odeme_tarihi_str, key="ozel_son_tar_input")
+                c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
+                c2.markdown(f"**Tescil Tebliğ Son Günü**\n\n`{son_odeme_tarihi_str}`")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", key="ozel_tescil_f_no")
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key="ozel_tescil_tutar")
                 odeme_gunu = c5.text_input("Ödeme Günü (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
@@ -526,8 +526,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                     if tescil_fatura_no.strip() and odeme_gunu.strip():
                         idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                         df.at[idx, 'Durum'] = "Tescil Kuruma Ödendi"
-                        df.at[idx, 'Tescil Tebliğ Tarihi'] = girilen_tescil_tar.strip()
-                        df.at[idx, 'Tescil Son Ödeme Tarihi'] = girilen_son_tar.strip()
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.to_csv(DATA_FILE, index=False)
                         st.success(f"🎉 '{secilen_tescil_marka}' başarıyla 'Tescil Kuruma Ödendi' aşamasına taşındı!")
