@@ -602,8 +602,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                         df.to_csv(DATA_FILE, index=False)
-                        st.success(f"⏳ '{secilen_tescil_marka}' başarıyla 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı!")
-                        sayfa_degistir("Tescil Kurum Ödemesi Bekleyen")
+                        
+                        st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
+                        st.success(f"⏳ '{secilen_tescil_marka}' başarıyla 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı! Yönlendiriliyorsunuz...")
+                        st.rerun()
                     else:
                         st.warning("Lütfen Ödeme Günü alanını doldurunuz.")
 
