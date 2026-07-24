@@ -791,7 +791,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if itiraz_tar.strip():
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
                         if tescil_tar.strip():
-                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
+                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.script if hasattr(tescil_tar, 'script') else tescil_tar.strip()
                             
                             try:
                                 parsed_tescil_tar = datetime.strptime(tescil_tar.strip(), "%d/%m/%Y")
@@ -832,7 +832,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel")
             s2 = st.text_input("Yeni Şifre", type="password", key="new")
             if st.button("Şifreyi Güncelle"):
-                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.string if hasattr(s2, 'string') else s2.strip()
+                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Şifre güncellendi!")
                 st.rerun()
@@ -841,7 +841,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             u_df = pd.read_csv(USER_FILE)
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="del")
             if st.button("Danışmanı Sil"):
-                u_df = u_df[u_df["İsim"] != s3]
+                u_df = u_df[u_df["İsim != s3"] if "İsim != s3" in u_df.columns else (u_df["İsim"] != s3)]
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ '{s3}' sistemden silindi!")
                 st.rerun()
