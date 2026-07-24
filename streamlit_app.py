@@ -403,47 +403,59 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
     if df.empty:
         st.info("Sistemde kayıtlı hiç satış bulunmuyor.")
     else:
-        marka_listesi_tum = df['Marka Adı'].astype(str).tolist()
-        secilen_duzenle_marka = st.selectbox("Düzenlenecek Markayı Seçin", options=marka_listesi_tum, key="admin_duzenle_marka")
+        # Sol üst tarafa marka adı ile arama motoru / filtreleme eklendi
+        col_arama1, col_arama2 = st.columns([1, 1])
+        arama_input = col_arama1.text_input("🔍 Marka Adı ile Ara", placeholder="Marka adı yazın...")
         
-        if secilen_duzenle_marka:
-            d_row = df[df['Marka Adı'].astype(str) == secilen_duzenle_marka].iloc[0]
+        filtrelenmis_df = df.copy()
+        if arama_input.strip():
+            filtrelenmis_df = filtrelenmis_df[filtrelenmis_df['Marka Adı'].astype(str).str.contains(arama_input.strip(), case=False, na=False)]
             
-            with st.form("admin_satis_duzenle_form"):
-                st.markdown(f"### Marka: {d_row['Marka Adı']}")
-                c1, c2 = st.columns(2)
+        marka_listesi_tum = filtrelenmis_df['Marka Adı'].astype(str).tolist()
+        
+        if not marka_listesi_tum:
+            st.warning("Aramanızla eşleşen marka bulunamadı.")
+        else:
+            secilen_duzenle_marka = st.selectbox("Düzenlenecek Markayı Seçin", options=marka_listesi_tum, key="admin_duzenle_marka")
+            
+            if secilen_duzenle_marka:
+                d_row = df[df['Marka Adı'].astype(str) == secilen_duzenle_marka].iloc[0]
                 
-                y_ad_soyad = c1.text_input("İsim Soyisim", value=str(d_row.get('Ad Soyad', '')))
-                y_tc = c1.text_input("TC", value=str(d_row.get('TC', '')))
-                y_tel = c1.text_input("Telefon", value=str(d_row.get('Telefon', '')))
-                y_email = c1.text_input("E-Mail", value=str(d_row.get('E-Mail', '')))
-                y_dogum = c1.text_input("Doğum Tarihi", value=str(d_row.get('Doğum Tarihi', '')))
-                
-                y_il = c2.text_input("İl", value=str(d_row.get('İl', '')))
-                y_sinif = c2.text_input("Sınıf", value=str(d_row.get('Sınıf', '')))
-                y_odeme = c2.text_input("Ödeme Türü", value=str(d_row.get('Ödeme', '')))
-                y_s_tarih = c2.text_input("Satış Tarihi", value=str(d_row.get('Satış Tarihi', '')))
-                y_tutar = c2.text_input("Tutar (TL)", value=str(d_row.get('Tutar', '')))
-                y_danisman = c2.text_input("Danışman", value=str(d_row.get('Danışman', '')))
-
-                submitted_admin_edit = st.form_submit_button("💾 Bilgileri Güncelle")
-                if submitted_admin_edit:
-                    idx = df.index[df['Marka Adı'].astype(str) == secilen_duzenle_marka][0]
-                    df.at[idx, 'Ad Soyad'] = y_ad_soyad.strip()
-                    df.at[idx, 'TC'] = y_tc.strip()
-                    df.at[idx, 'Telefon'] = y_tel.strip()
-                    df.at[idx, 'E-Mail'] = y_email.strip()
-                    df.at[idx, 'Doğum Tarihi'] = y_dogum.strip()
-                    df.at[idx, 'İl'] = y_il.strip()
-                    df.at[idx, 'Sınıf'] = y_sinif.strip()
-                    df.at[idx, 'Ödeme'] = y_odeme.strip()
-                    df.at[idx, 'Satış Tarihi'] = y_s_tarih.strip()
-                    df.at[idx, 'Tutar'] = y_tutar.strip()
-                    df.at[idx, 'Danışman'] = y_danisman.strip().upper()
+                with st.form("admin_satis_duzenle_form"):
+                    st.markdown(f"### Marka: {d_row['Marka Adı']}")
+                    c1, c2 = st.columns(2)
                     
-                    df.to_csv(DATA_FILE, index=False)
-                    st.success(f"✅ '{secilen_duzenle_marka}' markasına ait danışman satış bilgileri başarıyla güncellendi!")
-                    st.rerun()
+                    y_ad_soyad = c1.text_input("İsim Soyisim", value=str(d_row.get('Ad Soyad', '')))
+                    y_tc = c1.text_input("TC", value=str(d_row.get('TC', '')))
+                    y_tel = c1.text_input("Telefon", value=str(d_row.get('Telefon', '')))
+                    y_email = c1.text_input("E-Mail", value=str(d_row.get('E-Mail', '')))
+                    y_dogum = c1.text_input("Doğum Tarihi", value=str(d_row.get('Doğum Tarihi', '')))
+                    
+                    y_il = c2.text_input("İl", value=str(d_row.get('İl', '')))
+                    y_sinif = c2.text_input("Sınıf", value=str(d_row.get('Sınıf', '')))
+                    y_odeme = c2.text_input("Ödeme Türü", value=str(d_row.get('Ödeme', '')))
+                    y_s_tarih = c2.text_input("Satış Tarihi", value=str(d_row.get('Satış Tarihi', '')))
+                    y_tutar = c2.text_input("Tutar (TL)", value=str(d_row.get('Tutar', '')))
+                    y_danisman = c2.text_input("Danışman", value=str(d_row.get('Danışman', '')))
+
+                    submitted_admin_edit = st.form_submit_button("💾 Bilgileri Güncelle")
+                    if submitted_admin_edit:
+                        idx = df.index[df['Marka Adı'].astype(str) == secilen_duzenle_marka][0]
+                        df.at[idx, 'Ad Soyad'] = y_ad_soyad.strip()
+                        df.at[idx, 'TC'] = y_tc.strip()
+                        df.at[idx, 'Telefon'] = y_tel.strip()
+                        df.at[idx, 'E-Mail'] = y_email.strip()
+                        df.at[idx, 'Doğum Tarihi'] = y_dogum.strip()
+                        df.at[idx, 'İl'] = y_il.strip()
+                        df.at[idx, 'Sınıf'] = y_sinif.strip()
+                        df.at[idx, 'Ödeme'] = y_odeme.strip()
+                        df.at[idx, 'Satış Tarihi'] = y_s_tarih.strip()
+                        df.at[idx, 'Tutar'] = y_tutar.strip()
+                        df.at[idx, 'Danışman'] = y_danisman.strip().upper()
+                        
+                        df.to_csv(DATA_FILE, index=False)
+                        st.success(f"✅ '{secilen_duzenle_marka}' markasına ait danışman satış bilgileri başarıyla güncellendi!")
+                        st.rerun()
 
 # --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
