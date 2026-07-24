@@ -832,7 +832,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel")
             s2 = st.text_input("Yeni Şifre", type="password", key="new")
             if st.button("Şifreyi Güncelle"):
-                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
+                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.string if hasattr(s2, 'string') else s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Şifre güncellendi!")
                 st.rerun()
