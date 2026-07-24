@@ -403,9 +403,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
     if df.empty:
         st.info("Sistemde kayıtlı hiç satış bulunmuyor.")
     else:
-        # Sol üst tarafa marka adı ile arama motoru / filtreleme eklendi
-        col_arama1, col_arama2 = st.columns([1, 1])
-        arama_input = col_arama1.text_input("🔍 Marka Adı ile Ara", placeholder="Marka adı yazın...")
+        arama_input = st.text_input("🔍 Marka Adı ile Ara", placeholder="Marka adı yazın...")
         
         filtrelenmis_df = df.copy()
         if arama_input.strip():
@@ -438,7 +436,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                     y_tutar = c2.text_input("Tutar (TL)", value=str(d_row.get('Tutar', '')))
                     y_danisman = c2.text_input("Danışman", value=str(d_row.get('Danışman', '')))
 
-                    submitted_admin_edit = st.form_submit_button("💾 Bilgileri Güncelle")
+                    b_col1, b_col2, b_col3 = st.columns([1, 1, 2])
+                    submitted_admin_edit = b_col1.form_submit_button("💾 Bilgileri Güncelle")
+                    submitted_delete = b_col2.form_submit_button("🗑️ Kaydı Sil", type="primary")
+
                     if submitted_admin_edit:
                         idx = df.index[df['Marka Adı'].astype(str) == secilen_duzenle_marka][0]
                         df.at[idx, 'Ad Soyad'] = y_ad_soyad.strip()
@@ -455,6 +456,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         
                         df.to_csv(DATA_FILE, index=False)
                         st.success(f"✅ '{secilen_duzenle_marka}' markasına ait danışman satış bilgileri başarıyla güncellendi!")
+                        st.rerun()
+
+                    if submitted_delete:
+                        df_yeni = df[df['Marka Adı'].astype(str) != secilen_duzenle_marka]
+                        df_yeni.to_csv(DATA_FILE, index=False)
+                        st.success(f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt başarıyla silindi!")
                         st.rerun()
 
 # --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
