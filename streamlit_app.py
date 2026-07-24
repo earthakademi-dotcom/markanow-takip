@@ -499,7 +499,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             for i, row in asama_df.iterrows():
                 with st.container():
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
-                    # Hizalama düzeltildi: Fatura No, Fatura Tarihi ve Buton oranlı sütunlara bölündü
                     c1, c2, c3 = st.columns([1.5, 1.5, 1])
                     f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
                     f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
@@ -518,6 +517,149 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             else:
                                 st.warning("Lütfen Fatura No ve Fatura Tarihi alanlarını doldurun.")
                     st.write("---")
+        elif secilen_asama == "Tescil Tebliğ Beklemede":
+            st.subheader("💳 Tescil Tebliğ Ödeme Ekranı")
+            for i, row in asama_df.iterrows():
+                tescil_tarihi_mevcut = str(row.get('Tescil Tebliğ Tarihi', '')).strip()
+                if tescil_tarihi_mevcut and tescil_tarihi_mevcut.lower() != 'nan':
+                    with st.container():
+                        st.markdown(f"Marka: **{row['Marka Adı']}** | Tescil Tebliğ Tarihi: **{tescil_tarihi_mevcut}** | Danışman: *{row['Danışman']}*")
+                        tc1, tc2, tc3 = st.columns([1.5, 1.5, 1])
+                        tescil_fatura_no = tc1.text_input("Tescil Fatura No", key=f"tescil_f_no_{row['Marka Adı']}")
+                        tescil_tutar = tc2.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key=f"tescil_tutar_{row['Marka Adı']}")
+                        
+                        with tc3:
+                            st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                            if st.button("🎉 Tescil Ödemesini Onayla ve Tescillendi Yap", key=f"tescil_onay_btn_{row['Marka Adı']}"):
+                                if tescil_fatura_no.strip():
+                                    idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
+                                    df.at[idx, 'Durum'] = "Tescillendi 🎉"
+                                    df.to_csv(DATA_FILE, index=False)
+                                    st.success(f"🎉 '{row['Marka Ad_ı'] if 'Marka Ad_ı' in row else row['Marka Adı']}' başarıyla tescillendi ve arşive alındı!")
+                                    st.rerun()
+                                else:
+                                    st.warning("Lütfen tescil fatura numarasını giriniz.")
+                        st.write("---")
+                else:
+                    st.info(f"'{row['Marka Adı']}' için henüz Tescil Tebliğ Tarihi girilmemiştir. Lütfen aşağıdaki panelden tarih giriniz.")
+                    
+            st.write("---")
+            st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
+            
+            marka_listesi = asama_df['Marka Adı'].astype(str).tolist()
+            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi, key=f"sel_marka_{secilen_asama}")
+            
+            if secilen_marka:
+                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                orijinal_danisman = str(s_row.get('Danışman', '')).strip().upper()
+                st.markdown(f"**Seçilen Marka:** {s_row['Marka Adı']} | **Satışı Giren Danışman:** {orijinal_danisman}")
+                
+                with st.form(f"form_guncelle_{secilen_marka}"):
+                    c1, c2 = st.columns(2)
+                    
+                    tum_durumlar = [
+                        "Muhasebe Onayı Bekliyor",
+                        "Başvuru Beklemede",
+                        "Kurum İncelemesinde",
+                        "Yayında",
+                        "İtiraz Geldi - Savunma Bekliyor",
+                        "Tescil Tebliğ Beklemede",
+                        "Tescillendi 🎉",
+                        "Reddedildi ❌"
+                    ]
+                    
+                    mevcut_durum_index = tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0
+                    yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=mevcut_durum_index)
+                    c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
+
+                    mevcut_b_no = str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else ""
+                    mevcut_b_tar = str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else ""
+
+                    b_no_disabled = bool(mevcut_b_no.strip() and mevcut_b_no != 'nan')
+                    b_tar_disabled = bool(mevcut_b_tar.strip() and mevcut_b_tar != 'nan')
+
+                    b_no = c1.text_input("Başvuru No", value=mevcut_b_no if mevcut_b_no != 'nan' else "", disabled=b_no_disabled)
+                    b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=mevcut_b_tar if mevcut_b_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), disabled=b_tar_disabled, key=f"form_b_tar_{secilen_marka}")
+                    
+                    mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
+                    mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
+
+                    y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
+
+                    y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
+                    
+                    calculated_yayin_bitis = ""
+                    if y_tar.strip() and y_tar.strip().lower() != 'nan':
+                        try:
+                            parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
+                            taslak_bitis = ay_ekle(parsed_y_tar, 2)
+                            hesaplanan_bitis = resmi_tatil_ve_tatil_kontrol(taslak_bitis)
+                            calculated_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
+                        except:
+                            pass
+
+                    final_yayin_bitis_val = mevcut_yayin_bitis if (mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan') else calculated_yayin_bitis
+
+                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
+
+                    mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
+                    secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
+                    secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
+
+                    sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
+
+                    mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
+                    mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
+
+                    itiraz_tar = ""
+                    tescil_tar = ""
+
+                    if sonraki_asama == "İtiraz Tebliğ Beklemede":
+                        itiraz_tar = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
+                    elif sonraki_asama == "Tescil Tebliğ Beklemede":
+                        tescil_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
+
+                    submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
+                    if submitted_update:
+                        final_durum = yeni_durum
+                        
+                        if secilen_asama == "Kurum İncelemesinde":
+                            if not y_tar.strip() or y_tar.strip().lower() == 'nan':
+                                st.error("❌ Hata: Yayın Tarihi girmeden kaydı güncelleyemezsiniz!")
+                                st.stop()
+                            else:
+                                final_durum = "Yayında"
+
+                        if sonraki_asama == "İtiraz Tebliğ Beklemede":
+                            final_durum = "İtiraz Geldi - Savunma Bekliyor"
+                        elif sonraki_asama == "Tescil Tebliğ Beklemede":
+                            final_durum = "Tescil Tebliğ Beklemede"
+
+                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                        df.at[idx, 'Durum'] = final_durum
+                        df.at[idx, 'Danışman'] = orijinal_danisman
+                        
+                        if not b_no_disabled and b_no.strip():
+                            df.at[idx, 'Başvuru No'] = b_no.strip()
+                        if not b_tar_disabled and b_tarih.strip():
+                            df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
+                            
+                        if not y_tar_disabled and y_tar.strip():
+                            df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
+                            
+                        if final_yayin_bitis_val:
+                            df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
+
+                        df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
+                        if itiraz_tar.strip():
+                            df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
+                        if tescil_tar.strip():
+                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
+                            
+                        df.to_csv(DATA_FILE, index=False)
+                        
+                        st.success(f"✅ Eksiksiz Güncellendi! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
+                        st.rerun()
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             
