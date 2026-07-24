@@ -90,12 +90,12 @@ st.markdown(
     }
     </style>
 
-    <!-- Kesin Çözüm Tarih Formatlama Scripti (Blur / Focusout Tetiklemeli) -->
+    <!-- Tarih / İşaretini Sabitleme Scripti -->
     <script>
-    function applyDateFormatting() {
+    function forceDateSlashMask() {
         const inputs = document.querySelectorAll('input[type="text"]');
         inputs.forEach(input => {
-            if (input && !input.dataset.formatBound) {
+            if (input && !input.dataset.slashFixed) {
                 const parentContainer = input.closest('.stTextInput');
                 let isDateLike = false;
                 if (parentContainer) {
@@ -109,28 +109,43 @@ st.markdown(
                 }
 
                 if (isDateLike) {
-                    input.dataset.formatBound = "true";
+                    input.dataset.slashFixed = "true";
                     
-                    // Alan odağı kaybettiğinde (başka yere tıklandığında) veya enter'a basıldığında otomatik GG/AA/YYYY yap
-                    input.addEventListener('blur', function (e) {
-                        let val = e.target.value.replace(/\\D/g, "");
-                        if (val.length === 8) {
-                            let formatted = val.substring(0, 2) + "/" + val.substring(2, 4) + "/" + val.substring(4, 8);
-                            if (e.target.value !== formatted) {
-                                e.target.value = formatted;
-                                e.target.dispatchEvent(new Event('input', { bubbles: true }));
-                                e.target.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
+                    const formatValue = (el) => {
+                        let val = el.value.replace(/\\D/g, "");
+                        if (val.length > 8) val = val.slice(0, 8);
+                        let formatted = "";
+                        if (val.length > 0) {
+                            formatted += val.substring(0, 2);
                         }
+                        if (val.length >= 3) {
+                            formatted += "/" + val.substring(2, 4);
+                        }
+                        if (val.length >= 5) {
+                            formatted += "/" + val.substring(4, 8);
+                        }
+                        if (el.value !== formatted) {
+                            el.value = formatted;
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    };
+
+                    input.addEventListener('input', function (e) {
+                        formatValue(e.target);
+                    });
+                    
+                    input.addEventListener('blur', function (e) {
+                        formatValue(e.target);
                     });
                 }
             }
         });
     }
 
-    const observer = new MutationObserver(applyDateFormatting);
+    const observer = new MutationObserver(forceDateSlashMask);
     observer.observe(document.body, { childList: true, subtree: true });
-    window.addEventListener('load', applyDateFormatting);
+    window.addEventListener('load', forceDateSlashMask);
     </script>
     """,
     unsafe_allow_html=True
