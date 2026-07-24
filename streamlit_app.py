@@ -473,10 +473,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
         
     st.markdown("<h2>💳 Tescil Tebliğ Ödeme Ekranı</h2>", unsafe_allow_html=True)
     
-    tescil_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede"]
+    # Sadece Tescil Tebliğ Tarihi dolu olanları bu ekranda listeliyoruz
+    tescil_df = df[(df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede") & 
+                   (df['Tescil Tebliğ Tarihi'].astype(str).str.strip() != "") & 
+                   (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() != "nan")]
     
     if tescil_df.empty:
-        st.info("Tescil Tebliğ Beklemede aşamasında kayıt bulunmuyor.")
+        st.info("Tescil Tebliğ Tarihi girilmiş ve ödeme bekleyen marka bulunmuyor.")
     else:
         marka_listesi_tescil = tescil_df['Marka Adı'].astype(str).tolist()
         secilen_tescil_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi_tescil, key="sel_tescil_odeme_marka")
@@ -517,6 +520,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
     
+    # Eğer "Tescil Tebliğ Beklemede" sayfasındaysak, henüz tebliğ tarihi girilmemiş olanları gösterelim ki tarih girebilsinler
+    if secilen_asama == "Tescil Tebliğ Beklemede":
+        asama_df = asama_df[(asama_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") | 
+                            (asama_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")]
+
     if arama_metni.strip():
         asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
     
