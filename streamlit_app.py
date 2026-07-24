@@ -145,6 +145,13 @@ def resmi_tatil_ve_tatil_kontrol(dt):
             break
     return dt
 
+def tarih_birlestir_ve_formatla(tarih_str):
+    """Kullanıcı tarih alanına ister 8 haneli düz rakam (24072026) ister aralıklı yazsın otomatik GG/AA/YYYY yapar."""
+    temiz = "".join(filter(str.isdigit, str(tarih_str)))
+    if len(temiz) == 8:
+        return f"{temiz[:2]}/{temiz[2:4]}/{temiz[4:]}"
+    return tarih_str.strip()
+
 def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
@@ -296,16 +303,19 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         tel = c1.text_input("Telefon")
         email = c1.text_input("E-Mail")
         c1.text_input("Danışman", value=aktif_kullanici_ad, disabled=True)
-        dogru_tarihi = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="")
+        dogru_tarihi_ham = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="")
         
         il = c2.selectbox("İl", ILLER)
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
         odeme = c2.selectbox("Ödeme Türü", ["EFT", "Kredi Kartı"])
-        s_tarihi = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
+        s_tarihi_ham = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
         tutar = c2.text_input("Tutar (TL)", value="")
         
         submitted = st.form_submit_button("Satışı Kaydet")
         if submitted:
+            dogru_tarihi = tarih_birlestir_ve_formatla(dogru_tarihi_ham)
+            s_tarihi = tarih_birlestir_ve_formatla(s_tarihi_ham)
+
             eksik_alanlar = []
             if not m_adi.strip(): eksik_alanlar.append("Marka Adı")
             if not ad_soyad.strip(): eksik_alanlar.append("İsim Soyisim")
@@ -456,7 +466,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'İl'] = y_il.strip()
                         df.at[idx, 'Sınıf'] = y_sinif.strip()
                         df.at[idx, 'Ödeme'] = y_odeme.strip()
-                        df.at[idx, 'Satış Tarihi'] = y_s_tarih.strip()
+                        df.at[idx, 'Satış Tarihi'] = tarih_birlestir_ve_formatla(y_s_tarih)
                         df.at[idx, 'Tutar'] = y_tutar.strip()
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
@@ -520,10 +530,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 c2.markdown(f"**TESCİL SON GÜNÜ**\n\n`{son_odeme_tarihi_str}`")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", value="", key="ozel_tescil_f_no")
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key="ozel_tescil_tutar")
-                odeme_gunu = c5.text_input("Ödeme Günü (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
+                odeme_gunu_ham = c5.text_input("Ödeme Günü (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
                 st.write("")
                 if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn"):
+                    odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
                     if tescil_fatura_no.strip() and odeme_gunu.strip():
                         idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                         df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
@@ -577,11 +588,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
                     c1, c2, c3 = st.columns([1.5, 1.5, 1])
                     f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
-                    f_tarih = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
+                    f_tarih_ham = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
                     
                     with c3:
                         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
                         if st.button("✅ Onayla ve Başvuru Beklemede Yap", key=f"onay_btn_{row['Marka Adı']}"):
+                            f_tarih = tarih_birlestir_ve_formatla(f_tarih_ham)
                             if f_no.strip() and f_tarih.strip():
                                 idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
                                 df.at[idx, 'Durum'] = "Başvuru Beklemede"
@@ -637,15 +649,17 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     b_tar_disabled = bool(mevcut_b_tar.strip() and mevcut_b_tar != 'nan')
 
                     b_no = c1.text_input("Başvuru No", value=mevcut_b_no if mevcut_b_no != 'nan' else "", disabled=b_no_disabled)
-                    b_tarih = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=mevcut_b_tar if mevcut_b_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), disabled=b_tar_disabled, key=f"form_b_tar_{secilen_marka}")
+                    b_tarih_ham = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=mevcut_b_tar if mevcut_b_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), disabled=b_tar_disabled, key=f"form_b_tar_{secilen_marka}")
                     
                     mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
                     mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
 
                     y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
 
-                    y_tar = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
+                    y_tar_ham = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
                     
+                    y_tar = tarih_birlestir_ve_formatla(y_tar_ham)
+
                     calculated_yayin_bitis = ""
                     if y_tar.strip() and y_tar.strip().lower() != 'nan':
                         try:
@@ -669,16 +683,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
                     mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
 
-                    itiraz_tar = ""
-                    tescil_tar = ""
+                    itiraz_tar_ham = ""
+                    tescil_tar_ham = ""
 
                     if sonraki_asama == "İtiraz Tebliğ Beklemede":
-                        itiraz_tar = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
+                        itiraz_tar_ham = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
                     elif sonraki_asama == "Tescil Tebliğ Beklemede":
-                        tescil_tar = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
+                        tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
                     if submitted_update:
+                        b_tarih = tarih_birlestir_ve_formatla(b_tarih_ham)
+                        itiraz_tar = tarih_birlestir_ve_formatla(itiraz_tar_ham)
+                        tescil_tar = tarih_birlestir_ve_formatla(tescil_tar_ham)
+
                         final_durum = yeni_durum
                         
                         if secilen_asama == "Kurum İncelemesinde":
