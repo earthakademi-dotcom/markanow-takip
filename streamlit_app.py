@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL & GİRİŞ CSS & JS STİLLERİ ---
+# --- GLOBAL & GİRİŞ CSS STİLLERİ ---
 st.markdown(
     """
     <style>
@@ -89,35 +89,6 @@ st.markdown(
         border: 1px solid #E0A800 !important;
     }
     </style>
-
-    <!-- Otomatik Tarih Maskeleme (GG/AA/YYYY) Scripti -->
-    <script>
-    document.addEventListener("input", function (e) {
-        if (e.target && e.target.tagName === "INPUT") {
-            let val = e.target.value;
-            // Eğer alan tarih alanına benziyorsa veya içinde GG/AA/YYYY geçiyorsa ya da genel textinput ise
-            // Rakam dışındaki karakterleri temizleyip GG/AA/YYYY formatına sokalım
-            if (e.target.placeholder && (e.target.placeholder.includes("GG/AA/YYYY") || e.target.placeholder.includes("gg/aa/yyyy"))) {
-                let numbers = val.replace(/\\D/g, "");
-                if (numbers.length > 8) numbers = numbers.slice(0, 8);
-                let formatted = "";
-                if (numbers.length > 0) {
-                    formatted += numbers.substring(0, 2);
-                }
-                if (numbers.length >= 3) {
-                    formatted += "/" + numbers.substring(2, 4);
-                }
-                if (numbers.length >= 5) {
-                    formatted += "/" + numbers.substring(4, 8);
-                }
-                if (e.target.value !== formatted) {
-                    e.target.value = formatted;
-                    e.target.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
-        }
-    });
-    </script>
     """,
     unsafe_allow_html=True
 )
@@ -175,6 +146,9 @@ def resmi_tatil_ve_tatil_kontrol(dt):
     return dt
 
 def tarih_birlestir_ve_formatla(tarih_str):
+    """Kullanıcı 11112025 yazdığında veya boşluksuz/slashsız yazdığında otomatik 11/11/2025 yapar."""
+    if not tarih_str:
+        return ""
     temiz = "".join(filter(str.isdigit, str(tarih_str)))
     if len(temiz) == 8:
         return f"{temiz[:2]}/{temiz[2:4]}/{temiz[4:]}"
