@@ -150,7 +150,7 @@ def load_data():
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
-        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi"
+        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi"
     ]
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -320,7 +320,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
@@ -492,7 +492,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
             
             if secilen_tescil_marka:
                 t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
-                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** {t_row.get('Tescil Tebliğ Tarihi', '-')} | **Danışman:** *{t_row['Danışman']}*")
+                
+                # Otomatik hesaplanan son ödeme tarihini gösterelim
+                otomatik_son_odeme = t_row.get('Tescil Son Ödeme Tarihi', '-')
+                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** {t_row.get('Tescil Tebliğ Tarihi', '-')} | **Son Ödeme Tarihi (2 Ay):** **{otomatik_son_odeme}** | **Danışman:** *{t_row['Danışman']}*")
                 
                 c1, c2, c3 = st.columns([1.5, 1.5, 1])
                 tescil_fatura_no = c1.text_input("Tescil Fatura No", key="ozel_tescil_f_no")
@@ -684,6 +687,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
                         if tescil_tar.strip():
                             df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
+                            
+                            # Tescil Tebliğ Tarihi girildiğinde tam 2 ay kuralı + hafta sonu / resmi tatil kontrolüyle Son Ödeme Tarihi hesaplama
+                            try:
+                                parsed_tescil_tar = datetime.strptime(tescil_tar.strip(), "%d/%m/%Y")
+                                taslak_son_odeme = ay_ekle(parsed_tescil_tar, 2)
+                                hesaplanan_son_odeme = resmi_tatil_ve_tatil_kontrol(taslak_son_odeme)
+                                df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme.strftime("%d/%m/%Y")
+                            except:
+                                pass
                             
                         df.to_csv(DATA_FILE, index=False)
                         
