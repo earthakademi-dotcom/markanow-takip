@@ -147,7 +147,7 @@ def resmi_tatil_ve_tatil_kontrol(dt):
 
 def load_data():
     zorunlu_kolonlar = [
-        "Marka Adı", "Ad Soyad", "TC", "Telefon", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
+        "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
         "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi"
@@ -207,7 +207,6 @@ if not st.session_state.kullanici:
 # --- ROL TANIMLAMALARI ---
 aktif_kullanici_ad = str(st.session_state.kullanici).strip().upper()
 is_admin = (aktif_kullanici_ad == "ALİ OSMAN YELBEY")
-# Sadece yetkili ana yönetim hesapları muhasebe paneline erişebilir, diğer herkes Danışman olarak başlar
 is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN"])
 
 if "aktif_sayfa" not in st.session_state:
@@ -286,6 +285,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         ad_soyad = c1.text_input("İsim Soyisim")
         tc = c1.text_input("TC (11 Hane)")
         tel = c1.text_input("Telefon")
+        email = c1.text_input("E-Mail")
         c1.text_input("Danışman", value=aktif_kullanici_ad, disabled=True)
         dogru_tarihi = c1.text_input("Doğum Tarihi (GG/AA/YYYY)", value="")
         
@@ -302,6 +302,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
             if not ad_soyad.strip(): eksik_alanlar.append("İsim Soyisim")
             if not tc.strip(): eksik_alanlar.append("TC")
             if not tel.strip(): eksik_alanlar.append("Telefon")
+            if not email.strip(): eksik_alanlar.append("E-Mail")
             if not dogru_tarihi.strip(): eksik_alanlar.append("Doğum Tarihi")
             if not sinif: eksik_alanlar.append("Sınıf Seçimi")
             if not s_tarihi.strip(): eksik_alanlar.append("Satış Tarihi")
@@ -311,7 +312,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                 st.error(f"❌ Lütfen boş bırakılan zorunlu alanları doldurunuz: {', '.join(eksik_alanlar)}")
             else:
                 new_row = {
-                    "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), 
+                    "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": ""
