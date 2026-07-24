@@ -90,13 +90,12 @@ st.markdown(
     }
     </style>
 
-    <!-- Anlık Otomatik Tarih Maskeleme Scripti -->
+    <!-- Kesin Çözüm Tarih Formatlama Scripti (Blur / Focusout Tetiklemeli) -->
     <script>
-    function setupDateMasks() {
+    function applyDateFormatting() {
         const inputs = document.querySelectorAll('input[type="text"]');
         inputs.forEach(input => {
-            if (input && !input.dataset.masked) {
-                // Etiketinde veya placeholder'ında tarih ibaresi olanlar veya genel tarih alanları
+            if (input && !input.dataset.formatBound) {
                 const parentContainer = input.closest('.stTextInput');
                 let isDateLike = false;
                 if (parentContainer) {
@@ -110,27 +109,18 @@ st.markdown(
                 }
 
                 if (isDateLike) {
-                    input.dataset.masked = "true";
-                    input.addEventListener('input', function (e) {
+                    input.dataset.formatBound = "true";
+                    
+                    // Alan odağı kaybettiğinde (başka yere tıklandığında) veya enter'a basıldığında otomatik GG/AA/YYYY yap
+                    input.addEventListener('blur', function (e) {
                         let val = e.target.value.replace(/\\D/g, "");
-                        if (val.length > 8) val = val.slice(0, 8);
-                        
-                        let formatted = "";
-                        if (val.length > 0) {
-                            formatted += val.substring(0, 2);
-                        }
-                        if (val.length >= 3) {
-                            formatted += "/" + val.substring(2, 4);
-                        }
-                        if (val.length >= 5) {
-                            formatted += "/" + val.substring(4, 8);
-                        }
-                        
-                        if (e.target.value !== formatted) {
-                            e.target.value = formatted;
-                            // React / Streamlit state tetiklemesi
-                            e.target.dispatchEvent(new Event('input', { bubbles: true }));
-                            e.target.dispatchEvent(new Event('change', { bubbles: true }));
+                        if (val.length === 8) {
+                            let formatted = val.substring(0, 2) + "/" + val.substring(2, 4) + "/" + val.substring(4, 8);
+                            if (e.target.value !== formatted) {
+                                e.target.value = formatted;
+                                e.target.dispatchEvent(new Event('input', { bubbles: true }));
+                                e.target.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                         }
                     });
                 }
@@ -138,10 +128,9 @@ st.markdown(
         });
     }
 
-    // Sayfa yüklendiğinde ve DOM değişimlerinde çalıştır
-    const observer = new MutationObserver(setupDateMasks);
+    const observer = new MutationObserver(applyDateFormatting);
     observer.observe(document.body, { childList: true, subtree: true });
-    window.addEventListener('load', setupDateMasks);
+    window.addEventListener('load', applyDateFormatting);
     </script>
     """,
     unsafe_allow_html=True
