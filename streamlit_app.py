@@ -150,7 +150,7 @@ def load_data():
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
-        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi"
+        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi"
     ]
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -320,7 +320,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
@@ -493,27 +493,28 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
             if secilen_tescil_marka:
                 t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
                 
-                # Tablodan doğrudan Tescil Tebliğ Tarihi ve Son Ödeme Tarihi okunup yazdırılıyor
                 tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '-')
                 son_odeme_tarihi_str = t_row.get('Tescil Son Ödeme Tarihi', '-')
                 
-                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** **{tescil_tarihi_str}** | **Son Ödeme Tarihi:** **{son_odeme_tarihi_str}** | **Danışman:** *{t_row['Danışman']}*")
+                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** **{tescil_tarihi_str}** | **Tescil Ödeme Son Günü:** **{son_odeme_tarihi_str}** | **Danışman:** *{t_row['Danışman']}*")
                 
-                c1, c2, c3 = st.columns([1.5, 1.5, 1])
+                c1, c2, c3, c4 = st.columns([1.2, 1.2, 1.2, 1])
                 tescil_fatura_no = c1.text_input("Tescil Fatura No", key="ozel_tescil_f_no")
                 tescil_tutar = c2.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key="ozel_tescil_tutar")
+                odeme_gunu = c3.text_input("Ödeme Günü (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
-                with c3:
+                with c4:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
                     if st.button("🎉 Tescil Ödemesini Onayla ve Tescillendi Yap", key="ozel_tescil_onay_btn"):
-                        if tescil_fatura_no.strip():
+                        if tescil_fatura_no.strip() and odeme_gunu.strip():
                             idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                             df.at[idx, 'Durum'] = "Tescillendi 🎉"
+                            df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                             df.to_csv(DATA_FILE, index=False)
                             st.success(f"🎉 '{secilen_tescil_marka}' başarıyla tescillendi ve arşive alındı!")
                             st.rerun()
                         else:
-                            st.warning("Lütfen tescil fatura numarasını giriniz.")
+                            st.warning("Lütfen Fatura No ve Ödeme Günü alanlarını doldurunuz.")
 
 # --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
