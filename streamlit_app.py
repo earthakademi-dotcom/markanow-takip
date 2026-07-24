@@ -477,7 +477,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
         
     st.markdown("<h2>💳 Tescil Tebliğ Edildi Müşteri Arandı Ekranı</h2>", unsafe_allow_html=True)
     
-    # Hem "Tescil Tebliğ Beklemede" hem de henüz işleme alınmış "Tescil Kurum Ödemesi Bekleyen" aşamasındakileri göstersin
     tescil_df = df[(df['Durum'].astype(str).str.strip().isin(["Tescil Tebliğ Beklemede", "Tescil Kurum Ödemesi Bekleyen"])) & 
                    (df['Tescil Tebliğ Tarihi'].astype(str).str.strip() != "") & 
                    (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() != "nan")]
@@ -518,8 +517,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 
                 c1, c2, c3, c4, c5 = st.columns([1.1, 1.1, 1.1, 1.1, 1])
                 c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
-                c2.markdown(f"**Tescil Tebliğ Son Günü**\n\n`{son_odeme_tarihi_str}`")
-                tescil_fatura_no = c3.text_input("Tescil Fatura No", value=str(t_row.get('Fatura No', '')) if pd.notna(t_row.get('Fatura No')) and str(t_row.get('Fatura No')) != 'nan' else "", key="ozel_tescil_f_no")
+                c2.markdown(f"**TESCİL SON GÜNÜ**\n\n`{son_odeme_tarihi_str}`")
+                tescil_fatura_no = c3.text_input("Tescil Fatura No", value="", key="ozel_tescil_f_no")
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key="ozel_tescil_tutar")
                 odeme_gunu = c5.text_input("Ödeme Günü (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
@@ -528,6 +527,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                     if tescil_fatura_no.strip() and odeme_gunu.strip():
                         idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                         df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
+                        df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.to_csv(DATA_FILE, index=False)
                         st.success(f"⏳ '{secilen_tescil_marka}' başarıyla 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı!")
