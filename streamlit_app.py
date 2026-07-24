@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Markanow ERP", layout="wide")
 
-# --- GLOBAL & GİRİŞ CSS STİLLERİ ---
+# --- GLOBAL & GİRİŞ CSS & JS STİLLERİ ---
 st.markdown(
     """
     <style>
@@ -89,6 +89,60 @@ st.markdown(
         border: 1px solid #E0A800 !important;
     }
     </style>
+
+    <!-- Anlık Otomatik Tarih Maskeleme Scripti -->
+    <script>
+    function setupDateMasks() {
+        const inputs = document.querySelectorAll('input[type="text"]');
+        inputs.forEach(input => {
+            if (input && !input.dataset.masked) {
+                // Etiketinde veya placeholder'ında tarih ibaresi olanlar veya genel tarih alanları
+                const parentContainer = input.closest('.stTextInput');
+                let isDateLike = false;
+                if (parentContainer) {
+                    const label = parentContainer.querySelector('label');
+                    if (label && (label.innerText.includes('Tarihi') || label.innerText.includes('Günü') || label.innerText.includes('GG/AA/YYYY'))) {
+                        isDateLike = true;
+                    }
+                }
+                if (input.placeholder && (input.placeholder.includes('GG/AA/YYYY') || input.placeholder.includes('gg/aa/yyyy'))) {
+                    isDateLike = true;
+                }
+
+                if (isDateLike) {
+                    input.dataset.masked = "true";
+                    input.addEventListener('input', function (e) {
+                        let val = e.target.value.replace(/\\D/g, "");
+                        if (val.length > 8) val = val.slice(0, 8);
+                        
+                        let formatted = "";
+                        if (val.length > 0) {
+                            formatted += val.substring(0, 2);
+                        }
+                        if (val.length >= 3) {
+                            formatted += "/" + val.substring(2, 4);
+                        }
+                        if (val.length >= 5) {
+                            formatted += "/" + val.substring(4, 8);
+                        }
+                        
+                        if (e.target.value !== formatted) {
+                            e.target.value = formatted;
+                            // React / Streamlit state tetiklemesi
+                            e.target.dispatchEvent(new Event('input', { bubbles: true }));
+                            e.target.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    // Sayfa yüklendiğinde ve DOM değişimlerinde çalıştır
+    const observer = new MutationObserver(setupDateMasks);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('load', setupDateMasks);
+    </script>
     """,
     unsafe_allow_html=True
 )
@@ -146,7 +200,6 @@ def resmi_tatil_ve_tatil_kontrol(dt):
     return dt
 
 def tarih_birlestir_ve_formatla(tarih_str):
-    """Kullanıcı 11112025 yazdığında veya boşluksuz/slashsız yazdığında otomatik 11/11/2025 yapar."""
     if not tarih_str:
         return ""
     temiz = "".join(filter(str.isdigit, str(tarih_str)))
