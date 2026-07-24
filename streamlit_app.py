@@ -493,9 +493,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
             if secilen_tescil_marka:
                 t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
                 
-                # Otomatik hesaplanan son ödeme tarihini gösterelim
-                otomatik_son_odeme = t_row.get('Tescil Son Ödeme Tarihi', '-')
-                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** {t_row.get('Tescil Tebliğ Tarihi', '-')} | **Son Ödeme Tarihi (2 Ay):** **{otomatik_son_odeme}** | **Danışman:** *{t_row['Danışman']}*")
+                # Tablodan doğrudan Tescil Tebliğ Tarihi ve Son Ödeme Tarihi okunup yazdırılıyor
+                tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '-')
+                son_odeme_tarihi_str = t_row.get('Tescil Son Ödeme Tarihi', '-')
+                
+                st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** **{tescil_tarihi_str}** | **Son Ödeme Tarihi:** **{son_odeme_tarihi_str}** | **Danışman:** *{t_row['Danışman']}*")
                 
                 c1, c2, c3 = st.columns([1.5, 1.5, 1])
                 tescil_fatura_no = c1.text_input("Tescil Fatura No", key="ozel_tescil_f_no")
@@ -688,7 +690,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if tescil_tar.strip():
                             df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar.strip()
                             
-                            # Tescil Tebliğ Tarihi girildiğinde tam 2 ay kuralı + hafta sonu / resmi tatil kontrolüyle Son Ödeme Tarihi hesaplama
                             try:
                                 parsed_tescil_tar = datetime.strptime(tescil_tar.strip(), "%d/%m/%Y")
                                 taslak_son_odeme = ay_ekle(parsed_tescil_tar, 2)
