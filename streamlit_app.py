@@ -255,6 +255,8 @@ if is_muhasebe:
             sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True):
             sayfa_degistir("Tescil Tebliğ Beklemede")
+        if st.button("💳 Tescil Tebliğ Ödeme", use_container_width=True):
+            sayfa_degistir("Tescil Tebliğ Ödeme")
         if st.button("🎉 Tescillendi", use_container_width=True):
             sayfa_degistir("Tescillendi")
         if st.button("❌ Reddedildi", use_container_width=True):
@@ -464,6 +466,41 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         st.success(f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt başarıyla silindi!")
                         st.rerun()
 
+# --- TESCİL TEBLİĞ ÖDEME EKRANI (ÖZEL MENÜ) ---
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Ödeme":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>💳 Tescil Tebliğ Ödeme Ekranı</h2>", unsafe_allow_html=True)
+    
+    tescil_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede"]
+    
+    if tescil_df.empty:
+        st.info("Tescil Tebliğ Beklemede aşamasında kayıt bulunmuyor.")
+    else:
+        marka_listesi_tescil = tescil_df['Marka Adı'].astype(str).tolist()
+        secilen_tescil_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi_tescil, key="sel_tescil_odeme_marka")
+        
+        if secilen_tescil_marka:
+            t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
+            st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Tescil Tebliğ Tarihi:** {t_row.get('Tescil Tebliğ Tarihi', '-')} | **Danışman:** *{t_row['Danışman']}*")
+            
+            c1, c2, c3 = st.columns([1.5, 1.5, 1])
+            tescil_fatura_no = c1.text_input("Tescil Fatura No", key=" ozel_tescil_f_no")
+            tescil_tutar = c2.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key="ozel_tescil_tutar")
+            
+            with c3:
+                st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                if st.button("🎉 Tescil Ödemesini Onayla ve Tescillendi Yap", key="ozel_tescil_onay_btn"):
+                    if tescil_fatura_no.strip():
+                        idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
+                        df.at[idx, 'Durum'] = "Tescillendi 🎉"
+                        df.to_csv(DATA_FILE, index=False)
+                        st.success(f"🎉 '{secilen_tescil_marka}' başarıyla tescillendi ve arşive alındı!")
+                        st.rerun()
+                    else:
+                        st.warning("Lütfen tescil fatura numarasını giriniz.")
+
 # --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
     "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
@@ -535,7 +572,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                     idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
                                     df.at[idx, 'Durum'] = "Tescillendi 🎉"
                                     df.to_csv(DATA_FILE, index=False)
-                                    st.success(f"🎉 '{row['Marka Ad_ı'] if 'Marka Ad_ı' in row else row['Marka Adı']}' başarıyla tescillendi ve arşive alındı!")
+                                    st.success(f"🎉 '{row['Marka Adı']}' başarıyla tescillendi ve arşive alındı!")
                                     st.rerun()
                                 else:
                                     st.warning("Lütfen tescil fatura numarasını giriniz.")
