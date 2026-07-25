@@ -360,12 +360,30 @@ def sinif_adedi_hesapla(sinif_str):
         gorulen_siniflar = set()
         for p in parcalar:
             if "/" in p:
-                continue
-            if p.isdigit():
-                s_int = int(p)
-                if 1 <= s_int <= 45:
+                ana_sinif_str = p.split("/")[0].strip()
+                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
+                    s_int = int(ana_sinif_str)
                     if s_int not in gorulen_siniflar:
                         gorulen_siniflar.add(s_int)
+                        satir_sayac += 1
+                else:
+                    if p not in gorulen_siniflar:
+                        gorulen_siniflar.add(p)
+                        satir_sayac += 1
+            else:
+                if p.isdigit():
+                    s_int = int(p)
+                    if 1 <= s_int <= 45:
+                        if s_int not in gorulen_siniflar:
+                            gorulen_siniflar.add(s_int)
+                            satir_sayac += 1
+                    else:
+                        if p not in gorulen_siniflar:
+                            gorulen_siniflar.add(p)
+                            satir_sayac += 1
+                else:
+                    if p not in gorulen_siniflar:
+                        gorulen_siniflar.add(p)
                         satir_sayac += 1
         return satir_sayac
     except:
@@ -615,14 +633,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
     st.write("🔹 **1. Sınıf Bedeli** ve **3. Sınıf Bedeli** ile **Ortak Avukat Ücretini** aşağıdaki alanlardan belirleyebilirsiniz. \n🔹 **1. Sınıf**: 1. Sınıf Bedeli \n🔹 **2. Sınıf**: 1. Sınıf + 1. Sınıf Bedeli \n🔹 **3. Sınıf**: 1. Sınıf + 1. Sınıf + 3. Sınıf Bedeli \n🔹 **4 ila 45. Sınıflar**: Önceki sınıf + 3. Sınıf Bedeli eklenerek hesaplanır.")
 
-    # Mevcut değerleri güvenli çekme
     mevcut_h1 = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
     mevcut_h3_bedel = float(st.session_state.sinif_harclari.get(4, {"harc": 3150.0})["harc"] - st.session_state.sinif_harclari.get(3, {"harc": 3150.0})["harc"]) if len(st.session_state.sinif_harclari) >= 4 else 3150.0
     if mevcut_h3_bedel <= 0:
         mevcut_h3_bedel = 3150.0
     mevcut_ortak_avukat = float(list(st.session_state.sinif_harclari.values())[0]["avukat"]) if st.session_state.sinif_harclari else 750.0
 
-    # Üst Kontrol Paneli (1. Sınıf Bedeli, 3. Sınıf Bedeli ve Ortak Avukat Ücreti)
     col_k1, col_k2, col_k3 = st.columns(3)
     giris_h1 = col_k1.number_input("1. Sınıf Bedeli (TL)", value=float(mevcut_h1), step=50.0, format="%.2f")
     giris_h3_bedel = col_k2.number_input("3. Sınıf Bedeli (TL)", value=float(mevcut_h3_bedel), step=50.0, format="%.2f")
@@ -630,25 +646,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
 
     st.write("---")
 
-    # Tablo verisi hazırlama (Yeni kurallara göre tam liste)
     tablo_verileri = []
     
-    # 1. Sınıf = 1. Sınıf Bedeli
     h1 = giris_h1
     a1 = ortak_avukat_input
     tablo_verileri.append({"Sınıf No": 1, "Harç (TL)": h1, "Avukat (TL)": a1, "Toplam (Harç + Avukat) (TL)": h1 + a1})
 
-    # 2. Sınıf = 1. Sınıf Bedeli + 1. Sınıf Bedeli
     h2 = giris_h1 + giris_h1
     a2 = ortak_avukat_input
     tablo_verileri.append({"Sınıf No": 2, "Harç (TL)": h2, "Avukat (TL)": a2, "Toplam (Harç + Avukat) (TL)": h2 + a2})
 
-    # 3. Sınıf = 1. Sınıf Bedeli + 1. Sınıf Bedeli + 3. Sınıf Bedeli
     h3 = giris_h1 + giris_h1 + giris_h3_bedel
     a3 = ortak_avukat_input
     tablo_verileri.append({"Sınıf No": 3, "Harç (TL)": h3, "Avukat (TL)": a3, "Toplam (Harç + Avukat) (TL)": h3 + a3})
 
-    # 4 ila 45. Sınıflar = Önceki sınıf + 3. Sınıf Bedeli
     onceki_h = h3
     for i in range(4, 46):
         onceki_h += giris_h3_bedel
@@ -658,7 +669,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     
     config_df = pd.DataFrame(tablo_verileri)
 
-    # Profesyonel İnteraktif Düzenleyici Tablo (Tamamen kilitli, yönetim üstteki kutulardan yapılıyor)
     st.data_editor(
         config_df,
         column_config={
@@ -1008,7 +1018,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     if asama_df.empty:
         st.info(f"'{secilen_asama}' aşamasında aramanızla eşleşen kayıt bulunmuyor.")
     else:
-        # Tablo görünümünde "Harç Tutarı" yerine ilgili sınıf sayısına karşılık gelen "Toplam Ücret" gösterilmesi için geçici süton güncellemesi
         goruntu_df = asama_df.copy()
         ucret_sutun_degerleri = []
         sinif_adedi_listesi = []
@@ -1247,6 +1256,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
+                u_df.loc[u_df["İsim"] == p, "Şfile"] = s2.strip()
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
