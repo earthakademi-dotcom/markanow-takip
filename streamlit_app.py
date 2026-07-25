@@ -394,20 +394,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         with cols[idx % 3]:
             st.metric(label=gorunen_isim, value=f"{adet} Adet")
 
-    st.write("---")
-    st.subheader("🔍 Aşama Detayları ve Liste Görünümü")
-    
-    secilen_rapor_kategori = st.selectbox("İncelemek İstediğiniz Aşamayı Seçin", [item[0] for item in rapor_kalemleri])
-    secilen_durum_kod = dict(rapor_kalemleri)[secilen_rapor_kategori]
-    
-    _, detay_df = get_count_and_df(secilen_durum_kod)
-    
-    if detay_df.empty:
-        st.info(f"'{secilen_rapor_kategori}' aşamasında kayıt bulunmuyor.")
-    else:
-        st.write(f"Toplam **{len(detay_df)}** kayıt listeleniyor:")
-        st.dataframe(detay_df, use_container_width=True)
-
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
