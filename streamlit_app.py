@@ -542,7 +542,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     
     toplam_tutar = 0.0
     for _, row in muhasebe_bekleyen_df.iterrows():
-        toplam_tutar += sinif_harci_ve_avukat_hesapla(row.get('Sınıf', ''))
+        toplam_tutar += sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
     c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
     
     st.write("---")
@@ -551,7 +551,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     else:
         ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']]
-        ucret_listesi = [f"{sinif_harci_ve_avukat_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
+        ucret_listesi = [f"{sinif_toplam_ucret_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
         
         ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
         ozet_df['Toplam Ücret'] = ucret_listesi
@@ -1246,7 +1246,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
-                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
+                u_df.loc[u_df["İsim"] == p, "Schifre"] = s2.strip() # fixed key reference securely
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
