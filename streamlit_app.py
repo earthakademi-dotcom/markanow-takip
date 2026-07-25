@@ -569,13 +569,17 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
         ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         
         harc_listesi = []
+        sinif_adedi_listesi = []
         for _, row in basvuru_bekleyen_df.iterrows():
             h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
             harc_listesi.append(f"{h_tutar:,.2f} TL")
+            s_adet = sinif_adedi_hesapla(row.get('Sınıf', ''))
+            sinif_adedi_listesi.append(f"{s_adet} Adet")
             
+        ozet_df['Sınıf Adedi'] = sinif_adedi_listesi
         ozet_df['Harç Tutarı'] = harc_listesi
         
-        cols_order = ['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Harç Tutarı']
+        cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Harç Tutarı']
         ozet_df = ozet_df[cols_order]
         
         st.dataframe(ozet_df, use_container_width=True)
@@ -1149,7 +1153,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             try:
                                 parsed_tescil_tar = datetime.strptime(tescil_tar.strip(), "%d/%m/%Y")
                                 taslak_son_odeme = ay_ekle(parsed_tescil_tar, 2)
-                                hesaplanan_son_odeme = resmi_tatil_ve_tatil_kontrol(taslak_son_od_odeme := taslak_son_odeme) # koruma
+                                hesaplanan_son_odeme = resmi_tatil_ve_tatil_kontrol(taslak_son_odeme)
                                 df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme.strftime("%d/%m/%Y")
                             except:
                                 pass
@@ -1202,7 +1206,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, ist_index:=False) if False else u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
                 st.rerun()
