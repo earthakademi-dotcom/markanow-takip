@@ -356,7 +356,6 @@ def sinif_toplam_ucret_hesapla(sinif_str):
 def sinif_adedi_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        # Sadece "/" içermeyen (yani ana sınıf olan) veya 35/ alt sınıfı olmayanları saymak için filtreliyoruz
         gercek_siniflar = [p for p in parcalar if "/" not in p]
         return len(gercek_siniflar)
     except:
@@ -552,7 +551,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     else:
         ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']]
+        ucret_listesi = [f"{sinif_harci_ve_avukat_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
+        
         ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
+        ozet_df['Toplam Ücret'] = ucret_listesi
+        
+        cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Toplam Ücret']
+        ozet_df = ozet_df[cols_order]
+        
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu":
