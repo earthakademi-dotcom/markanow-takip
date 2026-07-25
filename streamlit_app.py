@@ -320,6 +320,8 @@ if is_muhasebe:
             sayfa_degistir("Marka Tescil Raporlama")
         if st.button("📌 Muhasebe Bekleyen Raporu", use_container_width=True):
             sayfa_degistir("Muhasebe Bekleyen Raporu")
+        if st.button("⏳ Başvuru Beklemede Raporu", use_container_width=True):
+            sayfa_degistir("Başvuru Beklemede Raporu")
 
     with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
@@ -406,16 +408,71 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     
     muhasebe_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
     
-    c1, c2 = st.columns(2)
-    c1.metric("Toplam Bekleyen İşlem", f"{len(muhasebe_bekleyen_df)} Adet")
+    toplam_marka_sayisi = muhasebe_bekleyen_df['Marka Adı'].nunique()
+    
+    toplam_sinif_adedi = 0
+    for s_val in muhasebe_bekleyen_df['Sınıf'].dropna():
+        parcalar = [p.strip() for p in str(s_val).split(",")]
+        satir_sayac = 0
+        gorulen_siniflar = set()
+        for p in parcalar:
+            if "/" in p:
+                continue
+            if p.isdigit() and 1 <= int(p) <= 45:
+                if p not in gorulen_siniflar:
+                    gorulen_siniflar.add(p)
+                    satir_sayac += 1
+        toplam_sinif_adedi += satir_sayac
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
     toplam_tutar = pd.to_numeric(muhasebe_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
-    c2.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
+    c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
     
     st.write("---")
     if muhasebe_bekleyen_df.empty:
         st.info("Muhasebe onayı bekleyen kayıt bulunmuyor.")
     else:
         ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        st.dataframe(ozet_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>⏳ Başvuru Beklemede Raporu</h2>", unsafe_allow_html=True)
+    st.write("Başvuru beklemede olan işlemlerin detaylı rapor görünümü aşağıdadır.")
+    
+    basvuru_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Başvuru Beklemede"]
+    
+    toplam_marka_sayisi = basvuru_bekleyen_df['Marka Adı'].nunique()
+    
+    toplam_sinif_adedi = 0
+    for s_val in basvuru_bekleyen_df['Sınıf'].dropna():
+        parcalar = [p.strip() for p in str(s_val).split(",")]
+        satir_sayac = 0
+        gorulen_siniflar = set()
+        for p in parcalar:
+            if "/" in p:
+                continue
+            if p.isdigit() and 1 <= int(p) <= 45:
+                if p not in gorulen_siniflar:
+                    gorulen_siniflar.add(p)
+                    satir_sayac += 1
+        toplam_sinif_adedi += satir_sayac
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
+    toplam_tutar = pd.to_numeric(basvuru_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
+    c3.metric("Toplam Başvuru Tutarı", f"{toplam_tutar:,.2f} TL")
+    
+    st.write("---")
+    if basvuru_bekleyen_df.empty:
+        st.info("Başvuru beklemede kayıt bulunmuyor.")
+    else:
+        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         st.dataframe(ozet_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
