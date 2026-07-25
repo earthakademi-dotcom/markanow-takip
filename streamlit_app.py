@@ -315,9 +315,7 @@ if not is_muhasebe:
         sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
-    with st.sidebar.expander("📈 Marka Tescil Raporlama", expanded=True):
-        if st.button("📊 Genel Rapor Paneli", use_container_width=True):
-            sayfa_degistir("Marka Tescil Raporlama")
+    with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
             sayfa_degistir("Muhasebe Onayı Bekliyor")
         if st.button("⏳ Başvuru Beklemede", use_container_width=True):
@@ -356,55 +354,6 @@ df = load_data()
 if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
     st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
-
-elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
-    if st.button("⬅️ Geri Çık"):
-        sayfa_degistir("Ana Sayfa")
-        
-    st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
-    st.write("Sistemdeki tüm markaların güncel aşama durumlarına göre sayısal dağılımı aşağıdadır.")
-    
-    def get_count_and_df(asama_adi):
-        if asama_adi == "Tescil Tebliğ Beklemede":
-            sub_df = df[(df['Durum'].astype(str).str.strip() == asama_adi) & 
-                        ((df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") | 
-                         (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan"))]
-        else:
-            sub_df = df[df['Durum'].astype(str).str.strip() == asama_adi]
-        return len(sub_df), sub_df
-
-    rapor_kalemleri = [
-        ("Başvuru Beklemede", "Başvuru Beklemede"),
-        ("Kurum İncelemesinde", "Kurum İncelemesinde"),
-        ("Yayında", "Yayında"),
-        ("İtiraz / Savunma Bekliyor", "İtiraz Geldi - Savunma Bekliyor"),
-        ("Tescil Tebliğ Beklemede", "Tescil Tebliğ Beklemede"),
-        ("Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Tebliğ Edildi Müşteri Arandı"),
-        ("Tescil Kurum Ödemesi Bekleyen", "Tescil Kurum Ödemesi Bekleyen"),
-        ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
-        ("Tescillendi", "Tescillendi 🎉"),
-        ("Reddedildi", "Reddedildi ❌")
-    ]
-
-    cols = st.columns(3)
-    for idx, (gorunen_isim, durum_kod) in enumerate(rapor_kalemleri):
-        adet, _ = get_count_and_df(durum_kod)
-        with cols[idx % 3]:
-            st.metric(label=gorunen_isim, value=f"{adet} Adet")
-
-    st.write("---")
-    st.subheader("🔍 Aşama Detayları ve Liste Görünümü")
-    
-    secilen_rapor_kategori = st.selectbox("İncelemek İstediğiniz Aşamayı Seçin", [item[0] for item in rapor_kalemleri])
-    secilen_durum_kod = dict(rapor_kalemleri)[secilen_rapor_kategori]
-    
-    _, detay_df = get_count_and_df(secilen_durum_kod)
-    
-    if detay_df.empty:
-        st.info(f"'{secilen_rapor_kategori}' aşamasında kayıt bulunmuyor.")
-    else:
-        st.write(f"Toplam **{len(detay_df)}** kayıt listeleniyor:")
-        st.dataframe(detay_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
