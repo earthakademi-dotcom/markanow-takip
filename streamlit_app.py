@@ -375,18 +375,22 @@ if "sinif_harclari" not in st.session_state:
             h_val = 3510.0
         st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
-# --- KESİN MANTIK: 35/ ALT SINIFLAR ASLA SINIF OLARAK SAYILMAZ. SADECE 1-45 ANA SINIFLAR SAYILIR VE HESAPLANIR. ---
+# --- KESİN MANTIK: HER MARKA İÇİN ANA SINIFLAR (1-45) BİRER KEZ SAYILIR (TEK HARÇ + AVUKAT), 35/ ALT SINIFLAR İÇİN SADECE İLGİLİ ANA SINIFIN AVUKATI EKLENİR ---
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_tutar = 0.0
         
+        # Bu marka için işlem yapılan ana sınıfları takip edelim ki aynı ana sınıf tekrar harç üretmesin
+        islenen_ana_siniflar = set()
+        
         for p in parcalar:
             if "/" in p:
-                # 35/ alt sınıflar için harç ve sınıf adedi alınmıyor, sadece ilgili ana sınıfın avukat ücreti ekleniyor
+                # 35/ alt sınıf: Harç alınmıyor, sadece ilgili ana sınıfın (örn: 35) avukat ücreti ekleniyor
                 ana_sinif_str = p.split("/")[0].strip()
                 if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
-                    kayit = st.session_state.sinif_harclari.get(int(ana_sinif_str), {"harc": 3510.0, "avukat": 2000.0})
+                    s_int = int(ana_sinif_str)
+                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
                 else:
                     kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
                 toplam_tutar += kayit["avukat"]
@@ -394,11 +398,16 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
                 if p.isdigit():
                     s_int = int(p)
                     if 1 <= s_int <= 45:
-                        kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                        toplam_tutar += kayit["harc"] + kayit["avukat"]
+                        # Eğer bu ana sınıf daha önce eklenmediyse Harç + Avukat ekle
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                            toplam_tutar += kayit["harc"] + kayit["avukat"]
                     else:
-                        kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                        toplam_tutar += kayit["harc"] + kayit["avukat"]
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                            toplam_tutar += kayit["harc"] + kayit["avukat"]
         return toplam_tutar
     except:
         return 0.0
@@ -1115,7 +1124,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                         import time; time.sleep(1.2)
                         st.rerun()
                 else:
-                    st.warning("Lütfen bir personel adı girin.")
+                    st.warning("Lütfen bir personel adı girer misiniz.")
                     
     with t2:
         if os.path.exists(USER_FILE):
