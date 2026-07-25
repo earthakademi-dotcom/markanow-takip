@@ -475,24 +475,14 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     c1.metric("Filtrelenen Satış Adedi", len(danisman_df))
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
-    # --- SINIF SAYIMI VE GÖSTERGESİ (Akıllı Çakıştırma ve Tekilleştirme Kuralı) ---
+    # --- SINIF SAYIMI VE GÖSTERGESİ (Sadece Ana Sınıflar Sayılır, Alt Kırılımlar/Adaylar Sadece Tabloda Kalır) ---
     sinif_sayaclari = {str(i): 0 for i in range(1, 46)}
     for s_val in danisman_df['Sınıf'].dropna():
         parcalar = [p.strip() for p in str(s_val).split(",")]
-        # Bu satırda / içeren alt kırılımlar var mı kontrol et (Örn: 35/1, 35/21 vb.)
-        ana_siniflar_bu_satir = set()
-        
         for p in parcalar:
-            if "/" not in p:
-                ana_siniflar_bu_satir.add(p)
-                
-        for p in parcalar:
+            # İçinde '/' karakteri geçen (alt kırılımlar örn: 35/21, 35/11 vb.) sayım kutusuna dahil edilmez
             if "/" in p:
-                # Eğer alt kırılıma ait ana sınıf (örn: 35/1 için '35') zaten bu satırda geçiyorsa, bu alt kırılımı ayrıca sayma
-                ana_koku = p.split("/")[0]
-                if ana_koku in ana_siniflar_bu_satir:
-                    continue  # Çakıştığı için sayma
-            
+                continue
             if p in sinif_sayaclari:
                 sinif_sayaclari[p] += 1
                 
