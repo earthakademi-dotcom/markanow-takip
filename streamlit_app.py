@@ -408,7 +408,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         return 0.0
 
 def sinif_harc_tutari_hesapla(sinif_str):
-    """Sadece ana sınıfların (1-45) harç tutarını hesaplar. Alt sınıflar (örn: 35/21) ASLA harç üretmez, böylece 35,35/21 gibi bir girişte sadece 35. sınıfın 1 adet harç ücreti toplanır."""
+    """Sadece ana sınıfların (1-45) harç tutarını hesaplar. Örneğin 35,35/21 gibi bir girişte alt sınıf (35/21) harç üretmez, sadece ana sınıf (35) için 1 kez harç üretilir."""
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_harc = 0.0
@@ -416,8 +416,21 @@ def sinif_harc_tutari_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar (örn: 35/21) kurum harcı üretmez, atla
-                continue
+                # Alt sınıflar harç üretmez, ancak ana sınıfın daha önce eklenip eklenmediğini kontrol etmek gerekebilir.
+                # Kullanıcının talebine göre: "35 ile 35/alt sınıf var onun hesabı 35 alt sınıflarını saymayacaksın, 1 sınıf harç ücretini buraya yansıtacaksın"
+                ana_sinif_str = p.split("/")[0].strip()
+                if ana_sinif_str.isdigit():
+                    s_int = int(ana_sinif_str)
+                    if 1 <= s_int <= 45:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                            toplam_harc += kayit["harc"]
+                    else:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                            toplam_harc += kayit["harc"]
             else:
                 if p.isdigit():
                     s_int = int(p)
@@ -557,7 +570,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     else:
         ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         
-        # Sadece ana sınıfların harç tutarını satır bazında hesaplayıp tabloya ekliyoruz (Satış Tarihinin yanına)
+        # Harç tutarlarını hesaplayıp Satış Tarihinin yanına ekliyoruz
         harc_listesi = []
         for _, row in basvuru_bekleyen_df.iterrows():
             h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
@@ -565,7 +578,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
             
         ozet_df['Harç Tutarı'] = harc_listesi
         
-        # Kolon sıralaması: Marka Adı, Sınıf, Satış Tarihi, Harç Tutarı
         cols_order = ['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Harç Tutarı']
         ozet_df = ozet_df[cols_order]
         
@@ -640,7 +652,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
 
     if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
         st.session_state.sinif_harclari = guncel_veriler
-        st.success("✅ Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
+        st.success("Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
         import time; time.sleep(1.2)
         st.rerun()
 
@@ -835,7 +847,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
                         df.to_csv(DATA_FILE, index=False)
-                        st.session_state["success_msg"] = f"✅ Başarılı! '{secilen_duzenle_marka}' markasına ait bilgiler güncellendi."
+                        st.session_state["success_msg"] = f"Başarılı! '{secilen_duzenle_marka}' markasına ait bilgiler güncellendi."
                         st.rerun()
 
                     if submitted_delete:
@@ -1122,7 +1134,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 pass
                             
                         df.to_csv(DATA_FILE, index=False)
-                        st.session_state["success_msg"] = `✅ Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.`
+                        st.session_state["success_msg"] = f"Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi."
                         st.rerun()
 
                 if "success_msg" in st.session_state:
@@ -1167,7 +1179,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             u_df = pd.read_csv(USER_FILE)
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
-            if st.button("Şifreyi Güncelle", key="btn_sf_gunc_elle"):
+            if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
