@@ -319,12 +319,13 @@ def sinif_harc_tutari_hesapla(sinif_str):
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 2000.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+                            # BURASI DÜZELTİLDİ: Sadece 1. Sınıfın Harç Tutarı (harc) baz alınacak
+                            toplam_tutar += kayit["harc"]
                     else:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 2000.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+                            toplam_tutar += kayit["harc"]
         return toplam_tutar
     except:
         return 0.0
@@ -524,7 +525,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
-    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
+    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
     
     toplam_tutar = 0.0
     for _, row in muhasebe_bekleyen_df.iterrows():
@@ -559,7 +560,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
-    c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
+    c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
     c3.metric("Toplam Başvuru Harç Tutarı", f"{toplam_basvuru_harc_tutari:,.2f} TL")
     
     st.write("---")
