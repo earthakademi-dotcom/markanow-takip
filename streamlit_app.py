@@ -309,36 +309,32 @@ def sinif_harc_tutari_hesapla(sinif_str):
         toplam_harc = 0.0
         islenen_ana_siniflar = set()
         
+        # Kaçıncı sınıf olduğunu bulmak için sırayla sayıyoruz (1. sınıf, 2. sınıf vb.)
+        sirali_sayac = 0
         for p in parcalar:
             if "/" in p:
                 continue
-            else:
-                if p.isdigit():
-                    s_int = int(p)
-                    if 1 <= s_int <= 45:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            # KESİN ÇÖZÜM: Doğrudan oturum hafızasındaki veya dinamik hesaplanan güncel harç değerini alıyoruz
-                            if s_int in st.session_state.sinif_harclari:
-                                h_val = st.session_state.sinif_harclari[s_int]["harc"]
+            if p.isdigit():
+                s_int = int(p)
+                if 1 <= s_int <= 45:
+                    if s_int not in islenen_ana_siniflar:
+                        islenen_ana_siniflar.add(s_int)
+                        sirali_sayac += 1
+                        # Fiyatlandırma tablosundaki N. sınıfın harç değerini doğrudan alıyoruz
+                        if sirali_sayac in st.session_state.sinif_harclari:
+                            toplam_harc += st.session_state.sinif_harclari[sirali_sayac]["harc"]
+                        else:
+                            # Eğer sınır dışı kalırsa en son hesaplanan formülle ekle
+                            base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
+                            if sirali_sayac == 1:
+                                toplam_harc += base_h1
+                            elif sirali_sayac == 2:
+                                toplam_harc += base_h1 + 2820.0
                             else:
-                                # Yedek dinamik hesaplama (1. Sınıf baz alınarak)
-                                base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
-                                if s_int == 1:
-                                    h_val = base_h1
-                                elif s_int == 2:
-                                    h_val = base_h1 + 2820.0
-                                else:
-                                    h_val = (base_h1 + 2820.0)
-                                    for idx_step in range(3, s_int + 1):
-                                        h_val += 3150.0 if idx_step > 2 else 0.0
-                            
-                            toplam_harc += h_val
-                    else:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
+                                h_val = base_h1 + 2820.0
+                                for _ in range(3, sirali_sayac + 1):
+                                    h_val += 3150.0
+                                toplam_harc += h_val
         return toplam_harc
     except:
         return 0.0
