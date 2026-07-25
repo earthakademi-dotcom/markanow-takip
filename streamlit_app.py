@@ -315,8 +315,9 @@ if not is_muhasebe:
         sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
-    if st.sidebar.button("📈 Marka Tescil Raporlama", use_container_width=True):
-        sayfa_degistir("Marka Tescil Raporlama")
+    with st.sidebar.expander("📈 Marka Tescil Raporlama", expanded=True):
+        if st.button("📊 Genel Rapor Paneli", use_container_width=True):
+            sayfa_degistir("Marka Tescil Raporlama")
 
     with st.sidebar.expander("📄 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
@@ -365,7 +366,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
     st.write("Sistemdeki tüm markaların güncel aşama durumlarına göre sayısal dağılımı aşağıdadır.")
     
-    # Hesaplama fonksiyonu
     def get_count_and_df(asama_adi):
         if asama_adi == "Tescil Tebliğ Beklemede":
             sub_df = df[(df['Durum'].astype(str).str.strip() == asama_adi) & 
@@ -388,7 +388,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         ("Reddedildi", "Reddedildi ❌")
     ]
 
-    # Metrik Kartları Gösterimi (3'lü kolonlar halinde)
     cols = st.columns(3)
     for idx, (gorunen_isim, durum_kod) in enumerate(rapor_kalemleri):
         adet, _ = get_count_and_df(durum_kod)
