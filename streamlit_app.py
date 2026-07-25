@@ -531,20 +531,35 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
 
     yeni_harc_verileri = {}
     
-    for i in range(1, 46):
-        st.markdown(f"**{i}. Sınıf**")
-        col_h, col_a, col_t = st.columns(3)
-        mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
-        
-        # number_input kullanılarak anlık hesaplama sağlanmıştır
-        f_h = col_h.number_input(f"Harç (TL)", value=float(mevcut_kayit["harc"]), step=10.0, format="%.2f", key=f"harc_sinif_{i}")
-        f_a = col_a.number_input(f"Avukat (TL)", value=float(mevcut_kayit["avukat"]), step=10.0, format="%.2f", key=f"avukat_sinif_{i}")
-        
-        toplam_deger = f_h + f_a
-        col_t.text_input(f"Toplam (TL)", value=f"{toplam_deger:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
-        
-        yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
-        st.write("---")
+    # Her satırı bağımsız ve anlık tetiklenebilir hale getiren fragment yapısı
+    @st.fragment
+    def fiyatlandirma_formu():
+        nonlocal yeni_harc_verileri
+        for i in range(1, 46):
+            st.markdown(f"**{i}. Sınıf**")
+            col_h, col_a, col_t = st.columns(3)
+            mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
+            
+            # Text input kullanarak kullanıcıya tamamen özgür, ok tuşsuz ve tertemiz bir görünüm sağlandı
+            val_h = col_h.text_input(f"Harç (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
+            val_a = col_a.text_input(f"Avukat (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
+            
+            try:
+                f_h = float(val_h.replace(",", "."))
+            except:
+                f_h = 0.0
+            try:
+                f_a = float(val_a.replace(",", "."))
+            except:
+                f_a = 0.0
+                
+            toplam_deger = f_h + f_a
+            col_t.text_input(f"Toplam (TL)", value=f"{toplam_deger:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
+            
+            yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
+            st.write("---")
+
+    fiyatlandirma_formu()
 
     if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
         st.session_state.sinif_harclari = yeni_harc_verileri
