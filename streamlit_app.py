@@ -265,8 +265,6 @@ if "sinif_harclari" not in st.session_state:
                 h_val = 2820.0
             elif i == 2:
                 h_val = 2820.0
-            elif i == 3:
-                h_val = 3150.0
             else:
                 h_val = 3150.0
             st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
@@ -585,7 +583,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("1. ve 3. sınıfların harç ücretlerini manuel belirleyebilirsiniz. 2. sınıfın harcı otomatik olarak 1. sınıf ile aynı alınır, 4. sınıftan 45. sınıfa kadar olan harçlar ise 3. sınıfın harç ücreti baz alınarak otomatik atanır. 1. sınıfa girdiğiniz Avukat Ücreti tüm sınıflara uygulanır.")
+    st.write("1. Sınıf harcı (örn: 2820 TL) ve 3. Sınıf harcı (örn: 3150 TL) manuel girilir. 2. Sınıf harcı otomatik olarak 1. Sınıf ile aynı (2820 TL) alınır. 4. sınıftan 45. sınıfa kadar olan harçlar ise 3. Sınıfın harç ücreti olarak otomatik atanır. 1. Sınıfa girdiğiniz Avukat Ücreti tüm sınıflara uygulanır.")
 
     if "toplu_avukat_input" not in st.session_state:
         st.session_state.toplu_avukat_input = str(st.session_state.sinif_harclari.get(1, {"avukat": 2000.0})["avukat"])
