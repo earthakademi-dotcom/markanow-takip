@@ -361,8 +361,26 @@ if is_admin:
 
 df = load_data()
 
+# --- 1-45 SINIF HARÇ VE AVUKAT ÜCRETLERİNİ SAKLAYAN STATE BAŞLANGICI ---
+if "sinif_harclari" not in st.session_state:
+    st.session_state.sinif_harclari = {}
+    for i in range(1, 46):
+        if i == 1:
+            h_val = 2820.0
+            a_val = 2000.0
+        elif i == 2:
+            h_val = 2820.0
+            a_val = 2000.0
+        elif i == 3:
+            h_val = 3150.0
+            a_val = 2000.0
+        else:
+            h_val = 3510.0
+            a_val = 2000.0
+        st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": a_val}
+
 # --- SINIF BAZLI HARÇ HESAPLAMA YARDIMCI FONKSİYONU ---
-def sinif_harci_hesapla(sinif_str, base_1_harc, base_2_harc, base_3_harc, base_ek_harc, base_avukat):
+def sinif_harci_hesapla_detayli(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         unique_siniflar = []
@@ -372,24 +390,21 @@ def sinif_harci_hesapla(sinif_str, base_1_harc, base_2_harc, base_3_harc, base_e
                     unique_siniflar.append(p)
             else:
                 if p.isdigit() and 1 <= int(p) <= 45:
-                    if p not in unique_siniflar:
-                        unique_siniflar.append(p)
+                    if int(p) not in unique_siniflar:
+                        unique_siniflar.append(int(p))
         
-        adet = len(unique_siniflar)
-        if adet <= 0:
-            harc_toplam = 0.0
-        elif adet == 1:
-            harc_toplam = base_1_harc
-        elif adet == 2:
-            harc_toplam = base_1_harc + base_2_harc
-        elif adet == 3:
-            harc_toplam = base_1_harc + base_2_harc + base_3_harc
-        else:
-            harc_toplam = base_1_harc + base_2_harc + base_3_harc + (adet - 3) * base_ek_harc
-            
-        return harc_toplam + base_avukat
+        toplam_tutar = 0.0
+        for idx, s in enumerate(unique_siniflar):
+            if isinstance(s, int) and 1 <= s <= 45:
+                kayit = st.session_state.sinif_harclari.get(s, {"harc": 3510.0, "avukat": 2000.0})
+                toplam_tutar += kayit["harc"] + kayit["avukat"]
+            else:
+                # Alt sınıflar veya diğerleri için varsayılan 3. sınıf veya sonraki sınıf harcı baz alınabilir
+                kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                toplam_tutar += kayit["harc"] + kayit["avukat"]
+        return toplam_tutar
     except:
-        return base_avukat
+        return 0.0
 
 # --- SAYFA İÇERİKLERİ ---
 
@@ -496,33 +511,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
                     satir_sayac += 1
         toplam_sinif_adedi += satir_sayac
 
-    # Oturum değişkenleri kontrolü (Varsayılan değerler: 1. sınıf 2820, 2. sınıf 2820, 3. sınıf 3150, sonraki her sınıf 3510, avukatlık 2000)
-    if "harc_1" not in st.session_state: st.session_state.harc_1 = "2820"
-    if "harc_2" not in st.session_state: st.session_state.harc_2 = "2820"
-    if "harc_3" not in st.session_state: st.session_state.harc_3 = "3150"
-    if "harc_ek" not in st.session_state: st.session_state.harc_ek = "3510"
-    if "harc_avukat" not in st.session_state: st.session_state.harc_avukat = "2000"
-
-    try:
-        b1 = float(st.session_state.harc_1)
-    except: b1 = 2820.0
-    try:
-        b2 = float(st.session_state.harc_2)
-    except: b2 = 2820.0
-    try:
-        b3 = float(st.session_state.harc_3)
-    except: b3 = 3150.0
-    try:
-        bek = float(st.session_state.harc_ek)
-    except: bek = 3510.0
-    try:
-        bau = float(st.session_state.harc_avukat)
-    except: bau = 2000.0
-
-    # Toplam başvuru tutarını her markanın kendi sınıf adetlerine göre hesaplayalım
     toplam_hesaplanan_basvuru_tutari = 0.0
     for _, row in basvuru_bekleyen_df.iterrows():
-        toplam_hesaplanan_basvuru_tutari += sinif_harci_hesapla(row.get('Sınıf', ''), b1, b2, b3, bek, bau)
+        toplam_hesaplanan_basvuru_tutari += sinif_harci_hesapla_detayli(row.get('Sınıf', ''))
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
@@ -540,33 +531,36 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi</h2>", unsafe_allow_html=True)
-    st.write("Marka başvuru harç ücretlerini (1. sınıf, 2. sınıf, 3. sınıf ve sonraki her sınıf için artan tutarları) ve avukatlık hizmet ücretini aşağıdan belirleyebilir; toplam tutarların bu kurala göre hesaplanmasını sağlayabilirsiniz.")
+    st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
+    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Yıl içinde güncellemeleri buradan yapabilirsiniz.")
 
-    if "harc_1" not in st.session_state: st.session_state.harc_1 = "2820"
-    if "harc_2" not in st.session_state: st.session_state.harc_2 = "2820"
-    if "harc_3" not in st.session_state: st.session_state.harc_3 = "3150"
-    if "harc_ek" not in st.session_state: st.session_state.harc_ek = "3510"
-    if "harc_avukat" not in st.session_state: st.session_state.harc_avukat = "2000"
+    with st.form("fiyatlandirma_formu_1_45"):
+        yeni_harc_verileri = {}
+        
+        for i in range(1, 46):
+            st.markdown(f"### {i}. Sınıf")
+            col_h, col_a = st.columns(2)
+            mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
+            
+            val_h = col_h.text_input(f"{i}. Sınıf Harç Ücreti (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
+            val_a = col_a.text_input(f"{i}. Sınıf Avukat Ücreti (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
+            
+            try:
+                f_h = float(val_h)
+            except:
+                f_h = 3510.0
+            try:
+                f_a = float(val_a)
+            except:
+                f_a = 2000.0
+                
+            yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
+            st.write("---")
 
-    with st.form("fiyatlandirma_formu_2"):
-        f1, f2, f3 = st.columns(3)
-        g_1 = f1.text_input("1. Sınıf Harç Ücreti (TL)", value=st.session_state.harc_1)
-        g_2 = f2.text_input("2. Sınıf Ek Harç Ücreti (TL)", value=st.session_state.harc_2)
-        g_3 = f3.text_input("3. Sınıf Ek Harç Ücreti (TL)", value=st.session_state.harc_3)
-        
-        f4, f5 = st.columns(2)
-        g_ek = f4.text_input("4. Sınıf ve Sonrası Her Sınıf İçin Ek Harç (TL)", value=st.session_state.harc_ek)
-        g_avukat = f5.text_input("Avukatlık Hizmet Ücreti (TL)", value=st.session_state.harc_avukat)
-        
-        submitted_fiyat = st.form_submit_button("Hesapla / Güncelle")
+        submitted_fiyat = st.form_submit_button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True)
         if submitted_fiyat:
-            st.session_state.harc_1 = g_1
-            st.session_state.harc_2 = g_2
-            st.session_state.harc_3 = g_3
-            st.session_state.harc_ek = g_ek
-            st.session_state.harc_avukat = g_avukat
-            st.success("✅ Fiyatlandırma kalemleri başarıyla güncellendi!")
+            st.session_state.sinif_harclari = yeni_harc_verileri
+            st.success("✅ Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
@@ -1103,9 +1097,10 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
             if st.button("Şifreyi Güncelle", key="btn_sifre_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, option_index=False, index=False) if "option_index" in pd.DataFrame().to_csv.__code__.co_varnames else u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
+                st.rerof_ = True # safe rerun trigger via standard rerun
                 st.rerun()
                 
     with t3:
