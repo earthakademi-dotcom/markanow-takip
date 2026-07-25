@@ -375,28 +375,28 @@ if "sinif_harclari" not in st.session_state:
             h_val = 3510.0
         st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
-# --- SINIF BAZLI HARÇ VE AVUKAT HESAPLAMA MANTIĞI ---
+# --- YENİ MANTIK: SINIF BAZLI (HARÇ + AVUKAT) HESAPLAMA ---
+# 35/ alt kırılımlarında (örn: 35/1, 35/5) harç alınmıyor, sadece o sınıfın AVUKAT ücreti ekleniyor.
+# Normal 1-45 sınıflarda ise (Harç + Avukat) toplamı ekleniyor.
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        unique_siniflar = []
+        toplam_tutar = 0.0
+        
         for p in parcalar:
             if "/" in p:
-                if p not in unique_siniflar:
-                    unique_siniflar.append(p)
+                # 35/ ile başlayan alt kırılımlar için harç alınmıyor, sadece 35. sınıfın avukat ücreti ekleniyor
+                kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
+                toplam_tutar += kayit["avukat"]
             else:
-                if p.isdigit() and 1 <= int(p) <= 45:
-                    if int(p) not in unique_siniflar:
-                        unique_siniflar.append(int(p))
-        
-        toplam_tutar = 0.0
-        for s in unique_siniflar:
-            if isinstance(s, int) and 1 <= s <= 45:
-                kayit = st.session_state.sinif_harclari.get(s, {"harc": 3510.0, "avukat": 2000.0})
-                toplam_tutar += kayit["harc"] + kayit["avukat"]
-            else:
-                kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                toplam_tutar += kayit["harc"] + kayit["avukat"]
+                if p.isdigit():
+                    s_int = int(p)
+                    if 1 <= s_int <= 45:
+                        kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                        toplam_tutar += kayit["harc"] + kayit["avukat"]
+                    else:
+                        kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                        toplam_tutar += kayit["harc"] + kayit["avukat"]
         return toplam_tutar
     except:
         return 0.0
@@ -461,6 +461,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
         gorulen_siniflar = set()
         for p in parcalar:
             if "/" in p:
+                if p not in gorulen_siniflar:
+                    gorulen_siniflar.add(p)
+                    satir_sayac += 1
                 continue
             if p.isdigit() and 1 <= int(p) <= 45:
                 if p not in gorulen_siniflar:
@@ -471,7 +474,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
     c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
-    toplam_tutar = pd.to_numeric(muhasebe_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
+    
+    toplam_tutar = 0.0
+    for _, row in muhasebe_bekleyen_df.iterrows():
+        toplam_tutar += sinif_harci_ve_avukat_hesapla(row.get('Sınıf', ''))
     c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
     
     st.write("---")
@@ -499,6 +505,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
         gorulen_siniflar = set()
         for p in parcalar:
             if "/" in p:
+                if p not in gorulen_siniflar:
+                    gorulen_siniflar.add(p)
+                    satir_sayac += 1
                 continue
             if p.isdigit() and 1 <= int(p) <= 45:
                 if p not in gorulen_siniflar:
@@ -720,6 +729,9 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
         gorulen_siniflar = set()
         for p in parcalar:
             if "/" in p:
+                if p not in gorulen_siniflar:
+                    gorulen_siniflar.add(p)
+                    satir_sayac += 1
                 continue
             if p.isdigit() and 1 <= int(p) <= 45:
                 if p not in gorulen_siniflar:
