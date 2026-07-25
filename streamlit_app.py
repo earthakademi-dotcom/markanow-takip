@@ -417,7 +417,6 @@ def sinif_harc_tutari_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar kurum harcı üretmez
                 continue
             else:
                 if p.isdigit():
@@ -556,7 +555,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     if basvuru_bekleyen_df.empty:
         st.info("Başvuru beklemede kayıt bulunmuyor.")
     else:
-        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Harç Tutarı']].copy() if 'Harç Tutarı' in basvuru_bekleyen_df.columns else basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        
+        # Tabloya her satırın kendi harç tutarını da ekleyelim (Satış Tarihinin yanına)
+        harc_listesi = []
+        for _, row in basvuru_bekleyen_df.iterrows():
+            harc_listesi.append(f"{sinif_harc_tutari_hesapla(row.get('Sınıf', '')):,.2f} TL")
+        ozet_df['Harç Tutarı'] = harc_listesi
+        
+        # Kolon sıralamasını 'Satış Tarihi', 'Harç Tutarı' olacak şekilde ayarlayalım
+        cols_order = [c for c in ozet_df.columns if c not in ['Satış Tarihi', 'Harç Tutarı']] + ['Satış Tarihi', 'Harç Tutarı']
+        ozet_df = ozet_df[cols_order]
+        
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
@@ -1141,7 +1151,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                     if yeni_isim in u_df["İsim"].values:
                         st.error(f"❌ '{yeni_isim}' isminde bir personel zaten mevcut!")
                     else:
-                        yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şfile": [s.strip()]}) if "Şfile" in pd.DataFrame(columns=["İsim", "Şifre"]).columns else pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
+                        yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
                         u_df = pd.concat([u_df, yeni_kisi], ignore_index=True)
                         u_df.to_csv(USER_FILE, index=False)
                         st.success(f"🎉 Başarılı! '{yeni_isim}' sisteme eklendi.")
@@ -1166,7 +1176,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
-            if st.button("Danışmanı Danışman Sil", key="btn_danisman_sil"):
+            if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
