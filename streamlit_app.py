@@ -258,19 +258,22 @@ if not st.session_state.kullanici:
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         user_df = pd.read_csv(USER_FILE)
-        secili_kullanici = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
-        sifre_input = st.text_input("Şifre", type="password")
         
-        st.write("")
-        if st.button("Giriş Yap", use_container_width=True):
-            dogru_sifre = str(user_df[user_df["İsim"] == secili_kullanici].iloc[0]["Şifre"]).strip()
-            if str(sifre_input).strip() == dogru_sifre:
-                st.session_state.kullanici = secili_kullanici
-                st.query_params["user"] = secili_kullanici
-                st.success("Giriş başarılı! Yönlendiriliyorsunuz...")
-                st.rerun()
-            else:
-                st.error("❌ Hatalı Şifre!")
+        with st.form("giris_formu"):
+            secili_kullanici = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
+            sifre_input = st.text_input("Şifre", type="password")
+            
+            st.write("")
+            submitted = st.form_submit_button("Giriş Yap", use_container_width=True)
+            if submitted:
+                dogru_sifre = str(user_df[user_df["İsim"] == secili_kullanici].iloc[0]["Şifre"]).strip()
+                if str(sifre_input).strip() == dogru_sifre:
+                    st.session_state.kullanici = secili_kullanici
+                    st.query_params["user"] = secili_kullanici
+                    st.success("Giriş başarılı! Yönlendiriliyorsunuz...")
+                    st.rerun()
+                else:
+                    st.error("❌ Hatalı Şifre!")
     st.stop()
 
 # --- ROL TANIMLAMALARI ---
@@ -562,7 +565,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         st.session_state["success_msg"] = f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt silindi!"
                         st.rerun()
 
-                # Form dışına taşınan kalıcı bildirim gösterimi
                 if "success_msg" in st.session_state:
                     st.success(st.session_state["success_msg"])
                     del st.session_state["success_msg"]
@@ -651,7 +653,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
         st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
     with top_col2:
         arama_metni = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...", key=f"arama_{secilen_asama}")
-    
+        
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
     
     if secilen_asama == "Tescil Tebliğ Beklemede":
