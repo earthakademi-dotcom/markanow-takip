@@ -823,32 +823,45 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
         st.dataframe(pd.read_csv(USER_FILE), use_container_width=True)
     
     t1, t2, t3 = st.tabs(["➕ Danışman Ekle", "🔑 Şifre Değiştir", "❌ Danışman Sil"])
+    
     with t1:
-        n, s = st.text_input("Personel / Danışman Adı", key="ekle"), st.text_input("Şifre", type="password", key="sifre")
-        if st.button("Danışman Ekle"):
-            if n.strip():
-                u_df = pd.read_csv(USER_FILE) if os.path.exists(USER_FILE) else pd.DataFrame(columns=["İsim", "Şifre"])
-                yeni_kisi = pd.DataFrame({"İsim": [n.strip().upper()], "Şifre": [s.strip()]})
-                pd.concat([u_df, yeni_kisi], ignore_index=True).to_csv(USER_FILE, index=False)
-                st.success(f"🎉 '{n.strip().upper()}' başarıyla eklendi!")
-                st.rerun()
-            else:
-                st.warning("Lütfen bir isim girin.")
+        with st.form("personel_ekle_form", clear_on_submit=True):
+            n = st.text_input("Personel / Danışman Adı")
+            s = st.text_input("Şifre", type="password")
+            submitted_personel = st.form_submit_button("Danışman Ekle")
+            
+            if submitted_personel:
+                if n.strip():
+                    u_df = pd.read_csv(USER_FILE) if os.path.exists(USER_FILE) else pd.DataFrame(columns=["İsim", "Şifre"])
+                    yeni_isim = n.strip().upper()
+                    
+                    if yeni_isim in u_df["İsim"].values:
+                        st.error(f"❌ '{yeni_isim}' isminde bir personel zaten mevcut!")
+                    else:
+                        yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
+                        u_df = pd.concat([u_df, yeni_kisi], ignore_index=True)
+                        u_df.to_csv(USER_FILE, index=False)
+                        st.success(f"🎉 '{yeni_isim}' başarıyla eklendi!")
+                        st.rerun()
+                else:
+                    st.warning("Lütfen bir personel adı girin.")
+                    
     with t2:
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
-            p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel")
-            s2 = st.text_input("Yeni Şifre", type="password", key="new")
-            if st.button("Şifreyi Güncelle"):
+            p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
+            s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
+            if st.button("Şifreyi Güncelle", key="btn_sifre_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Şifre güncellendi!")
                 st.rerun()
+                
     with t3:
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
-            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="del")
-            if st.button("Danışmanı Sil"):
+            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
+            if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ '{s3}' sistemden silindi!")
