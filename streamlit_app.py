@@ -625,10 +625,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         toplam_deger_2 = f_h2 + f_a2
         yeni_harc_verileri[2] = {"harc": f_h2, "avukat": f_a2}
 
-        st.markdown(f"**2. Sınıf** *(Otomatik: 1. Sınıf Harcı ({f_h1:,.2f}) + 2,820.00 TL)*")
+        st.markdown(f"**2. Sınıf** *(Otomatik: 1. Sınıf Harcı ({f_h1:,.2f}) + 2,820.00 TL = {f_h2:,.2f} TL)*")
         c_h2, c_a2, c_t2 = st.columns(3)
-        c_h2.text_input("Harç (TL) - 2. Sınıf", value=str(f_h2), disabled=True, key="harc_sinif_2")
-        c_a2.text_input("Avukat (TL) - 2. Sınıf", value=str(f_a2), disabled=True, key="avukat_sinif_2")
+        c_h2.text_input("Harç (TL) - 2. Sınıf", value=f"{f_h2:,.2f}", disabled=True, key="harc_sinif_2")
+        c_a2.text_input("Avukat (TL) - 2. Sınıf", value=f"{f_a2:,.2f}", disabled=True, key="avukat_sinif_2")
         c_t2.text_input("Toplam (TL) - 2. Sınıf", value=f"{toplam_deger_2:,.2f}", disabled=True, key="toplam_sinif_2")
         st.write("---")
 
@@ -638,11 +638,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         toplam_deger_3 = f_h3 + f_a3
         yeni_harc_verileri[3] = {"harc": f_h3, "avukat": f_a3}
 
-        st.markdown(f"**3. Sınıf** *(Otomatik: 2. Sınıf Harcı ({f_h2:,.2f}) + 3,150.00 TL)*")
+        st.markdown(f"**3. Sınıf** *(Otomatik: 2. Sınıf Harcı ({f_h2:,.2f}) + 3,150.00 TL = {f_h3:,.2f} TL)*")
         c_h3, c_a3, c_t3 = st.columns(3)
-        c_h3.text_input("Harç (TL) - 3. Sınıf", value=str(f_h3), disabled=True, key="harc_sinif_3")
-        c_a3.text_input("Avukat (TL) - 3. Sınıf", value=str(f_a3), disabled=True, key="avukat_sinif_3")
+        c_h3.text_input("Harç (TL) - 3. Sınıf", value=f"{f_h3:,.2f}", disabled=True, key="harc_sinif_3")
+        c_a3.text_input("Avukat (TL) - 3. Sınıf", value=f"{f_a3:,.2f}", disabled=True, key="avukat_sinif_3")
         c_t3.text_input("Toplam (TL) - 3. Sınıf", value=f"{toplam_deger_3:,.2f}", disabled=True, key="toplam_sinif_3")
+        st.markdown(f"**3. Sınıf Harç Toplam Ücreti:** Harç ({f_h3:,.2f} TL) + Avukat ({f_a3:,.2f} TL) = **{toplam_deger_3:,.2f} TL**")
         st.write("---")
 
         # 4 - 45 Sınıflar (Otomatik: Önceki sınıfın harcı + 3150)
@@ -653,10 +654,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
             toplam_degeri = son_harc + f_ai
             yeni_harc_verileri[i] = {"harc": son_harc, "avukat": f_ai}
 
-            st.markdown(f"**{i}. Sınıf** *(Otomatik: {i-1}. Sınıf Harcı + 3,150.00 TL)*")
+            st.markdown(f"**{i}. Sınıf** *(Otomatik: {i-1}. Sınıf Harcı + 3,150.00 TL = {son_harc:,.2f} TL)*")
             col_h, col_a, col_t = st.columns(3)
-            col_h.text_input(f"Harç (TL) - {i}. Sınıf", value=str(son_harc), disabled=True, key=f"harc_sinif_{i}")
-            col_a.text_input(f"Avukat (TL) - {i}. Sınıf", value=str(f_ai), disabled=True, key=f"avukat_sinif_{i}")
+            col_h.text_input(f"Harç (TL) - {i}. Sınıf", value=f"{son_harc:,.2f}", disabled=True, key=f"harc_sinif_{i}")
+            col_a.text_input(f"Avukat (TL) - {i}. Sınıf", value=f"{f_ai:,.2f}", disabled=True, key=f"avukat_sinif_{i}")
             col_t.text_input(f"Toplam (TL) - {i}. Sınıf", value=f"{toplam_degeri:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
             st.write("---")
             
@@ -1148,7 +1149,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             try:
                                 parsed_tescil_tar = datetime.strptime(tescil_tar.strip(), "%d/%m/%Y")
                                 taslak_son_odeme = ay_ekle(parsed_tescil_tar, 2)
-                                hesaplanan_son_odeme = resmi_tatil_ve_tatil_kontrol(taslak_son_odeme)
+                                hesaplanan_son_odeme = resmi_tatil_ve_tatil_kontrol(taslak_son_od_odeme := taslak_son_odeme) # koruma
                                 df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme.strftime("%d/%m/%Y")
                             except:
                                 pass
@@ -1201,7 +1202,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, ist_index:=False) if False else u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
                 st.rerun()
