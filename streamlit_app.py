@@ -361,7 +361,7 @@ if is_admin:
 
 df = load_data()
 
-# --- 1-45 SINIF HARÇ VE TEK AVUKAT ÜCRETLERİNİ SAKLAYAN STATE ---
+# --- 1-45 SINIF HARÇ VE AVUKAT ÜCRETLERİNİ SAKLAYAN STATE ---
 if "sinif_harclari" not in st.session_state:
     st.session_state.sinif_harclari = {}
     for i in range(1, 46):
@@ -373,7 +373,6 @@ if "sinif_harclari" not in st.session_state:
             h_val = 3150.0
         else:
             h_val = 3510.0
-        # Her sınıf için ayrı avukat ücreti tutulur (isteğe göre değiştirilebilir)
         st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
 # --- SINIF BAZLI HARÇ VE AVUKAT HESAPLAMA MANTIĞI ---
@@ -394,7 +393,6 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         for s in unique_siniflar:
             if isinstance(s, int) and 1 <= s <= 45:
                 kayit = st.session_state.sinif_harclari.get(s, {"harc": 3510.0, "avukat": 2000.0})
-                # Her seçilen sınıf için o sınıfın harcı + o sınıfın avukat ücreti eklenir
                 toplam_tutar += kayit["harc"] + kayit["avukat"]
             else:
                 kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
@@ -529,18 +527,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Mantık gereği her sınıf seçildiğinde o sınıfın harcı ve avukat ücreti toplama eklenmektedir.")
+    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Toplam sütununda harç ve avukat ücretinin toplamı otomatik gösterilmektedir.")
 
     with st.form("fiyatlandirma_formu_1_45"):
         yeni_harc_verileri = {}
         
         for i in range(1, 46):
             st.markdown(f"### {i}. Sınıf")
-            col_h, col_a = st.columns(2)
+            col_h, col_a, col_t = st.columns([2, 2, 2])
             mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
             
-            val_h = col_h.text_input(f"{i}. Sınıf Harç Ücreti (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
-            val_a = col_a.text_input(f"{i}. Sınıf Avukat Ücreti (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
+            val_h = col_h.text_input(f"{i}. Sınıf Harç (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
+            val_a = col_a.text_input(f"{i}. Sınıf Avukat (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
             
             try:
                 f_h = float(val_h)
@@ -551,6 +549,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
             except:
                 f_a = 2000.0
                 
+            toplam_deger = f_h + f_a
+            col_t.text_input(f"{i}. Sınıf Toplam (TL)", value=f"{toplam_deger:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
+            
             yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
             st.write("---")
 
@@ -1106,6 +1107,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
-                st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
+                st.success(f5 := f"❌ Başarılı! '{s3}' sistemden silindi.")
                 import time; time.sleep(1.2)
                 st.rerun()
