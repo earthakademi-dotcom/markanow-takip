@@ -602,7 +602,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("Aşağıdaki alana yazdığınız ortak avukat ücreti, tablodaki **tüm sınıflara** otomatik olarak uygulanır. Harç tutarlarını tablodan dilediğiniz gibi güncelleyebilirsiniz.")
+    st.write("🔹 **1. Sınıf** ve **3. Sınıf** harç tutarlarını tablodan **manuel** olarak düzenleyebilirsiniz. \n🔹 **2. Sınıf** (1. Sınıf + 2.820 TL) ve **4 ila 45. Sınıflar** (Önceki sınıf + 3.150 TL) otomatik olarak hesaplanır. \n🔹 Ortak Avukat ücretini aşağıdaki alandan tüm sınıflara toplu uygulayabilirsiniz.")
 
     # Ortak Avukat Ücreti Giriş Kutusu
     mevcut_ortak_avukat = float(list(st.session_state.sinif_harclari.values())[0]["avukat"]) if st.session_state.sinif_harclari else 750.0
@@ -612,23 +612,39 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
 
     st.write("---")
 
-    # Tablo verisi hazırlama (Avukat sabit ve ortak olarak verilir)
+    # Mevcut harç değerlerini güvenli çekme
+    h1_mevcut = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
+    h3_mevcut = float(st.session_state.sinif_harclari.get(3, {"harc": 8790.0})["harc"])
+
+    # Tablo verisi hazırlama (Mantık kurallarına göre dinamik hesaplama)
     tablo_verileri = []
-    for i in range(1, 46):
-        kayit = st.session_state.sinif_harclari.get(i, {"harc": 2820.0, "avukat": ortak_avukat_input})
-        h_val = kayit["harc"]
-        a_val = ortak_avukat_input
-        t_val = h_val + a_val
-        tablo_verileri.append({
-            "Sınıf No": i,
-            "Harç (TL)": h_val,
-            "Avukat (TL)": a_val,
-            "Toplam (Harç + Avukat) (TL)": t_val
-        })
+    
+    # 1. Sınıf (Manuel)
+    h1 = h1_mevcut
+    a1 = ortak_avukat_input
+    tablo_verileri.append({"Sınıf No": 1, "Harç (TL)": h1, "Avukat (TL)": a1, "Toplam (Harç + Avukat) (TL)": h1 + a1})
+
+    # 2. Sınıf (1. Sınıf + 2820)
+    h2 = h1 + 2820.0
+    a2 = ortak_avukat_input
+    tablo_verileri.append({"Sınıf No": 2, "Harç (TL)": h2, "Avukat (TL)": a2, "Toplam (Harç + Avukat) (TL)": h2 + a2})
+
+    # 3. Sınıf (Manuel)
+    h3 = h3_mevcut
+    a3 = ortak_avukat_input
+    tablo_verileri.append({"Sınıf No": 3, "Harç (TL)": h3, "Avukat (TL)": a3, "Toplam (Harç + Avukat) (TL)": h3 + a3})
+
+    # 4 ila 45. Sınıflar (Önceki sınıf + 3150)
+    onceki_h = h3
+    for i in range(4, 46):
+        onceki_h += 3150.0
+        hi = onceki_h
+        ai = ortak_avukat_input
+        tablo_verileri.append({"Sınıf No": i, "Harç (TL)": hi, "Avukat (TL)": ai, "Toplam (Harç + Avukat) (TL)": hi + ai})
     
     config_df = pd.DataFrame(tablo_verileri)
 
-    # Profesyonel İnteraktif Düzenleyici Tablo (Avukat sütunu disabled yapılarak toplu kontrol sağlandı)
+    # Profesyonel İnteraktif Düzenleyici Tablo (Sadece 1. ve 3. satırların harçları düzenlenebilir, diğerleri kilitli)
     edited_df = st.data_editor(
         config_df,
         column_config={
@@ -637,7 +653,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
             "Avukat (TL)": st.column_config.NumberColumn("Avukat (TL)", disabled=True, format="%.2f TL"),
             "Toplam (Harç + Avukat) (TL)": st.column_config.NumberColumn("Toplam Ücret", disabled=True, format="%.2f TL")
         },
-        disabled=["Sınıf No", "Avukat (TL)", "Toplam (Harç + Avukat) (TL)"],
+        disabled=[col for col in config_df.columns if col not in ["Harç (TL)"]],
         hide_index=True,
         use_container_width=True,
         num_rows="fixed",
@@ -646,19 +662,35 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
 
     st.write("")
     if st.button("💾 Tüm Sınıf Fiyatlarını ve Avukat Ücretini Kaydet", use_container_width=True):
+        # Tablodan güncel 1. ve 3. sınıf harçlarını al
+        yeni_h1 = float(edited_df.loc[edited_df["Sınıf No"] == 1, "Harç (TL)"].values[0])
+        yeni_h3 = float(edited_df.loc[edited_df["Sınıf No"] == 3, "Harç (TL)"].values[0])
+
         yeni_sozluk = {}
         save_list = []
-        for _, row in edited_df.iterrows():
-            s_no = int(row["Sınıf No"])
-            h_fiyat = float(row["Harç (TL)"])
-            a_fiyat = float(ortak_avukat_input)  # Ortak avukat tüm sınıflara basılır
-            yeni_sozluk[s_no] = {"harc": h_fiyat, "avukat": a_fiyat}
-            save_list.append({"Sınıf": s_no, "Harç": h_fiyat, "Avukat": a_fiyat})
+        
+        # Yeniden kurallara göre tam dict oluştur
+        cur_h = yeni_h1
+        for i in range(1, 46):
+            if i == 1:
+                h_fiyat = yeni_h1
+            elif i == 2:
+                h_fiyat = yeni_h1 + 2820.0
+            elif i == 3:
+                h_fiyat = yeni_h3
+            else:
+                cur_h += 3150.0
+                h_fiyat = cur_h
+                
+            a_fiyat = float(ortak_avukat_input)
+            
+            yeni_sozluk[i] = {"harc": h_fiyat, "avukat": a_fiyat}
+            save_list.append({"Sınıf": i, "Harç": h_fiyat, "Avukat": a_fiyat})
             
         st.session_state.sinif_harclari = yeni_sozluk
         pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False)
         
-        st.success("🎉 Tüm sınıf harçları ve ortak avukat ücreti başarıyla kaydedildi!")
+        st.success("🎉 Sınıf harçları ve ortak avukat ücreti başarıyla kurallara göre güncellendi!")
         import time; time.sleep(1.2)
         st.rerun()
 
