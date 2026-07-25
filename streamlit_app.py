@@ -309,7 +309,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
 def sinif_harc_tutari_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        toplam_harc = 0.0
+        toplam_tutar = 0.0
         islenen_ana_siniflar = set()
         
         sirali_sayac = 0
@@ -322,11 +322,11 @@ def sinif_harc_tutari_hesapla(sinif_str):
                     if s_int not in islenen_ana_siniflar:
                         islenen_ana_siniflar.add(s_int)
                         sirali_sayac += 1
-                        # İSTEĞİNİZ ÜZERE: Kaçıncı sınıf ise (1., 2., 3. sınıf...) Fiyatlandırma Yönetimi'ndeki o sınıfın (Harç + Avukat) toplam tutarını getiriyoruz!
+                        # KESİN ÇÖZÜM: Kaçıncı sınıf ise (1., 2., 3. sınıf...) Fiyatlandırma Yönetimi'ndeki o sınıfın (Harç + Avukat) TOPLAM tutarını doğrudan getiriyoruz!
                         if sirali_sayac in st.session_state.sinif_harclari:
                             h_val = st.session_state.sinif_harclari[sirali_sayac]["harc"]
                             a_val = st.session_state.sinif_harclari[sirali_sayac]["avukat"]
-                            toplam_harc += (h_val + a_val)
+                            toplam_tutar += (h_val + a_val)
                         else:
                             base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
                             base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 2000.0})["avukat"]
@@ -338,8 +338,8 @@ def sinif_harc_tutari_hesapla(sinif_str):
                                 h_val = base_h1 + 2820.0
                                 for _ in range(3, sirali_sayac + 1):
                                     h_val += 3150.0
-                            toplam_harc += (h_val + base_a1)
-        return toplam_harc
+                            toplam_tutar += (h_val + base_a1)
+        return toplam_tutar
     except:
         return 0.0
 
@@ -1220,7 +1220,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, intdex=False) if hasattr(u_df.to_csv, "index") else u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
                 st.rerun()
