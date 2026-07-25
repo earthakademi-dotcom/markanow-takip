@@ -316,7 +316,6 @@ def sinif_harc_tutari_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar harç/toplam hesaplamasında sayılmaz
                 continue
             else:
                 if p.isdigit():
@@ -325,7 +324,6 @@ def sinif_harc_tutari_hesapla(sinif_str):
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                            # Fiyatlandırma tablosundaki Toplam (Harç + Avukat) değerini baz alıyoruz
                             toplam_tutar += kayit["harc"] + kayit["avukat"]
                     else:
                         if s_int not in islenen_ana_siniflar:
@@ -602,9 +600,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     def fiyatlandirma_formu():
         yeni_harc_verileri = {}
         
-        st.markdown("**1. Sınıf (Tüm Sınıflar İçin Ana Avukat Ücreti Belirleme)**")
-        col_h1, col_a1, col_t1 = st.columns(3)
         mevcut_1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0, "avukat": 2000.0})
+        col_h1, col_a1, col_t1 = st.columns(3)
         
         val_h1 = col_h1.text_input(f"Harç (TL)", value=str(mevcut_1["harc"]), key="harc_sinif_1")
         val_a1 = col_a1.text_input(f"Avukat (TL)", value=str(st.session_state.toplu_avukat_input), key="avukat_sinif_1")
@@ -622,6 +619,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
             
         toplam_deger_1 = f_h1 + f_a1
         col_t1.text_input(f"Toplam (TL)", value=f"{toplam_deger_1:,.2f}", disabled=True, key="toplam_sinif_1")
+        
+        # 1. Sınıf Harç + Avukat Toplam Ücretini başlıkta dinamik gösteriyoruz
+        st.markdown(f"**1. Sınıf Harç Toplam Ücreti Yaz:** Harç ({f_h1:,.2f} TL) + Avukat ({f_a1:,.2f} TL) = **Güncel Toplam Tutar: {toplam_deger_1:,.2f} TL** (Tüm Sınıflar İçin Ana Avukat Ücreti Belirleme)")
         
         yeni_harc_verileri[1] = {"harc": f_h1, "avukat": f_a1}
         st.write("---")
@@ -960,7 +960,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     
     if secilen_asama == "Tescil Tebliğ Beklemede":
         asama_df = asama_df[(asama_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") | 
-                            (asama_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")]
+                           (asama_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")]
 
     if arama_metni.strip():
         asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
