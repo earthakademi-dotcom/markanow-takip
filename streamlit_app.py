@@ -380,13 +380,10 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_tutar = 0.0
-        
-        # Bu marka için işlem yapılan ana sınıfları takip edelim ki aynı ana sınıf tekrar harç üretmesin
         islenen_ana_siniflar = set()
         
         for p in parcalar:
             if "/" in p:
-                # 35/ alt sınıf: Harç alınmıyor, sadece ilgili ana sınıfın (örn: 35) avukat ücreti ekleniyor
                 ana_sinif_str = p.split("/")[0].strip()
                 if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
                     s_int = int(ana_sinif_str)
@@ -398,7 +395,6 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
                 if p.isdigit():
                     s_int = int(p)
                     if 1 <= s_int <= 45:
-                        # Eğer bu ana sınıf daha önce eklenmediyse Harç + Avukat ekle
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
@@ -412,6 +408,34 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
     except:
         return 0.0
 
+def sinif_harc_tutari_hesapla(sinif_str):
+    """Sadece ana sınıfların resmi kurum harç toplamını hesaplar (avukat ücreti hariç)."""
+    try:
+        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
+        toplam_harc = 0.0
+        islenen_ana_siniflar = set()
+        
+        for p in parcalar:
+            if "/" in p:
+                # Alt sınıflar kurum harcı üretmez
+                continue
+            else:
+                if p.isdigit():
+                    s_int = int(p)
+                    if 1 <= s_int <= 45:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                            toplam_harc += kayit["harc"]
+                    else:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                            toplam_harc += kayit["harc"]
+        return toplam_harc
+    except:
+        return 0.0
+
 def sinif_adedi_hesapla(sinif_str):
     """35/ alt sınıflarını kesinlikle sınıf saymaz, yalnızca 1-45 arası ana sınıfları sayar."""
     try:
@@ -420,7 +444,7 @@ def sinif_adedi_hesapla(sinif_str):
         gorulen_siniflar = set()
         for p in parcalar:
             if "/" in p:
-                continue  # Alt sınıflar asla sınıf olarak sayılmayacak
+                continue
             if p.isdigit():
                 s_int = int(p)
                 if 1 <= s_int <= 45:
@@ -519,14 +543,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     for s_val in basvuru_bekleyen_df['Sınıf'].dropna():
         toplam_sinif_adedi += sinif_adedi_hesapla(s_val)
 
-    toplam_hesaplanan_basvuru_tutari = 0.0
+    toplam_basvuru_harc_tutari = 0.0
     for _, row in basvuru_bekleyen_df.iterrows():
-        toplam_hesaplanan_basvuru_tutari += sinif_harci_ve_avukat_hesapla(row.get('Sınıf', ''))
+        toplam_basvuru_harc_tutari += sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
     c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
-    c3.metric("Toplam Başvuru Tutarı", f"{toplam_hesaplanan_basvuru_tutari:,.2f} TL")
+    c3.metric("Toplam Başvuru Harç Tutarı", f"{toplam_basvuru_harc_tutari:,.2f} TL")
     
     st.write("---")
     if basvuru_bekleyen_df.empty:
@@ -1117,14 +1141,14 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                     if yeni_isim in u_df["İsim"].values:
                         st.error(f"❌ '{yeni_isim}' isminde bir personel zaten mevcut!")
                     else:
-                        yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
+                        yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şfile": [s.strip()]}) if "Şfile" in pd.DataFrame(columns=["İsim", "Şifre"]).columns else pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
                         u_df = pd.concat([u_df, yeni_kisi], ignore_index=True)
                         u_df.to_csv(USER_FILE, index=False)
                         st.success(f"🎉 Başarılı! '{yeni_isim}' sisteme eklendi.")
                         import time; time.sleep(1.2)
                         st.rerun()
                 else:
-                    st.warning("Lütfen bir personel adı girer misiniz.")
+                    st.warning("Lütfen bir personel adı girin.")
                     
     with t2:
         if os.path.exists(USER_FILE):
@@ -1142,7 +1166,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
-            if st.button("Danışmanı Sil", key="btn_danisman_sil"):
+            if st.button("Danışmanı Danışman Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
