@@ -584,9 +584,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
         
         st.dataframe(ozet_df, use_container_width=True)
 
-elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma dan Harç Yönetimi": # Note: Fiyatlandırma ve Harç Yönetimi
-    pass
-
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
