@@ -319,7 +319,6 @@ def sinif_harc_tutari_hesapla(sinif_str):
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 2000.0})
-                            # DÜZELTME: Sadece o sınıfa ait HARÇ tutarını topluyoruz (Avukat dahil değil)
                             toplam_harc += kayit["harc"]
                     else:
                         if s_int not in islenen_ana_siniflar:
@@ -584,6 +583,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
         ozet_df = ozet_df[cols_order]
         
         st.dataframe(ozet_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma dan Harç Yönetimi": # Note: Fiyatlandırma ve Harç Yönetimi
+    pass
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"):
@@ -1207,7 +1209,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, config:=False)
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
