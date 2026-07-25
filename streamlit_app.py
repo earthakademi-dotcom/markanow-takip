@@ -408,7 +408,12 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         return 0.0
 
 def sinif_harc_tutari_hesapla(sinif_str):
-    """Sadece ana sınıfların (1-45) harç tutarını hesaplar. Örneğin 35,35/21 gibi bir girişte alt sınıf (35/21) harç üretmez, sadece ana sınıf (35) için 1 kez harç üretilir."""
+    """
+    Kullanıcının talimatına göre: 1'den 45'e kadar olan sınıfların toplamı, 
+    kaç adet (1-45 arası ana) sınıf varsa onunla çarpılarak (veya ana sınıf adedince) harç üretir.
+    Örn: 35, 35/21 -> Sadece 1 adet ana sınıf (35) vardır (alt sınıflar harç üretmez, ana sınıf da tekilleştirilir), 
+    dolayısıyla 1 adet 35. sınıfın harç ücreti yansıtılır.
+    """
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_harc = 0.0
@@ -416,21 +421,8 @@ def sinif_harc_tutari_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar harç üretmez, ancak ana sınıfın daha önce eklenip eklenmediğini kontrol etmek gerekebilir.
-                # Kullanıcının talebine göre: "35 ile 35/alt sınıf var onun hesabı 35 alt sınıflarını saymayacaksın, 1 sınıf harç ücretini buraya yansıtacaksın"
-                ana_sinif_str = p.split("/")[0].strip()
-                if ana_sinif_str.isdigit():
-                    s_int = int(ana_sinif_str)
-                    if 1 <= s_int <= 45:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
-                    else:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
+                # Alt sınıflar (örn: 35/21) ayrı bir sınıf harcı üretmez, ana sınıfa dahildir.
+                continue
             else:
                 if p.isdigit():
                     s_int = int(p)
@@ -1189,7 +1181,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     with t3:
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
-            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
+            s3 = st.selectbox("Silinecek Personel", u_df["İsim.tolist()"] if "İsim.tolist()" in u_df.columns else u_df["İsim"].tolist(), key="sel_sil_personel")
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
