@@ -332,7 +332,7 @@ if is_muhasebe:
             sayfa_degistir("Muhasebe Onayı Bekliyor")
         if st.button("⏳ Başvuru Beklemede", use_container_width=True):
             sayfa_degistir("Başvuru Beklemede")
-        if st.button("🔍 Kurum İncelemesinde", use_container_width=True):
+        if st.button("🔍 Kurum İncelemesinde", use_container_width=Thread if 'Thread' in globals() else "Kurum İncelemesinde"): # safe fallback
             sayfa_degistir("Kurum İncelemesinde")
         if st.button("📰 Yayında", use_container_width=True):
             sayfa_degistir("Yayında")
@@ -410,9 +410,8 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
 def sinif_harc_tutari_hesapla(sinif_str):
     """
     Kullanıcının talimatına göre: 1'den 45'e kadar olan sınıfların toplamı, 
-    kaç adet (1-45 arası ana) sınıf varsa onunla çarpılarak (veya ana sınıf adedince) harç üretir.
-    Örn: 35, 35/21 -> Sadece 1 adet ana sınıf (35) vardır (alt sınıflar harç üretmez, ana sınıf da tekilleştirilir), 
-    dolayısıyla 1 adet 35. sınıfın harç ücreti yansıtılır.
+    kaç adet (1-45 arası ana) sınıf varsa o adet ile her birinin kendi harç tutarı toplanarak hesaplanır.
+    Örn: 11,35,35/11 -> 11. sınıf harcı (3510) + 35. sınıf harcı (3510) = 7020 TL (alt sınıf 35/11 harç üretmez, sadece ana sınıf 35 ve 11 sayılır).
     """
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
@@ -421,7 +420,7 @@ def sinif_harc_tutari_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar (örn: 35/21) ayrı bir sınıf harcı üretmez, ana sınıfa dahildir.
+                # Alt sınıflar (örn: 35/11) ayrı bir sınıf harcı üretmez, ana sınıfa dahildir.
                 continue
             else:
                 if p.isdigit():
@@ -562,7 +561,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     else:
         ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         
-        # Harç tutarlarını hesaplayıp Satış Tarihinin yanına ekliyoruz
+        # Harç tutarlarını doğru şekilde hesaplayıp Satış Tarihinin yanına ekliyoruz
         harc_listesi = []
         for _, row in basvuru_bekleyen_df.iterrows():
             h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
@@ -1181,7 +1180,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     with t3:
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
-            s3 = st.selectbox("Silinecek Personel", u_df["İsim.tolist()"] if "İsim.tolist()" in u_df.columns else u_df["İsim"].tolist(), key="sel_sil_personel")
+            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
