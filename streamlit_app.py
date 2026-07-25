@@ -470,8 +470,34 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
     
     toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
+    
+    # --- TOPLAM SINIF SAYISINI HESAPLAMA (35/ alt kırılımları hariç, çakışmalar önlenerek) ---
+    toplam_gecerli_sinif_adedi = 0
+    for s_val in danisman_df['Sınıf'].dropna():
+        parcalar = [p.strip() for p in str(s_val).split(",")]
+        ana_siniflar_bu_satir = set()
+        
+        # Önce bu satırdaki alt kırılım olmayan ana sınıfları tespit et
+        for p in parcalar:
+            if "/" not in p and p.isdigit():
+                if 1 <= int(p) <= 45:
+                    ana_siniflar_bu_satir.add(p)
+                    
+        # Şimdi geçerli sınıfları topla
+        satir_sayac = 0
+        gorulen_siniflar = set()
+        for p in parcalar:
+            if "/" in p:
+                # Alt sınıfları sayma
+                continue
+            if p.isdigit() and 1 <= int(p) <= 45:
+                if p not in gorulen_siniflar:
+                    gorulen_siniflar.add(p)
+                    satir_sayac += 1
+        toplam_gecerli_sinif_adedi += satir_sayac
+
     c1, c2 = st.columns(2)
-    c1.metric("Filtrelenen Satış Adedi", len(danisman_df))
+    c1.metric("Filtrelenen Satış Adedi", toplam_gecerli_sinif_adedi)
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
     st.write("")
