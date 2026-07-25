@@ -574,7 +574,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
             h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
             harc_listesi.append(f"{h_tutar:,.2f} TL")
             s_adet = sinif_adedi_hesapla(row.get('Sınıf', ''))
-            sinif_adedi_listesi.append(f"{s_adet} Adet")
+            sinif_adedi_listesi.append(f"{s_adet} Sınıf")
             
         ozet_df['Sınıf Adedi'] = sinif_adedi_listesi
         ozet_df['Harç Tutarı'] = harc_listesi
