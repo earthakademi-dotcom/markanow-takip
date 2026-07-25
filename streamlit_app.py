@@ -277,6 +277,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         toplam_tutar = 0.0
         islenen_ana_siniflar = set()
         
+        sirali_sayac = 0
         for p in parcalar:
             if "/" in p:
                 ana_sinif_str = p.split("/")[0].strip()
@@ -292,11 +293,13 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
                     if 1 <= s_int <= 45:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 2000.0})
+                            sirali_sayac += 1
+                            kayit = st.session_state.sinif_harclari.get(sirali_sayac, {"harc": 2820.0, "avukat": 2000.0})
                             toplam_tutar += kayit["harc"] + kayit["avukat"]
                     else:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
+                            sirali_sayac += 1
                             kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 2000.0})
                             toplam_tutar += kayit["harc"] + kayit["avukat"]
         return toplam_tutar
@@ -309,7 +312,6 @@ def sinif_harc_tutari_hesapla(sinif_str):
         toplam_harc = 0.0
         islenen_ana_siniflar = set()
         
-        # Kaçıncı sınıf olduğunu bulmak için sırayla sayıyoruz (1. sınıf, 2. sınıf vb.)
         sirali_sayac = 0
         for p in parcalar:
             if "/" in p:
@@ -320,21 +322,23 @@ def sinif_harc_tutari_hesapla(sinif_str):
                     if s_int not in islenen_ana_siniflar:
                         islenen_ana_siniflar.add(s_int)
                         sirali_sayac += 1
-                        # Fiyatlandırma tablosundaki N. sınıfın harç değerini doğrudan alıyoruz
+                        # İSTEĞİNİZ ÜZERE: Kaçıncı sınıf ise (1., 2., 3. sınıf...) Fiyatlandırma Yönetimi'ndeki o sınıfın (Harç + Avukat) toplam tutarını getiriyoruz!
                         if sirali_sayac in st.session_state.sinif_harclari:
-                            toplam_harc += st.session_state.sinif_harclari[sirali_sayac]["harc"]
+                            h_val = st.session_state.sinif_harclari[sirali_sayac]["harc"]
+                            a_val = st.session_state.sinif_harclari[sirali_sayac]["avukat"]
+                            toplam_harc += (h_val + a_val)
                         else:
-                            # Eğer sınır dışı kalırsa en son hesaplanan formülle ekle
                             base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
+                            base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 2000.0})["avukat"]
                             if sirali_sayac == 1:
-                                toplam_harc += base_h1
+                                h_val = base_h1
                             elif sirali_sayac == 2:
-                                toplam_harc += base_h1 + 2820.0
+                                h_val = base_h1 + 2820.0
                             else:
                                 h_val = base_h1 + 2820.0
                                 for _ in range(3, sirali_sayac + 1):
                                     h_val += 3150.0
-                                toplam_harc += h_val
+                            toplam_harc += (h_val + base_a1)
         return toplam_harc
     except:
         return 0.0
@@ -1216,7 +1220,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, intdex=False) if hasattr(u_df.to_csv, "index") else u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
                 st.rerun()
