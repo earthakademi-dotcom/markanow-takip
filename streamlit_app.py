@@ -375,7 +375,7 @@ if "sinif_harclari" not in st.session_state:
             h_val = 3510.0
         st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
-# --- KESİN MANTIK: ALT SINIFLARDA (35/...) HARÇ YOK, SADECE O SINIFIN AVUKATI; ANA SINIFLARDA (1-45) HARÇ + AVUKAT ---
+# --- KESİN MANTIK: 35/ ALT SINIFLAR ASLA SINIF OLARAK SAYILMAZ. SADECE 1-45 ANA SINIFLAR SAYILIR VE HESAPLANIR. ---
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
@@ -383,7 +383,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar (örn: 35/21): Harç alınmıyor, sadece ilgili ana sınıfın (örneğin 35. sınıfın) avukat ücreti ekleniyor
+                # 35/ alt sınıflar için harç ve sınıf adedi alınmıyor, sadece ilgili ana sınıfın avukat ücreti ekleniyor
                 ana_sinif_str = p.split("/")[0].strip()
                 if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
                     kayit = st.session_state.sinif_harclari.get(int(ana_sinif_str), {"harc": 3510.0, "avukat": 2000.0})
@@ -402,6 +402,25 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         return toplam_tutar
     except:
         return 0.0
+
+def sinif_adedi_hesapla(sinif_str):
+    """35/ alt sınıflarını kesinlikle sınıf saymaz, yalnızca 1-45 arası ana sınıfları sayar."""
+    try:
+        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
+        satir_sayac = 0
+        gorulen_siniflar = set()
+        for p in parcalar:
+            if "/" in p:
+                continue  # Alt sınıflar asla sınıf olarak sayılmayacak
+            if p.isdigit():
+                s_int = int(p)
+                if 1 <= s_int <= 45:
+                    if s_int not in gorulen_siniflar:
+                        gorulen_siniflar.add(s_int)
+                        satir_sayac += 1
+        return satir_sayac
+    except:
+        return 0
 
 # --- SAYFA İÇERİKLERİ ---
 
@@ -458,20 +477,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     
     toplam_sinif_adedi = 0
     for s_val in muhasebe_bekleyen_df['Sınıf'].dropna():
-        parcalar = [p.strip() for p in str(s_val).split(",")]
-        satir_sayac = 0
-        gorulen_siniflar = set()
-        for p in parcalar:
-            if "/" in p:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-                continue
-            if p.isdigit() and 1 <= int(p) <= 45:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-        toplam_sinif_adedi += satir_sayac
+        toplam_sinif_adedi += sinif_adedi_hesapla(s_val)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
@@ -502,20 +508,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     
     toplam_sinif_adedi = 0
     for s_val in basvuru_bekleyen_df['Sınıf'].dropna():
-        parcalar = [p.strip() for p in str(s_val).split(",")]
-        satir_sayac = 0
-        gorulen_siniflar = set()
-        for p in parcalar:
-            if "/" in p:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-                continue
-            if p.isdigit() and 1 <= int(p) <= 45:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-        toplam_sinif_adedi += satir_sayac
+        toplam_sinif_adedi += sinif_adedi_hesapla(s_val)
 
     toplam_hesaplanan_basvuru_tutari = 0.0
     for _, row in basvuru_bekleyen_df.iterrows():
@@ -726,23 +719,10 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     
     toplam_gecerli_sinif_adedi = 0
     for s_val in danisman_df['Sınıf'].dropna():
-        parcalar = [p.strip() for p in str(s_val).split(",")]
-        satir_sayac = 0
-        gorulen_siniflar = set()
-        for p in parcalar:
-            if "/" in p:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-                continue
-            if p.isdigit() and 1 <= int(p) <= 45:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-        toplam_gecerli_sinif_adedi += satir_sayac
+        toplam_gecerli_sinif_adedi += sinif_adedi_hesapla(s_val)
 
     c1, c2 = st.columns(2)
-    c1.metric("Filtrelenen Satış Adedi", toplam_gecerli_sinif_adedi)
+    c1.metric("Filtrelenen Sınıf Adedi", toplam_gecerli_sinif_adedi)
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
     st.write("")
