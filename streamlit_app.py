@@ -318,8 +318,6 @@ if is_muhasebe:
     with st.sidebar.expander("📈 Marka Tescil Raporlama", expanded=True):
         if st.button("📊 Genel Rapor Paneli", use_container_width=True):
             sayfa_degistir("Marka Tescil Raporlama")
-
-    with st.sidebar.expander("📄 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
             sayfa_degistir("Muhasebe Onayı Bekliyor")
         if st.button("⏳ Başvuru Beklemede", use_container_width=True):
@@ -364,7 +362,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
-    st.write("Aşağıdaki aşama butonlarına tıklayarak ilgili aşamada bulunan markaları inceleyebilirsiniz.")
+    st.write("Sistemdeki tüm markaların güncel aşama durumlarına göre sayısal dağılımı aşağıdadır.")
     
     def get_count_and_df(asama_adi):
         if asama_adi == "Tescil Tebliğ Beklemede":
@@ -376,42 +374,37 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         return len(sub_df), sub_df
 
     rapor_kalemleri = [
-        ("📌 Muhasebe Onayı Bekliyor", "Muhasebe Onayı Bekliyor"),
-        ("⏳ Başvuru Beklemede", "Başvuru Beklemede"),
-        ("🔍 Kurum İncelemesinde", "Kurum İncelemesinde"),
-        ("📰 Yayında", "Yayında"),
-        ("⚠️ İtiraz / Savunma Bekliyor", "İtiraz Geldi - Savunma Bekliyor"),
-        ("📄 Tescil Tebliğ Beklemede", "Tescil Tebliğ Beklemede"),
-        ("💳 Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Tebliğ Edildi Müşteri Arandı"),
-        ("⏳ Tescil Kurum Ödemesi Bekleyen", "Tescil Kurum Ödemesi Bekleyen"),
-        ("📄 Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
-        ("🎉 Tescillendi", "Tescillendi 🎉"),
-        ("❌ Reddedildi", "Reddedildi ❌")
+        ("Başvuru Beklemede", "Başvuru Beklemede"),
+        ("Kurum İncelemesinde", "Kurum İncelemesinde"),
+        ("Yayında", "Yayında"),
+        ("İtiraz / Savunma Bekliyor", "İtiraz Geldi - Savunma Bekliyor"),
+        ("Tescil Tebliğ Beklemede", "Tescil Tebliğ Beklemede"),
+        ("Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Tebliğ Edildi Müşteri Arandı"),
+        ("Tescil Kurum Ödemesi Bekleyen", "Tescil Kurum Ödemesi Bekleyen"),
+        ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
+        ("Tescillendi", "Tescillendi 🎉"),
+        ("Reddedildi", "Reddedildi ❌")
     ]
 
-    if "secilen_rapor_asama" not in st.session_state:
-        st.session_state.secilen_rapor_asama = None
-
-    for gorunen_isim, durum_kod in rapor_kalemleri:
+    cols = st.columns(3)
+    for idx, (gorunen_isim, durum_kod) in enumerate(rapor_kalemleri):
         adet, _ = get_count_and_df(durum_kod)
-        buton_etiketi = f"{gorunen_isim} ({adet} Adet)"
-        
-        if st.button(buton_etiketi, use_container_width=True):
-            st.session_state.secilen_rapor_asama = durum_kod
+        with cols[idx % 3]:
+            st.metric(label=gorunen_isim, value=f"{adet} Adet")
 
-    if st.session_state.secilen_rapor_asama:
-        st.write("---")
-        secilen_kod = st.session_state.secilen_rapor_asama
-        secilen_isim = [item[0] for item in rapor_kalemleri if item[1] == secilen_kod][0]
-        
-        st.subheader(f"📂 Seçilen Aşama: {secilen_isim}")
-        _, detay_df = get_count_and_df(secilen_kod)
-        
-        if detay_df.empty:
-            st.info("Bu aşamada kayıt bulunmuyor.")
-        else:
-            st.write(f"Toplam **{len(detay_df)}** kayıt listeleniyor:")
-            st.dataframe(detay_df, use_container_width=True)
+    st.write("---")
+    st.subheader("🔍 Aşama Detayları ve Liste Görünümü")
+    
+    secilen_rapor_kategori = st.selectbox("İncelemek İstediğiniz Aşamayı Seçin", [item[0] for item in rapor_kalemleri])
+    secilen_durum_kod = dict(rapor_kalemleri)[secilen_rapor_kategori]
+    
+    _, detay_df = get_count_and_df(secilen_durum_kod)
+    
+    if detay_df.empty:
+        st.info(f"'{secilen_rapor_kategori}' aşamasında kayıt bulunmuyor.")
+    else:
+        st.write(f"Toplam **{len(detay_df)}** kayıt listeleniyor:")
+        st.dataframe(detay_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
