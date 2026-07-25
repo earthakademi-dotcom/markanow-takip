@@ -307,7 +307,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
     except:
         return 0.0
 
-def sinif_harc_tutari_hesapla(sinif_str):
+def sinif_toplam_ucret_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_tutar = 0.0
@@ -316,32 +316,39 @@ def sinif_harc_tutari_hesapla(sinif_str):
         sirali_sayac = 0
         for p in parcalar:
             if "/" in p:
-                continue
-            if p.isdigit():
-                s_int = int(p)
-                if 1 <= s_int <= 45:
-                    if s_int not in islenen_ana_siniflar:
-                        islenen_ana_siniflar.add(s_int)
-                        sirali_sayac += 1
-                        if sirali_sayac in st.session_state.sinif_harclari:
-                            h_val = st.session_state.sinif_harclari[sirali_sayac]["harc"]
-                            a_val = st.session_state.sinif_harclari[sirali_sayac]["avukat"]
-                            toplam_tutar += (h_val + a_val)
-                        else:
-                            base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
-                            base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 750.0})["avukat"]
-                            base_h3_bedel = 3150.0
-                            if sirali_sayac == 1:
-                                h_val = base_h1
-                            elif sirali_sayac == 2:
-                                h_val = base_h1 + base_h1
-                            elif sirali_sayac == 3:
-                                h_val = base_h1 + base_h1 + base_h3_bedel
+                ana_sinif_str = p.split("/")[0].strip()
+                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
+                    s_int = int(ana_sinif_str)
+                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 750.0})
+                else:
+                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 2820.0, "avukat": 750.0})
+                toplam_tutar += kayit["avukat"]
+            else:
+                if p.isdigit():
+                    s_int = int(p)
+                    if 1 <= s_int <= 45:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            sirali_sayac += 1
+                            if sirali_sayac in st.session_state.sinif_harclari:
+                                h_val = st.session_state.sinif_harclari[sirali_sayac]["harc"]
+                                a_val = st.session_state.sinif_harclari[sirali_sayac]["avukat"]
+                                toplam_tutar += (h_val + a_val)
                             else:
-                                h_val = base_h1 + base_h1 + base_h3_bedel
-                                for _ in range(4, sirali_sayac + 1):
-                                    h_val += base_h3_bedel
-                            toplam_tutar += (h_val + base_a1)
+                                base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
+                                base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 750.0})["avukat"]
+                                base_h3_bedel = 3150.0
+                                if sirali_sayac == 1:
+                                    h_val = base_h1
+                                elif sirali_sayac == 2:
+                                    h_val = base_h1 + base_h1
+                                elif sirali_sayac == 3:
+                                    h_val = base_h1 + base_h1 + base_h3_bedel
+                                else:
+                                    h_val = base_h1 + base_h1 + base_h3_bedel
+                                    for _ in range(4, sirali_sayac + 1):
+                                        h_val += base_h3_bedel
+                                toplam_tutar += (h_val + base_a1)
         return toplam_tutar
     except:
         return 0.0
@@ -570,14 +577,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     for s_val in basvuru_bekleyen_df['Sınıf'].dropna():
         toplam_sinif_adedi += sinif_adedi_hesapla(s_val)
 
-    toplam_basvuru_harc_tutari = 0.0
+    toplam_basvuru_ucret_tutari = 0.0
     for _, row in basvuru_bekleyen_df.iterrows():
-        toplam_basvuru_harc_tutari += sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
+        toplam_basvuru_ucret_tutari += sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
     c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
-    c3.metric("Toplam Başvuru Harç Tutarı", f"{toplam_basvuru_harc_tutari:,.2f} TL")
+    c3.metric("Toplam Başvuru Ücret Tutarı", f"{toplam_basvuru_ucret_tutari:,.2f} TL")
     
     st.write("---")
     if basvuru_bekleyen_df.empty:
@@ -585,18 +592,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     else:
         ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         
-        harc_listesi = []
+        ucret_listesi = []
         sinif_adedi_listesi = []
         for _, row in basvuru_bekleyen_df.iterrows():
-            h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
-            harc_listesi.append(f"{h_tutar:,.2f} TL")
+            t_tutar = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+            ucret_listesi.append(f"{t_tutar:,.2f} TL")
             s_adet = sinif_adedi_hesapla(row.get('Sınıf', ''))
             sinif_adedi_listesi.append(f"{s_adet} Sınıf")
             
         ozet_df['Sınıf Adedi'] = sinif_adedi_listesi
-        ozet_df['Harç Tutarı'] = harc_listesi
+        ozet_df['Toplam Ücret'] = ucret_listesi
         
-        cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Harç Tutarı']
+        cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Toplam Ücret']
         ozet_df = ozet_df[cols_order]
         
         st.dataframe(ozet_df, use_container_width=True)
@@ -1001,11 +1008,27 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     if asama_df.empty:
         st.info(f"'{secilen_asama}' aşamasında aramanızla eşleşen kayıt bulunmuyor.")
     else:
+        # Tablo görünümünde "Harç Tutarı" yerine ilgili sınıf sayısına karşılık gelen "Toplam Ücret" gösterilmesi için geçici süton güncellemesi
+        goruntu_df = asama_df.copy()
+        ucret_sutun_degerleri = []
+        sinif_adedi_listesi = []
+        for _, row in goruntu_df.iterrows():
+            t_tutar = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+            ucret_sutun_degerleri.append(f"{t_tutar:,.2f} TL")
+            s_adet = sinif_adedi_hesapla(row.get('Sınıf', ''))
+            sinif_adedi_listesi.append(f"{s_adet} Sınıf")
+            
+        goruntu_df['Sınıf Adedi'] = sinif_adedi_listesi
+        goruntu_df['Toplam Ücret'] = ucret_sutun_degerleri
+        
+        if 'Harç Tutarı' in goruntu_df.columns:
+            goruntu_df = goruntu_df.drop(columns=['Harç Tutarı'])
+
         if secilen_asama == "Kurum İncelemesinde":
-            gosterge_df = asama_df[['Marka Adı', 'Başvuru No', 'Başvuru Tarihi']].copy()
+            gosterge_df = goruntu_df[['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Başvuru No', 'Başvuru Tarihi', 'Toplam Ücret']].copy()
             st.dataframe(gosterge_df, use_container_width=True)
         else:
-            st.dataframe(asama_df, use_container_width=True)
+            st.dataframe(goruntu_df, use_container_width=True)
             
         st.write("---")
         
