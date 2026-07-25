@@ -261,14 +261,15 @@ if "sinif_harclari" not in st.session_state:
             
     if not st.session_state.sinif_harclari:
         h1 = 2820.0
-        h2 = h1 + 2820.0
-        h3 = h2 + 3150.0
+        h3 = 3150.0
+        h2 = h1 + h1
+        h3_hesap = h1 + h1 + h3
         st.session_state.sinif_harclari[1] = {"harc": h1, "avukat": 750.0}
         st.session_state.sinif_harclari[2] = {"harc": h2, "avukat": 750.0}
-        st.session_state.sinif_harclari[3] = {"harc": h3, "avukat": 750.0}
-        curr_h = h3
+        st.session_state.sinif_harclari[3] = {"harc": h3_hesap, "avukat": 750.0}
+        curr_h = h3_hesap
         for i in range(4, 46):
-            curr_h += 3150.0
+            curr_h += h3
             st.session_state.sinif_harclari[i] = {"harc": curr_h, "avukat": 750.0}
 
 def sinif_harci_ve_avukat_hesapla(sinif_str):
@@ -329,14 +330,17 @@ def sinif_harc_tutari_hesapla(sinif_str):
                         else:
                             base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
                             base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 750.0})["avukat"]
+                            base_h3_bedel = 3150.0
                             if sirali_sayac == 1:
                                 h_val = base_h1
                             elif sirali_sayac == 2:
-                                h_val = base_h1 + 2820.0
+                                h_val = base_h1 + base_h1
+                            elif sirali_sayac == 3:
+                                h_val = base_h1 + base_h1 + base_h3_bedel
                             else:
-                                h_val = base_h1 + 2820.0
-                                for _ in range(3, sirali_sayac + 1):
-                                    h_val += 3150.0
+                                h_val = base_h1 + base_h1 + base_h3_bedel
+                                for _ in range(4, sirali_sayac + 1):
+                                    h_val += base_h3_bedel
                             toplam_tutar += (h_val + base_a1)
         return toplam_tutar
     except:
@@ -602,43 +606,45 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("🔹 **1. Sınıf Bedeli** ve **3. Sınıf Bedeli** ile **Ortak Avukat Ücretini** aşağıdaki alanlardan kolayca belirleyebilirsiniz. \n🔹 **2. Sınıf** (1. Sınıf + 2.820 TL) ve **4 ila 45. Sınıflar** (Önceki sınıf + 3.150 TL) otomatik olarak hesaplanır.")
+    st.write("🔹 **1. Sınıf Bedeli** ve **3. Sınıf Bedeli** ile **Ortak Avukat Ücretini** aşağıdaki alanlardan belirleyebilirsiniz. \n🔹 **1. Sınıf**: 1. Sınıf Bedeli \n🔹 **2. Sınıf**: 1. Sınıf + 1. Sınıf Bedeli \n🔹 **3. Sınıf**: 1. Sınıf + 1. Sınıf + 3. Sınıf Bedeli \n🔹 **4 ila 45. Sınıflar**: Önceki sınıf + 3. Sınıf Bedeli eklenerek hesaplanır.")
 
     # Mevcut değerleri güvenli çekme
     mevcut_h1 = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
-    mevcut_h3 = float(st.session_state.sinif_harclari.get(3, {"harc": 8790.0})["harc"])
+    mevcut_h3_bedel = float(st.session_state.sinif_harclari.get(4, {"harc": 3150.0})["harc"] - st.session_state.sinif_harclari.get(3, {"harc": 3150.0})["harc"]) if len(st.session_state.sinif_harclari) >= 4 else 3150.0
+    if mevcut_h3_bedel <= 0:
+        mevcut_h3_bedel = 3150.0
     mevcut_ortak_avukat = float(list(st.session_state.sinif_harclari.values())[0]["avukat"]) if st.session_state.sinif_harclari else 750.0
 
     # Üst Kontrol Paneli (1. Sınıf Bedeli, 3. Sınıf Bedeli ve Ortak Avukat Ücreti)
     col_k1, col_k2, col_k3 = st.columns(3)
     giris_h1 = col_k1.number_input("1. Sınıf Bedeli (TL)", value=float(mevcut_h1), step=50.0, format="%.2f")
-    giris_h3 = col_k2.number_input("3. Sınıf Bedeli (TL)", value=float(mevcut_h3), step=50.0, format="%.2f")
+    giris_h3_bedel = col_k2.number_input("3. Sınıf Bedeli (TL)", value=float(mevcut_h3_bedel), step=50.0, format="%.2f")
     ortak_avukat_input = col_k3.number_input("Tüm Sınıflar İçin Ortak Avukat Ücreti (TL)", value=float(mevcut_ortak_avukat), step=50.0, format="%.2f")
 
     st.write("---")
 
-    # Tablo verisi hazırlama (Kurallara göre tam liste)
+    # Tablo verisi hazırlama (Yeni kurallara göre tam liste)
     tablo_verileri = []
     
-    # 1. Sınıf
+    # 1. Sınıf = 1. Sınıf Bedeli
     h1 = giris_h1
     a1 = ortak_avukat_input
     tablo_verileri.append({"Sınıf No": 1, "Harç (TL)": h1, "Avukat (TL)": a1, "Toplam (Harç + Avukat) (TL)": h1 + a1})
 
-    # 2. Sınıf (1. Sınıf + 2820)
-    h2 = h1 + 2820.0
+    # 2. Sınıf = 1. Sınıf Bedeli + 1. Sınıf Bedeli
+    h2 = giris_h1 + giris_h1
     a2 = ortak_avukat_input
     tablo_verileri.append({"Sınıf No": 2, "Harç (TL)": h2, "Avukat (TL)": a2, "Toplam (Harç + Avukat) (TL)": h2 + a2})
 
-    # 3. Sınıf
-    h3 = giris_h3
+    # 3. Sınıf = 1. Sınıf Bedeli + 1. Sınıf Bedeli + 3. Sınıf Bedeli
+    h3 = giris_h1 + giris_h1 + giris_h3_bedel
     a3 = ortak_avukat_input
     tablo_verileri.append({"Sınıf No": 3, "Harç (TL)": h3, "Avukat (TL)": a3, "Toplam (Harç + Avukat) (TL)": h3 + a3})
 
-    # 4 ila 45. Sınıflar (Önceki sınıf + 3150)
+    # 4 ila 45. Sınıflar = Önceki sınıf + 3. Sınıf Bedeli
     onceki_h = h3
     for i in range(4, 46):
-        onceki_h += 3150.0
+        onceki_h += giris_h3_bedel
         hi = onceki_h
         ai = ortak_avukat_input
         tablo_verileri.append({"Sınıf No": i, "Harç (TL)": hi, "Avukat (TL)": ai, "Toplam (Harç + Avukat) (TL)": hi + ai})
@@ -666,16 +672,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         yeni_sozluk = {}
         save_list = []
         
-        cur_h = giris_h1
+        calc_h1 = giris_h1
+        calc_h2 = giris_h1 + giris_h1
+        calc_h3 = giris_h1 + giris_h1 + giris_h3_bedel
+        
+        cur_h = calc_h3
         for i in range(1, 46):
             if i == 1:
-                h_fiyat = giris_h1
+                h_fiyat = calc_h1
             elif i == 2:
-                h_fiyat = giris_h1 + 2820.0
+                h_fiyat = calc_h2
             elif i == 3:
-                h_fiyat = giris_h3
+                h_fiyat = calc_h3
             else:
-                cur_h += 3150.0
+                cur_h += giris_h3_bedel
                 h_fiyat = cur_h
                 
             a_fiyat = float(ortak_avukat_input)
@@ -686,7 +696,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         st.session_state.sinif_harclari = yeni_sozluk
         pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False)
         
-        st.success("🎉 Sınıf harçları ve avukat ücretleri başarıyla kurallara göre güncellendi!")
+        st.success("🎉 Sınıf harçları ve avukat ücretleri başarıyla yeni formüle göre güncellendi!")
         import time; time.sleep(1.2)
         st.rerun()
 
