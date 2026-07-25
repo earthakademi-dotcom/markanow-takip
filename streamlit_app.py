@@ -165,7 +165,6 @@ if not os.path.exists(USER_FILE):
     }).to_csv(USER_FILE, index=False)
 
 def ay_ekle(kaynak_tarih, ay_sayisi=2):
-    """Verilen tarihe tam ay ekler (Örn: 10.02.2026 -> 10.04.2026)"""
     yil = kaynak_tarih.year + (kaynak_tarih.month + ay_sayisi - 1) // 12
     ay = (kaynak_tarih.month + ay_sayisi - 1) % 12 + 1
     gun = kaynak_tarih.day
@@ -176,7 +175,6 @@ def ay_ekle(kaynak_tarih, ay_sayisi=2):
             gun -= 1
 
 def resmi_tatil_ve_tatil_kontrol(dt):
-    """Hafta sonu veya resmi tatil kontrolü yapar, iş günü değilse kaydırır."""
     resmi_tatiller = [
         (1, 1),   # Yılbaşı
         (23, 4),  # 23 Nisan
@@ -245,7 +243,7 @@ def load_data():
     d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
 
-# --- GİRİŞ KONTROLÜ VE OTURUM KORUMA (URL PARAMETRE DESTEĞİ) ---
+# --- GİRİŞ KONTROLÜ VE OTURUM KORUMA ---
 if "kullanici" not in st.session_state: 
     st.session_state.kullanici = None
 
@@ -305,7 +303,6 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 
 st.sidebar.write("---")
 
-# Menü Yönlendirmeleri
 if not is_muhasebe:
     if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
         sayfa_degistir("Yeni Satış Giriş")
@@ -404,7 +401,9 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 guncel_df.to_csv(DATA_FILE, index=False)
-                st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi. Ana sayfaya yönlendiriliyorsunuz...")
+                st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi!")
+                st.info("Ana sayfaya yönlendiriliyorsunuz, lütfen bekleyin...")
+                import time; time.sleep(1.5)
                 st.session_state.aktif_sayfa = "Ana Sayfa"
                 st.rerun()
 
@@ -554,14 +553,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
                         df.to_csv(DATA_FILE, index=False)
-                        st.success(f"✅ '{secilen_duzenle_marka}' markasına ait bilgiler başarıyla güncellendi!")
+                        st.session_state["success_msg"] = f"✅ Başarılı! '{secilen_duzenle_marka}' markasına ait bilgiler güncellendi."
                         st.rerun()
 
                     if submitted_delete:
                         df_yeni = df[df['Marka Adı'].astype(str) != secilen_duzenle_marka]
                         df_yeni.to_csv(DATA_FILE, index=False)
-                        st.success(f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt başarıyla silindi!")
+                        st.session_state["success_msg"] = f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt silindi!"
                         st.rerun()
+
+                # Form dışına taşınan kalıcı bildirim gösterimi
+                if "success_msg" in st.session_state:
+                    st.success(st.session_state["success_msg"])
+                    del st.session_state["success_msg"]
 
 # --- TESCİL TEBLİĞ EDİLİ MÜŞTERİ ARANDI EKRANI ---
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Müşteri Arandı":
@@ -627,13 +631,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                         df.to_csv(DATA_FILE, index=False)
                         
-                        st.success(f"✅ '{secilen_tescil_marka}' markası 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı!")
+                        st.success(f"✅ Başarılı! '{secilen_tescil_marka}' markası 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı.")
+                        import time; time.sleep(1.2)
                         st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
                         st.rerun()
                     else:
                         st.warning("Lütfen Ödeme Günü alanını doldurunuz.")
 
-# --- MUHASEBE AŞAMA SAYFALARI (SOL MENÜDEN SEÇİLENLER) ---
+# --- MUHASEBE AŞAMA SAYFALARI ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
     "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
     "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
@@ -686,7 +691,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 df.at[idx, 'Fatura No'] = f_no.strip()
                                 df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                                 df.to_csv(DATA_FILE, index=False)
-                                st.success(f"✅ '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı!")
+                                st.success(f"✅ Başarılı! '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı.")
+                                import time; time.sleep(1.2)
                                 st.rerun()
                             else:
                                 st.warning("Lütfen Fatura No ve Fatura Tarihi alanlarını doldurun.")
@@ -827,9 +833,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 pass
                             
                         df.to_csv(DATA_FILE, index=False)
-                        
-                        st.success(f"✅ Güncellendi! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
+                        st.session_state["success_msg"] = f"✅ Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi."
                         st.rerun()
+
+                if "success_msg" in st.session_state:
+                    st.success(st.session_state["success_msg"])
+                    del st.session_state["success_msg"]
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     if st.button("⬅️ Geri Çık"):
@@ -858,7 +867,8 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                         yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
                         u_df = pd.concat([u_df, yeni_kisi], ignore_index=True)
                         u_df.to_csv(USER_FILE, index=False)
-                        st.success(f"🎉 '{yeni_isim}' başarıyla eklendi!")
+                        st.success(f"🎉 Başarılı! '{yeni_isim}' sisteme eklendi.")
+                        import time; time.sleep(1.2)
                         st.rerun()
                 else:
                     st.warning("Lütfen bir personel adı girin.")
@@ -871,7 +881,8 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             if st.button("Şifreyi Güncelle", key="btn_sifre_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
-                st.success("✅ Şifre güncellendi!")
+                st.success("✅ Başarılı! Şifre güncellendi.")
+                import time; time.sleep(1.2)
                 st.rerun()
                 
     with t3:
@@ -881,5 +892,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
-                st.success(f"❌ '{s3}' sistemden silindi!")
+                st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
+                import time; time.sleep(1.2)
                 st.rerun()
