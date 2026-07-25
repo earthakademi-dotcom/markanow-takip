@@ -415,7 +415,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     if muhasebe_bekleyen_df.empty:
         st.info("Muhasebe onayı bekleyen kayıt bulunmuyor.")
     else:
-        st.dataframe(muhasebe_bekleyen_df, use_container_width=True)
+        ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        st.dataframe(ozet_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
