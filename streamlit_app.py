@@ -729,7 +729,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     
                     if secilen_asama == "Başvuru Beklemede":
                         c1.text_input("Yeni Durum / Aşama", value="Başvuru Beklemede", disabled=True)
-                        yeni_durum = "Başvuru Beklemede"
+                        yeni_durum = "Kurum İncelemesinde"
                         c2.text_input("Danışman (Satışı Giren)", value=orijinal_danisman, disabled=True)
                     else:
                         mevcut_durum_index = tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0
@@ -772,11 +772,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                         yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
 
-                    mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
-                    secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
-                    secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
+                    sonraki_asama = ""
+                    if secilen_asama != "Başvuru Beklemede":
+                        mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
+                        secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
+                        secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
 
-                    sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
+                        sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
 
                     mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else ""
                     mevcut_tescil_tar = str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else ""
@@ -824,8 +826,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 
                             if final_yayin_bitis_val:
                                 df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
+                            
+                            df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
 
-                        df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
                         if itiraz_tar.strip():
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
                         if tescil_tar.strip():
