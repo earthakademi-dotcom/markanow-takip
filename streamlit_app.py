@@ -471,24 +471,13 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     
     toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
     
-    # --- TOPLAM SINIF SAYISINI HESAPLAMA (35/ alt kırılımları hariç, çakışmalar önlenerek) ---
     toplam_gecerli_sinif_adedi = 0
     for s_val in danisman_df['Sınıf'].dropna():
         parcalar = [p.strip() for p in str(s_val).split(",")]
-        ana_siniflar_bu_satir = set()
-        
-        # Önce bu satırdaki alt kırılım olmayan ana sınıfları tespit et
-        for p in parcalar:
-            if "/" not in p and p.isdigit():
-                if 1 <= int(p) <= 45:
-                    ana_siniflar_bu_satir.add(p)
-                    
-        # Şimdi geçerli sınıfları topla
         satir_sayac = 0
         gorulen_siniflar = set()
         for p in parcalar:
             if "/" in p:
-                # Alt sınıfları sayma
                 continue
             if p.isdigit() and 1 <= int(p) <= 45:
                 if p not in gorulen_siniflar:
@@ -565,7 +554,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
                         df.to_csv(DATA_FILE, index=False)
-                        st.success(f"✅ '{secilen_duzenle_marka}' markasına ait danışman satış bilgileri başarıyla güncellendi!")
+                        st.success(f"✅ '{secilen_duzenle_marka}' markasına ait bilgiler başarıyla güncellendi!")
                         st.rerun()
 
                     if submitted_delete:
@@ -638,6 +627,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                         df.to_csv(DATA_FILE, index=False)
                         
+                        st.success(f"✅ '{secilen_tescil_marka}' markası 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı!")
                         st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
                         st.rerun()
                     else:
@@ -838,7 +828,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             
                         df.to_csv(DATA_FILE, index=False)
                         
-                        st.success(f"✅ Eksiksiz Güncellendi! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
+                        st.success(f"✅ Güncellendi! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
                         st.rerun()
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
