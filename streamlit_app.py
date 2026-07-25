@@ -563,6 +563,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
         st.session_state.sinif_harclari = guncel_veriler
         st.success("✅ Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
+        import time; time.sleep(1.2)
         st.rerun()
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
