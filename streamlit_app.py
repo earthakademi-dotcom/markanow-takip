@@ -305,23 +305,18 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
 
 def sinif_harc_tutari_hesapla(sinif_str):
     """
-    1'den 45'e kadar olan her benzersiz ana sınıf için (Harç + Avukat) toplamını hesaplar.
-    Alt sınıflar (örn: 35/21) sadece kendi avukat ücretini ekler ya da harç maliyetine dahildir.
+    Kural: Alt sınıfları (örn: 35/21 gibi '/' içerenleri) harç tutar hesaplarken KESİNLİKLE SAYMA. 
+    1'den 45'e kadar olan ana sınıfları say ve Harç Yönetimi'ndeki karşılık gelen harç ücretini topla.
     """
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        toplam_tutar = 0.0
+        toplam_harc = 0.0
         islenen_ana_siniflar = set()
         
         for p in parcalar:
             if "/" in p:
-                ana_sinif_str = p.split("/")[0].strip()
-                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
-                    s_int = int(ana_sinif_str)
-                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                else:
-                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
-                toplam_tutar += kayit["avukat"]
+                # Alt sınıflar harç hesaplamasında dikkate alınmaz / sayılmaz
+                continue
             else:
                 if p.isdigit():
                     s_int = int(p)
@@ -329,13 +324,13 @@ def sinif_harc_tutari_hesapla(sinif_str):
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+                            toplam_harc += kayit["harc"]
                     else:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
-        return toplam_tutar
+                            toplam_harc += kayit["harc"]
+        return toplam_harc
     except:
         return 0.0
 
