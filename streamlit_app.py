@@ -602,17 +602,17 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("🔹 **1. Sınıf Harcı** ve **3. Sınıf Harcı** ile **Ortak Avukat Ücretini** aşağıdaki alanlardan kolayca belirleyebilirsiniz. \n🔹 **2. Sınıf** (1. Sınıf + 2.820 TL) ve **4 ila 45. Sınıflar** (Önceki sınıf + 3.150 TL) otomatik olarak hesaplanır.")
+    st.write("🔹 **1. Sınıf Bedeli** ve **3. Sınıf Bedeli** ile **Ortak Avukat Ücretini** aşağıdaki alanlardan kolayca belirleyebilirsiniz. \n🔹 **2. Sınıf** (1. Sınıf + 2.820 TL) ve **4 ila 45. Sınıflar** (Önceki sınıf + 3.150 TL) otomatik olarak hesaplanır.")
 
     # Mevcut değerleri güvenli çekme
     mevcut_h1 = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
     mevcut_h3 = float(st.session_state.sinif_harclari.get(3, {"harc": 8790.0})["harc"])
     mevcut_ortak_avukat = float(list(st.session_state.sinif_harclari.values())[0]["avukat"]) if st.session_state.sinif_harclari else 750.0
 
-    # Üst Kontrol Paneli (1. Sınıf Harcı, 3. Sınıf Harcı ve Ortak Avukat Ücreti)
+    # Üst Kontrol Paneli (1. Sınıf Bedeli, 3. Sınıf Bedeli ve Ortak Avukat Ücreti)
     col_k1, col_k2, col_k3 = st.columns(3)
-    giris_h1 = col_k1.number_input("1. Sınıf Harç Tutarı (TL)", value=float(mevcut_h1), step=50.0, format="%.2f")
-    giris_h3 = col_k2.number_input("3. Sınıf Harç Tutarı (TL)", value=float(mevcut_h3), step=50.0, format="%.2f")
+    giris_h1 = col_k1.number_input("1. Sınıf Bedeli (TL)", value=float(mevcut_h1), step=50.0, format="%.2f")
+    giris_h3 = col_k2.number_input("3. Sınıf Bedeli (TL)", value=float(mevcut_h3), step=50.0, format="%.2f")
     ortak_avukat_input = col_k3.number_input("Tüm Sınıflar İçin Ortak Avukat Ücreti (TL)", value=float(mevcut_ortak_avukat), step=50.0, format="%.2f")
 
     st.write("---")
