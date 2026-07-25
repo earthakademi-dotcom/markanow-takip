@@ -745,28 +745,32 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     b_no = c1.text_input("Başvuru No", value=mevcut_b_no if mevcut_b_no != 'nan' else "", disabled=b_no_disabled)
                     b_tarih_ham = c2.text_input("Başvuru Tarihi (GG/AA/YYYY)", value=mevcut_b_tar if mevcut_b_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), disabled=b_tar_disabled, key=f"form_b_tar_{secilen_marka}")
                     
-                    mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
-                    mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
+                    y_tar = ""
+                    final_yayin_bitis_val = ""
 
-                    y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
+                    if secilen_asama != "Başvuru Beklemede":
+                        mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
+                        mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
 
-                    y_tar_ham = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
-                    
-                    y_tar = tarih_birlestir_ve_formatla(y_tar_ham)
+                        y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
 
-                    calculated_yayin_bitis = ""
-                    if y_tar.strip() and y_tar.strip().lower() != 'nan':
-                        try:
-                            parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
-                            taslak_bitis = ay_ekle(parsed_y_tar, 2)
-                            hesaplanan_bitis = resmi_tatil_ve_tatil_kontrol(taslak_bitis)
-                            calculated_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
-                        except:
-                            pass
+                        y_tar_ham = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
+                        
+                        y_tar = tarih_birlestir_ve_formatla(y_tar_ham)
 
-                    final_yayin_bitis_val = mevcut_yayin_bitis if (mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan') else calculated_yayin_bitis
+                        calculated_yayin_bitis = ""
+                        if y_tar.strip() and y_tar.strip().lower() != 'nan':
+                            try:
+                                parsed_y_tar = datetime.strptime(y_tar.strip(), "%d/%m/%Y")
+                                taslak_bitis = ay_ekle(parsed_y_tar, 2)
+                                hesaplanan_bitis = resmi_tatil_ve_tatil_kontrol(taslak_bitis)
+                                calculated_yayin_bitis = hesaplanan_bitis.strftime("%d/%m/%Y")
+                            except:
+                                pass
 
-                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
+                        final_yayin_bitis_val = mevcut_yayin_bitis if (mevcut_yayin_bitis and mevcut_yayin_bitis != 'nan') else calculated_yayin_bitis
+
+                        yayin_bitis = c2.text_input("Yayın Bitiş Tarihi (GG/AA/YYYY)", value=final_yayin_bitis_val, disabled=True, key=f"form_yayin_bitis_{secilen_marka}")
 
                     mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
                     secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
@@ -814,11 +818,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if not b_tar_disabled and b_tarih.strip():
                             df.at[idx, 'Başvuru Tarihi'] = b_tarih.strip()
                             
-                        if not y_tar_disabled and y_tar.strip():
-                            df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
-                            
-                        if final_yayin_bitis_val:
-                            df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
+                        if secilen_asama != "Başvuru Beklemede":
+                            if not y_tar_disabled and y_tar.strip():
+                                df.at[idx, 'Yayın Tarihi'] = y_tar.strip()
+                                
+                            if final_yayin_bitis_val:
+                                df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
 
                         df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
                         if itiraz_tar.strip():
