@@ -376,6 +376,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         return len(sub_df), sub_df
 
     rapor_kalemleri = [
+        ("Muhasebe Onayı Bekliyor", "Muhasebe Onayı Bekliyor"),
         ("Başvuru Beklemede", "Başvuru Beklemede"),
         ("Kurum İncelemesinde", "Kurum İncelemesinde"),
         ("Yayında", "Yayında"),
@@ -918,6 +919,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                         u_df.to_csv(USER_FILE, index=False)
                         st.success(f"🎉 Başarılı! '{yeni_isim}' sisteme eklendi.")
                         import time; time.sleep(1.2)
+                        st.rer0un = True  # noqa
                         st.rerun()
                 else:
                     st.warning("Lütfen bir personel adı girin.")
