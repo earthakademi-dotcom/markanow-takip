@@ -263,13 +263,13 @@ if "sinif_harclari" not in st.session_state:
         h1 = 2820.0
         h2 = h1 + 2820.0
         h3 = h2 + 3150.0
-        st.session_state.sinif_harclari[1] = {"harc": h1, "avukat": 2000.0}
-        st.session_state.sinif_harclari[2] = {"harc": h2, "avukat": 2000.0}
-        st.session_state.sinif_harclari[3] = {"harc": h3, "avukat": 2000.0}
+        st.session_state.sinif_harclari[1] = {"harc": h1, "avukat": 750.0}
+        st.session_state.sinif_harclari[2] = {"harc": h2, "avukat": 750.0}
+        st.session_state.sinif_harclari[3] = {"harc": h3, "avukat": 750.0}
         curr_h = h3
         for i in range(4, 46):
             curr_h += 3150.0
-            st.session_state.sinif_harclari[i] = {"harc": curr_h, "avukat": 2000.0}
+            st.session_state.sinif_harclari[i] = {"harc": curr_h, "avukat": 750.0}
 
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
@@ -283,9 +283,9 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
                 ana_sinif_str = p.split("/")[0].strip()
                 if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
                     s_int = int(ana_sinif_str)
-                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 2000.0})
+                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 750.0})
                 else:
-                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 2820.0, "avukat": 2000.0})
+                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 2820.0, "avukat": 750.0})
                 toplam_tutar += kayit["avukat"]
             else:
                 if p.isdigit():
@@ -294,13 +294,13 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             sirali_sayac += 1
-                            kayit = st.session_state.sinif_harclari.get(sirali_sayac, {"harc": 2820.0, "avukat": 2000.0})
+                            kayit = st.session_state.sinif_harclari.get(sirali_sayac, {"harc": 2820.0, "avukat": 750.0})
                             toplam_tutar += kayit["harc"] + kayit["avukat"]
                     else:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             sirali_sayac += 1
-                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 2000.0})
+                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 750.0})
                             toplam_tutar += kayit["harc"] + kayit["avukat"]
         return toplam_tutar
     except:
@@ -322,14 +322,13 @@ def sinif_harc_tutari_hesapla(sinif_str):
                     if s_int not in islenen_ana_siniflar:
                         islenen_ana_siniflar.add(s_int)
                         sirali_sayac += 1
-                        # KESİN ÇÖZÜM: Kaçıncı sınıf ise (1., 2., 3. sınıf...) Fiyatlandırma Yönetimi'ndeki o sınıfın (Harç + Avukat) TOPLAM tutarını doğrudan getiriyoruz!
                         if sirali_sayac in st.session_state.sinif_harclari:
                             h_val = st.session_state.sinif_harclari[sirali_sayac]["harc"]
                             a_val = st.session_state.sinif_harclari[sirali_sayac]["avukat"]
                             toplam_tutar += (h_val + a_val)
                         else:
                             base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
-                            base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 2000.0})["avukat"]
+                            base_a1 = st.session_state.sinif_harclari.get(1, {"avukat": 750.0})["avukat"]
                             if sirali_sayac == 1:
                                 h_val = base_h1
                             elif sirali_sayac == 2:
@@ -602,96 +601,56 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("1. Sınıf harcı (örn: 2820 TL) girilir. 2. Sınıf harcı otomatik olarak 1. Sınıf harcının üzerine 2820 TL eklenerek hesaplanır. 3. Sınıf ve sonraki her sınıf (4 ila 45) ise bir önceki sınıfın harç tutarının üzerine 3150 TL eklenerek otomatik hesaplanır. 1. Sınıfa girdiğiniz Avukat Ücreti tüm sınıflara uygulanır.")
+    st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
+    st.write("Aşağıdaki tablodan dilediğiniz sınıfın harç ve avukatlık ücretini doğrudan güncelleyebilirsiniz. Değişiklik yaptıktan sonra kaydet butonuna basmanız yeterlidir.")
 
-    if "toplu_avukat_input" not in st.session_state:
-        st.session_state.toplu_avukat_input = str(st.session_state.sinif_harclari.get(1, {"avukat": 2000.0})["avukat"])
+    # Tablo verisi hazırlama
+    tablo_verileri = []
+    for i in range(1, 46):
+        kayit = st.session_state.sinif_harclari.get(i, {"harc": 2820.0, "avukat": 750.0})
+        h_val = kayit["harc"]
+        a_val = kayit["avukat"]
+        t_val = h_val + a_val
+        tablo_verileri.append({
+            "Sınıf No": i,
+            "Harç (TL)": h_val,
+            "Avukat (TL)": a_val,
+            "Toplam (Harç + Avukat) (TL)": t_val
+        })
+    
+    config_df = pd.DataFrame(tablo_verileri)
 
-    @st.fragment
-    def fiyatlandirma_formu():
-        yeni_harc_verileri = {}
-        
-        # 1. Sınıf (Manuel)
-        mevcut_1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0, "avukat": 2000.0})
-        col_h1, col_a1, col_t1 = st.columns(3)
-        
-        val_h1 = col_h1.text_input("Harç (TL) - 1. Sınıf", value=str(mevcut_1["harc"]), key="harc_sinif_1")
-        val_a1 = col_a1.text_input("Avukat (TL) - Tüm Sınıflar", value=str(st.session_state.toplu_avukat_input), key="avukat_sinif_1")
-        
-        st.session_state.toplu_avukat_input = val_a1
-        
-        try:
-            f_h1 = float(val_h1.replace(",", "."))
-        except:
-            f_h1 = 2820.0
-        try:
-            f_a1 = float(val_a1.replace(",", "."))
-        except:
-            f_a1 = 2000.0
-            
-        toplam_deger_1 = f_h1 + f_a1
-        col_t1.text_input("Toplam (TL) - 1. Sınıf", value=f"{toplam_deger_1:,.2f}", disabled=True, key="toplam_sinif_1")
-        st.markdown(f"**1. Sınıf Harç Toplam Ücreti:** Harç ({f_h1:,.2f} TL) + Avukat ({f_a1:,.2f} TL) = **{toplam_deger_1:,.2f} TL**")
-        
-        yeni_harc_verileri[1] = {"harc": f_h1, "avukat": f_a1}
-        st.write("---")
+    # Profesyonel İnteraktif Düzenleyici Tablo
+    edited_df = st.data_editor(
+        config_df,
+        column_config={
+            "Sınıf No": st.column_config.NumberColumn("Sınıf", disabled=True),
+            "Harç (TL)": st.column_config.NumberColumn("Harç (TL)", format="%.2f TL"),
+            "Avukat (TL)": st.column_config.NumberColumn("Avukat (TL)", format="%.2f TL"),
+            "Toplam (Harç + Avukat) (TL)": st.column_config.NumberColumn("Toplam Ücret", disabled=True, format="%.2f TL")
+        },
+        disabled=["Sınıf No", "Toplam (Harç + Avukat) (TL)"],
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        key="fiyat_editor_tablosu"
+    )
 
-        # 2. Sınıf (Otomatik: 1. Sınıf Harcı + 2820)
-        f_h2 = f_h1 + 2820.0
-        f_a2 = f_a1
-        toplam_deger_2 = f_h2 + f_a2
-        yeni_harc_verileri[2] = {"harc": f_h2, "avukat": f_a2}
-
-        st.markdown(f"**2. Sınıf** *(Otomatik: 1. Sınıf Harcı ({f_h1:,.2f}) + 2,820.00 TL = {f_h2:,.2f} TL)*")
-        c_h2, c_a2, c_t2 = st.columns(3)
-        c_h2.text_input("Harç (TL) - 2. Sınıf", value=f"{f_h2:,.2f}", disabled=True, key="harc_sinif_2")
-        c_a2.text_input("Avukat (TL) - 2. Sınıf", value=f"{f_a2:,.2f}", disabled=True, key="avukat_sinif_2")
-        c_t2.text_input("Toplam (TL) - 2. Sınıf", value=f"{toplam_deger_2:,.2f}", disabled=True, key="toplam_sinif_2")
-        st.write("---")
-
-        # 3. Sınıf (Otomatik: 2. Sınıf Harcı + 3150)
-        f_h3 = f_h2 + 3150.0
-        f_a3 = f_a1
-        toplam_deger_3 = f_h3 + f_a3
-        yeni_harc_verileri[3] = {"harc": f_h3, "avukat": f_a3}
-
-        st.markdown(f"**3. Sınıf** *(Otomatik: 2. Sınıf Harcı ({f_h2:,.2f}) + 3,150.00 TL = {f_h3:,.2f} TL)*")
-        c_h3, c_a3, c_t3 = st.columns(3)
-        c_h3.text_input("Harç (TL) - 3. Sınıf", value=f"{f_h3:,.2f}", disabled=True, key="harc_sinif_3")
-        c_a3.text_input("Avukat (TL) - 3. Sınıf", value=f"{f_a3:,.2f}", disabled=True, key="avukat_sinif_3")
-        c_t3.text_input("Toplam (TL) - 3. Sınıf", value=f"{toplam_deger_3:,.2f}", disabled=True, key="toplam_sinif_3")
-        st.markdown(f"**3. Sınıf Harç Toplam Ücreti:** Harç ({f_h3:,.2f} TL) + Avukat ({f_a3:,.2f} TL) = **{toplam_deger_3:,.2f} TL**")
-        st.write("---")
-
-        # 4 - 45 Sınıflar (Otomatik: Önceki sınıfın harcı + 3150)
-        son_harc = f_h3
-        for i in range(4, 46):
-            son_harc += 3150.0
-            f_ai = f_a1
-            toplam_degeri = son_harc + f_ai
-            yeni_harc_verileri[i] = {"harc": son_harc, "avukat": f_ai}
-
-            st.markdown(f"**{i}. Sınıf** *(Otomatik: {i-1}. Sınıf Harcı + 3,150.00 TL = {son_harc:,.2f} TL)*")
-            col_h, col_a, col_t = st.columns(3)
-            col_h.text_input(f"Harç (TL) - {i}. Sınıf", value=f"{son_harc:,.2f}", disabled=True, key=f"harc_sinif_{i}")
-            col_a.text_input(f"Avukat (TL) - {i}. Sınıf", value=f"{f_ai:,.2f}", disabled=True, key=f"avukat_sinif_{i}")
-            col_t.text_input(f"Toplam (TL) - {i}. Sınıf", value=f"{toplam_degeri:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
-            st.write("---")
-            
-        return yeni_harc_verileri
-
-    guncel_veriler = fiyatlandirma_formu()
-
-    if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
-        st.session_state.sinif_harclari = guncel_veriler
-        
+    st.write("")
+    if st.button("💾 Tüm Sınıf Fiyatlarını Kalıcı Olarak Güncelle", use_container_width=True):
+        yeni_sozluk = {}
         save_list = []
-        for s_no, vals in guncel_veriler.items():
-            save_list.append({"Sınıf": s_no, "Harç": vals["harc"], "Avukat": vals["avukat"]})
+        for _, row in edited_df.iterrows():
+            s_no = int(row["Sınıf No"])
+            h_fiyat = float(row["Harç (TL)"])
+            a_fiyat = float(row["Avukat (TL)"])
+            yeni_sozluk[s_no] = {"harc": h_fiyat, "avukat": a_fiyat}
+            save_list.append({"Sınıf": s_no, "Harç": h_fiyat, "Avukat": a_fiyat})
+            
+        st.session_state.sinif_harclari = yeni_sozluk
         pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False)
         
-        st.success("Tüm sınıf harç ve avukatlık ücretleri kalıcı olarak başarıyla güncellendi!")
+        st.success("🎉 Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi ve kaydedildi!")
         import time; time.sleep(1.2)
         st.rerun()
 
