@@ -154,6 +154,7 @@ st.markdown(
 # --- TANIMLAMALAR VE VERİ YÜKLEME ---
 USER_FILE = "users.csv"
 DATA_FILE = "marka_takip.csv"
+HARC_CONFIG_FILE = "harc_config.csv"
 
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
@@ -242,6 +243,115 @@ def load_data():
     ]
     d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
+
+# --- 1-45 SINIF HARÇ VE AVUKAT ÜCRETLERİNİ KALICI DOSYADAN YÜKLEME ---
+if "sinif_harclari" not in st.session_state:
+    st.session_state.sinif_harclari = {}
+    if os.path.exists(HARC_CONFIG_FILE) and os.path.getsize(HARC_CONFIG_FILE) > 0:
+        try:
+            h_df = pd.read_csv(HARC_CONFIG_FILE)
+            for _, row in h_df.iterrows():
+                s_no = int(row["Sınıf"])
+                st.session_state.sinif_harclari[s_no] = {
+                    "harc": float(row["Harç"]),
+                    "avukat": float(row["Avukat"])
+                }
+        except:
+            pass
+            
+    if not st.session_state.sinif_harclari:
+        for i in range(1, 46):
+            if i == 1:
+                h_val = 2820.0
+            elif i == 2:
+                h_val = 2820.0
+            elif i == 3:
+                h_val = 3150.0
+            else:
+                h_val = 3510.0
+            st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
+
+def sinif_harci_ve_avukat_hesapla(sinif_str):
+    try:
+        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
+        toplam_tutar = 0.0
+        islenen_ana_siniflar = set()
+        
+        for p in parcalar:
+            if "/" in p:
+                ana_sinif_str = p.split("/")[0].strip()
+                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
+                    s_int = int(ana_sinif_str)
+                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                else:
+                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
+                toplam_tutar += kayit["avukat"]
+            else:
+                if p.isdigit():
+                    s_int = int(p)
+                    if 1 <= s_int <= 45:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+                    else:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+        return toplam_tutar
+    except:
+        return 0.0
+
+def sinif_harc_tutari_hesapla(sinif_str):
+    """
+    1'den 45'e kadar olan her benzersiz ana sınıf için kendi harç ücretini toplar.
+    Alt sınıflar (örn: 35/11, 35/21) ayrı bir harç üretmez.
+    """
+    try:
+        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
+        toplam_harc = 0.0
+        islenen_ana_siniflar = set()
+        
+        for p in parcalar:
+            if "/" in p:
+                # Alt sınıflar harç üretmez, ana sınıflar üzerinden değerlendirilir
+                continue
+            else:
+                if p.isdigit():
+                    s_int = int(p)
+                    if 1 <= s_int <= 45:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
+                            toplam_harc += kayit["harc"]
+                    else:
+                        if s_int not in islenen_ana_siniflar:
+                            islenen_ana_siniflar.add(s_int)
+                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
+                            toplam_harc += kayit["harc"]
+        return toplam_harc
+    except:
+        return 0.0
+
+def sinif_adedi_hesapla(sinif_str):
+    """35/ alt sınıflarını kesinlikle sınıf saymaz, yalnızca 1-45 arası ana sınıfları sayar."""
+    try:
+        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
+        satir_sayac = 0
+        gorulen_siniflar = set()
+        for p in parcalar:
+            if "/" in p:
+                continue
+            if p.isdigit():
+                s_int = int(p)
+                if 1 <= s_int <= 45:
+                    if s_int not in gorulen_siniflar:
+                        gorulen_siniflar.add(s_int)
+                        satir_sayac += 1
+        return satir_sayac
+    except:
+        return 0
 
 # --- GİRİŞ KONTROLÜ VE OTURUM KORUMA ---
 if "kullanici" not in st.session_state: 
@@ -332,7 +442,7 @@ if is_muhasebe:
             sayfa_degistir("Muhasebe Onayı Bekliyor")
         if st.button("⏳ Başvuru Beklemede", use_container_width=True):
             sayfa_degistir("Başvuru Beklemede")
-        if st.button("🔍 Kurum İncelemesinde", use_container_width=Thread if 'Thread' in globals() else "Kurum İncelemesinde"): # safe fallback
+        if st.button("🔍 Kurum İncelemesinde", use_container_width=True):
             sayfa_degistir("Kurum İncelemesinde")
         if st.button("📰 Yayında", use_container_width=True):
             sayfa_degistir("Yayında")
@@ -360,103 +470,6 @@ if is_admin:
         sayfa_degistir("Personel Yönetimi")
 
 df = load_data()
-
-# --- 1-45 SINIF HARÇ VE AVUKAT ÜCRETLERİNİ SAKLAYAN STATE ---
-if "sinif_harclari" not in st.session_state:
-    st.session_state.sinif_harclari = {}
-    for i in range(1, 46):
-        if i == 1:
-            h_val = 2820.0
-        elif i == 2:
-            h_val = 2820.0
-        elif i == 3:
-            h_val = 3150.0
-        else:
-            h_val = 3510.0
-        st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
-
-def sinif_harci_ve_avukat_hesapla(sinif_str):
-    try:
-        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        toplam_tutar = 0.0
-        islenen_ana_siniflar = set()
-        
-        for p in parcalar:
-            if "/" in p:
-                ana_sinif_str = p.split("/")[0].strip()
-                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
-                    s_int = int(ana_sinif_str)
-                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                else:
-                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
-                toplam_tutar += kayit["avukat"]
-            else:
-                if p.isdigit():
-                    s_int = int(p)
-                    if 1 <= s_int <= 45:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
-                    else:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
-        return toplam_tutar
-    except:
-        return 0.0
-
-def sinif_harc_tutari_hesapla(sinif_str):
-    """
-    Kullanıcının talimatına göre: 1'den 45'e kadar olan sınıfların toplamı, 
-    kaç adet (1-45 arası ana) sınıf varsa o adet ile her birinin kendi harç tutarı toplanarak hesaplanır.
-    Örn: 11,35,35/11 -> 11. sınıf harcı (3510) + 35. sınıf harcı (3510) = 7020 TL (alt sınıf 35/11 harç üretmez, sadece ana sınıf 35 ve 11 sayılır).
-    """
-    try:
-        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        toplam_harc = 0.0
-        islenen_ana_siniflar = set()
-        
-        for p in parcalar:
-            if "/" in p:
-                # Alt sınıflar (örn: 35/11) ayrı bir sınıf harcı üretmez, ana sınıfa dahildir.
-                continue
-            else:
-                if p.isdigit():
-                    s_int = int(p)
-                    if 1 <= s_int <= 45:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
-                    else:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
-        return toplam_harc
-    except:
-        return 0.0
-
-def sinif_adedi_hesapla(sinif_str):
-    """35/ alt sınıflarını kesinlikle sınıf saymaz, yalnızca 1-45 arası ana sınıfları sayar."""
-    try:
-        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        satir_sayac = 0
-        gorulen_siniflar = set()
-        for p in parcalar:
-            if "/" in p:
-                continue
-            if p.isdigit():
-                s_int = int(p)
-                if 1 <= s_int <= 45:
-                    if s_int not in gorulen_siniflar:
-                        gorulen_siniflar.add(s_int)
-                        satir_sayac += 1
-        return satir_sayac
-    except:
-        return 0
 
 # --- SAYFA İÇERİKLERİ ---
 
@@ -561,7 +574,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     else:
         ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         
-        # Harç tutarlarını doğru şekilde hesaplayıp Satış Tarihinin yanına ekliyoruz
         harc_listesi = []
         for _, row in basvuru_bekleyen_df.iterrows():
             h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
@@ -643,7 +655,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
 
     if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
         st.session_state.sinif_harclari = guncel_veriler
-        st.success("Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
+        
+        # Kalıcı olarak dosyaya kaydediyoruz ki her yenilemede sıfırlanmasın
+        save_list = []
+        for s_no, vals in guncel_veriler.items():
+            save_list.append({"Sınıf": s_no, "Harç": vals["harc"], "Avukat": vals["avukat"]})
+        pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False)
+        
+        st.success("Tüm sınıf harç ve avukatlık ücretleri kalıcı olarak başarıyla güncellendi!")
         import time; time.sleep(1.2)
         st.rerun()
 
@@ -1171,7 +1190,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
-                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
+                u_df.loc[u_df["İsim"] == p, "`Şifre`"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
