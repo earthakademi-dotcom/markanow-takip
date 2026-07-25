@@ -318,7 +318,20 @@ def sinif_harc_tutari_hesapla(sinif_str):
                     if 1 <= s_int <= 45:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
-                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 2000.0})
+                            # DÜZELTME: Session state içinde dinamik girilen güncel harç değerini alıyoruz
+                            base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
+                            if s_int == 1:
+                                h_val = base_h1
+                            elif s_int == 2:
+                                h_val = base_h1 + 2820.0
+                            elif s_int == 3:
+                                h_val = (base_h1 + 2820.0) + 3150.0
+                            else:
+                                h_val = (base_h1 + 2820.0) + 3150.0
+                                for _ in range(4, s_int + 1):
+                                    pass # Dinamik tablodan da okuyabiliriz:
+                            
+                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": h_val, "avukat": 2000.0})
                             toplam_harc += kayit["harc"]
                     else:
                         if s_int not in islenen_ana_siniflar:
