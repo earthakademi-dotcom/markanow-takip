@@ -549,6 +549,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
         st.info("Muhasebe onayı bekleyen kayıt bulunmuyor.")
     else:
         ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']]
+        ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu":
@@ -772,6 +774,11 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
     c1, c2 = st.columns(2)
     c1.metric("Bu Ay Satış Adedi", len(danisman_df))
     c2.metric("Bu Ay Toplam Ciro (TL)", f"{toplam_ciro:,.2f} TL")
+    
+    if not danisman_df.empty and 'Sınıf' in danisman_df.columns:
+        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in danisman_df['Sınıf']]
+        danisman_df.insert(danisman_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
+
     st.dataframe(danisman_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
@@ -814,6 +821,10 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     c1.metric("Filtrelenen Sınıf Adedi", toplam_gecerli_sinif_adedi)
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
+    if not danisman_df.empty and 'Sınıf' in danisman_df.columns:
+        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in danisman_df['Sınıf']]
+        danisman_df.insert(danisman_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
+
     st.write("")
     st.dataframe(danisman_df, use_container_width=True)
 
@@ -1239,7 +1250,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
-                u_df.to_csv(USER_FILE, config=False) if "config" in pd.DataFrame.to_csv.__code__.co_varnames else u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
                 import time; time.sleep(1.2)
                 st.rerun()
