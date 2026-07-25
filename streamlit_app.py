@@ -406,27 +406,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     
     muhasebe_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
     
-    toplam_marka_sayisi = muhasebe_bekleyen_df['Marka Adı'].nunique()
-    
-    toplam_sinif_adedi = 0
-    for s_val in muhasebe_bekleyen_df['Sınıf'].dropna():
-        parcalar = [p.strip() for p in str(s_val).split(",")]
-        satir_sayac = 0
-        gorulen_siniflar = set()
-        for p in parcalar:
-            if "/" in p:
-                continue
-            if p.isdigit() and 1 <= int(p) <= 45:
-                if p not in gorulen_siniflar:
-                    gorulen_siniflar.add(p)
-                    satir_sayac += 1
-        toplam_sinif_adedi += satir_sayac
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
-    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
+    c1, c2 = st.columns(2)
+    c1.metric("Toplam Bekleyen İşlem", f"{len(muhasebe_bekleyen_df)} Adet")
     toplam_tutar = pd.to_numeric(muhasebe_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
-    c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
+    c2.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
     
     st.write("---")
     if muhasebe_bekleyen_df.empty:
@@ -832,7 +815,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         mevcut_y_tar = str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else ""
                         mevcut_yayin_bitis = str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else ""
 
-                        y_tar_disabled = bool(mevcur_y_tar := mevcut_y_tar.strip() and mevcut_y_tar != 'nan') # type: ignore
+                        y_tar_disabled = bool(mevcut_y_tar.strip() and mevcut_y_tar != 'nan')
 
                         y_tar_ham = c1.text_input("Yayın Tarihi (GG/AA/YYYY)", value=mevcut_y_tar if mevcut_y_tar != 'nan' else "", disabled=y_tar_disabled, key=f"form_y_tar_{secilen_marka}")
                         
@@ -907,7 +890,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             if final_yayin_bitis_val:
                                 df.at[idx, 'Yayın Bitiş Tarihi'] = final_yayin_bitis_val
                             
-                            df.at[idx, 'Sonraki Aşama Seçimi']/ son_asama # type: ignore
+                            df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
 
                         if itiraz_tar.strip():
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar.strip()
@@ -970,7 +953,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
             if st.button("Şifreyi Güncelle", key="btn_sifre_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, `index=False`)
+                u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
                 st.rerun()
