@@ -356,7 +356,9 @@ def sinif_toplam_ucret_hesapla(sinif_str):
 def sinif_adedi_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        return len(parcalar)
+        # Sadece "/" içermeyen (yani ana sınıf olan) veya 35/ alt sınıfı olmayanları saymak için filtreliyoruz
+        gercek_siniflar = [p for p in parcalar if "/" not in p]
+        return len(gercek_siniflar)
     except:
         return 0
 
