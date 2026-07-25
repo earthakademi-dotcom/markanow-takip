@@ -305,17 +305,18 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
 
 def sinif_harc_tutari_hesapla(sinif_str):
     """
-    Kural: Alt sınıfları (örn: 35/21 gibi '/' içerenleri) harç tutar hesaplarken KESİNLİKLE SAYMA. 
-    1'den 45'e kadar olan ana sınıfları say ve Harç Yönetimi'ndeki karşılık gelen harç ücretini topla.
+    Kural: Alt sınıfları (örn: 35/21 gibi '/' içerenleri) harç tutar hesaplarken sayma.
+    1'den 45'e kadar olan ana sınıfları say, Fiyatlandırma Yönetimi'ndeki Toplam Ücreti 
+    (yani Harç + Avukat tutarını) baz alarak topla.
     """
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        toplam_harc = 0.0
+        toplam_tutar = 0.0
         islenen_ana_siniflar = set()
         
         for p in parcalar:
             if "/" in p:
-                # Alt sınıflar harç hesaplamasında dikkate alınmaz / sayılmaz
+                # Alt sınıflar harç/toplam hesaplamasında sayılmaz
                 continue
             else:
                 if p.isdigit():
@@ -324,13 +325,14 @@ def sinif_harc_tutari_hesapla(sinif_str):
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 3510.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
+                            # Fiyatlandırma tablosundaki Toplam (Harç + Avukat) değerini baz alıyoruz
+                            toplam_tutar += kayit["harc"] + kayit["avukat"]
                     else:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
                             kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
-        return toplam_harc
+                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+        return toplam_tutar
     except:
         return 0.0
 
@@ -1187,7 +1189,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
-            s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
+            s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
