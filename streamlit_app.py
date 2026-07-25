@@ -221,7 +221,7 @@ def load_data():
     
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-        d_temp.to_csv(DATA_FILE, index=FILE_INDEX := 0) # type: ignore
+        d_temp.to_csv(DATA_FILE, index=False)
     else:
         try:
             d_temp = pd.read_csv(DATA_FILE, dtype=str)
@@ -475,18 +475,18 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     c1.metric("Filtrelenen Satış Adedi", len(danisman_df))
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
-    # --- SINIF SAYIMI VE GÖSTERGESİ (35/ Hariç Tutma Mantığı) ---
+    # --- SINIF SAYIMI VE GÖSTERGESİ (1'den 45'e Kadar, 35/ Hariç Tutma Mantığı) ---
     sinif_sayaclari = {str(i): 0 for i in range(1, 46)}
     for s_val in danisman_df['Sınıf'].dropna():
         parcalar = [p.strip() for p in str(s_val).split(",")]
         for p in parcalar:
-            # 35/ ile başlayan alt sınıfları hariç tut, sadece ana sayıları al
+            # 35/ ile başlayan alt sınıfları hariç tut (Sadece tam ana sınıfları say)
             if p.startswith("35/"):
                 continue
             if p in sinif_sayaclari:
                 sinif_sayaclari[p] += 1
                 
-    st.markdown("### 📌 Sınıf Bazlı Satış Dağılımı")
+    st.markdown("### 📌 Sınıf Bazlı Satış Dağılımı (1 - 45)")
     aktif_siniflar = {k: v for k, v in sinif_sayaclari.items() if v > 0}
     if aktif_siniflar:
         st.write(aktif_siniflar)
@@ -857,6 +857,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                     if yeni_isim in u_df["İsim"].values:
                         st.error(f"❌ '{yeni_isim}' isminde bir personel zaten mevcut!")
                     else:
+                        yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Shifre": [s.strip()]}) # type: ignore
                         yeni_kisi = pd.DataFrame({"İsim": [yeni_isim], "Şifre": [s.strip()]})
                         u_df = pd.concat([u_df, yeni_kisi], ignore_index=True)
                         u_df.to_csv(USER_FILE, index=False)
@@ -869,6 +870,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
+            s2 = st.text_input("Yeni Şifre", type="password", key="new_s_input") # type: ignore
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
             if st.button("Şifreyi Güncelle", key="btn_sifre_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
