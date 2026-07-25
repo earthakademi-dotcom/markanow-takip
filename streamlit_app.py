@@ -318,6 +318,8 @@ if is_muhasebe:
     with st.sidebar.expander("📈 Raporlama", expanded=True):
         if st.button("📊 Genel Rapor Paneli", use_container_width=True):
             sayfa_degistir("Marka Tescil Raporlama")
+        if st.button("📌 Muhasebe Bekleyen Raporu", use_container_width=True):
+            sayfa_degistir("Muhasebe Bekleyen Raporu")
 
     with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True):
@@ -394,6 +396,26 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         adet, _ = get_count_and_df(durum_kod)
         with cols[idx % 3]:
             st.metric(label=gorunen_isim, value=f"{adet} Adet")
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>📌 Muhasebe Bekleyen Raporu</h2>", unsafe_allow_html=True)
+    st.write("Muhasebe onayı bekleyen işlemlerin detaylı rapor görünümü aşağıdadır.")
+    
+    muhasebe_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
+    
+    c1, c2 = st.columns(2)
+    c1.metric("Toplam Bekleyen İşlem", f"{len(muhasebe_bekleyen_df)} Adet")
+    toplam_tutar = pd.to_numeric(muhasebe_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
+    c2.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
+    
+    st.write("---")
+    if muhasebe_bekleyen_df.empty:
+        st.info("Muhasebe onayı bekleyen kayıt bulunmuyor.")
+    else:
+        st.dataframe(muhasebe_bekleyen_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
@@ -919,7 +941,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                         u_df.to_csv(USER_FILE, index=False)
                         st.success(f"🎉 Başarılı! '{yeni_isim}' sisteme eklendi.")
                         import time; time.sleep(1.2)
-                        st.rer0un = True  # noqa
                         st.rerun()
                 else:
                     st.warning("Lütfen bir personel adı girin.")
