@@ -318,21 +318,22 @@ def sinif_harc_tutari_hesapla(sinif_str):
                     if 1 <= s_int <= 45:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
-                            # DÜZELTME: Session state içinde dinamik girilen güncel harç değerini alıyoruz
-                            base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
-                            if s_int == 1:
-                                h_val = base_h1
-                            elif s_int == 2:
-                                h_val = base_h1 + 2820.0
-                            elif s_int == 3:
-                                h_val = (base_h1 + 2820.0) + 3150.0
+                            # KESİN ÇÖZÜM: Doğrudan oturum hafızasındaki veya dinamik hesaplanan güncel harç değerini alıyoruz
+                            if s_int in st.session_state.sinif_harclari:
+                                h_val = st.session_state.sinif_harclari[s_int]["harc"]
                             else:
-                                h_val = (base_h1 + 2820.0) + 3150.0
-                                for _ in range(4, s_int + 1):
-                                    pass # Dinamik tablodan da okuyabiliriz:
+                                # Yedek dinamik hesaplama (1. Sınıf baz alınarak)
+                                base_h1 = st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"]
+                                if s_int == 1:
+                                    h_val = base_h1
+                                elif s_int == 2:
+                                    h_val = base_h1 + 2820.0
+                                else:
+                                    h_val = (base_h1 + 2820.0)
+                                    for idx_step in range(3, s_int + 1):
+                                        h_val += 3150.0 if idx_step > 2 else 0.0
                             
-                            kayit = st.session_state.sinif_harclari.get(s_int, {"harc": h_val, "avukat": 2000.0})
-                            toplam_harc += kayit["harc"]
+                            toplam_harc += h_val
                     else:
                         if s_int not in islenen_ana_siniflar:
                             islenen_ana_siniflar.add(s_int)
