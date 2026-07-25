@@ -356,36 +356,7 @@ def sinif_toplam_ucret_hesapla(sinif_str):
 def sinif_adedi_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        satir_sayac = 0
-        gorulen_siniflar = set()
-        for p in parcalar:
-            if "/" in p:
-                ana_sinif_str = p.split("/")[0].strip()
-                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
-                    s_int = int(ana_sinif_str)
-                    if s_int not in gorulen_siniflar:
-                        gorulen_siniflar.add(s_int)
-                        satir_sayac += 1
-                else:
-                    if p not in gorulen_siniflar:
-                        gorulen_siniflar.add(p)
-                        satir_sayac += 1
-            else:
-                if p.isdigit():
-                    s_int = int(p)
-                    if 1 <= s_int <= 45:
-                        if s_int not in gorulen_siniflar:
-                            gorulen_siniflar.add(s_int)
-                            satir_sayac += 1
-                    else:
-                        if p not in gorulen_siniflar:
-                            gorulen_siniflar.add(p)
-                            satir_sayac += 1
-                else:
-                    if p not in gorulen_siniflar:
-                        gorulen_siniflar.add(p)
-                        satir_sayac += 1
-        return satir_sayac
+        return len(parcalar)
     except:
         return 0
 
@@ -1256,7 +1227,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
-                u_df.loc[u_df["İsim"] == p, "Şfile"] = s2.strip()
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
@@ -1269,7 +1239,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
-                u_df.to_csv(USER_FILE, index=False)
+                u_df.to_csv(USER_FILE, config=False) if "config" in pd.DataFrame.to_csv.__code__.co_varnames else u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
                 import time; time.sleep(1.2)
                 st.rerun()
