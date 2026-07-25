@@ -361,26 +361,23 @@ if is_admin:
 
 df = load_data()
 
-# --- 1-45 SINIF HARÇ VE AVUKAT ÜCRETLERİNİ SAKLAYAN STATE BAŞLANGICI ---
+# --- 1-45 SINIF HARÇ VE TEK AVUKAT ÜCRETLERİNİ SAKLAYAN STATE ---
 if "sinif_harclari" not in st.session_state:
     st.session_state.sinif_harclari = {}
     for i in range(1, 46):
         if i == 1:
             h_val = 2820.0
-            a_val = 2000.0
         elif i == 2:
             h_val = 2820.0
-            a_val = 2000.0
         elif i == 3:
             h_val = 3150.0
-            a_val = 2000.0
         else:
             h_val = 3510.0
-            a_val = 2000.0
-        st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": a_val}
+        # Her sınıf için ayrı avukat ücreti tutulur (isteğe göre değiştirilebilir)
+        st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
-# --- SINIF BAZLI HARÇ HESAPLAMA YARDIMCI FONKSİYONU ---
-def sinif_harci_hesapla_detayli(sinif_str):
+# --- SINIF BAZLI HARÇ VE AVUKAT HESAPLAMA MANTIĞI ---
+def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         unique_siniflar = []
@@ -394,12 +391,12 @@ def sinif_harci_hesapla_detayli(sinif_str):
                         unique_siniflar.append(int(p))
         
         toplam_tutar = 0.0
-        for idx, s in enumerate(unique_siniflar):
+        for s in unique_siniflar:
             if isinstance(s, int) and 1 <= s <= 45:
                 kayit = st.session_state.sinif_harclari.get(s, {"harc": 3510.0, "avukat": 2000.0})
+                # Her seçilen sınıf için o sınıfın harcı + o sınıfın avukat ücreti eklenir
                 toplam_tutar += kayit["harc"] + kayit["avukat"]
             else:
-                # Alt sınıflar veya diğerleri için varsayılan 3. sınıf veya sonraki sınıf harcı baz alınabilir
                 kayit = st.session_state.sinif_harclari.get(3, {"harc": 3150.0, "avukat": 2000.0})
                 toplam_tutar += kayit["harc"] + kayit["avukat"]
         return toplam_tutar
@@ -513,7 +510,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
 
     toplam_hesaplanan_basvuru_tutari = 0.0
     for _, row in basvuru_bekleyen_df.iterrows():
-        toplam_hesaplanan_basvuru_tutari += sinif_harci_hesapla_detayli(row.get('Sınıf', ''))
+        toplam_hesaplanan_basvuru_tutari += sinif_harci_ve_avukat_hesapla(row.get('Sınıf', ''))
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
@@ -532,7 +529,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Yıl içinde güncellemeleri buradan yapabilirsiniz.")
+    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Mantık gereği her sınıf seçildiğinde o sınıfın harcı ve avukat ücreti toplama eklenmektedir.")
 
     with st.form("fiyatlandirma_formu_1_45"):
         yeni_harc_verileri = {}
@@ -1095,12 +1092,11 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             u_df = pd.read_csv(USER_FILE)
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
-            if st.button("Şifreyi Güncelle", key="btn_sifre_guncelle"):
+            if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
-                st.rerof_ = True # safe rerun trigger via standard rerun
                 st.rerun()
                 
     with t3:
