@@ -527,38 +527,37 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Toplam sütununda harç ve avukat ücretinin toplamı otomatik gösterilmektedir.")
+    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Alanlar kompakt hale getirilmiş olup, toplam tutar anlık olarak hesaplanmaktadır.")
 
-    with st.form("fiyatlandirma_formu_1_45"):
-        yeni_harc_verileri = {}
+    yeni_harc_verileri = {}
+    
+    for i in range(1, 46):
+        st.markdown(f"**{i}. Sınıf**")
+        col_h, col_a, col_t = st.columns(3)
+        mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
         
-        for i in range(1, 46):
-            st.markdown(f"### {i}. Sınıf")
-            col_h, col_a, col_t = st.columns([2, 2, 2])
-            mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
+        val_h = col_h.text_input(f"Harç (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
+        val_a = col_a.text_input(f"Avukat (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
+        
+        try:
+            f_h = float(val_h)
+        except:
+            f_h = 0.0
+        try:
+            f_a = float(val_a)
+        except:
+            f_a = 0.0
             
-            val_h = col_h.text_input(f"{i}. Sınıf Harç (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
-            val_a = col_a.text_input(f"{i}. Sınıf Avukat (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
-            
-            try:
-                f_h = float(val_h)
-            except:
-                f_h = 3510.0
-            try:
-                f_a = float(val_a)
-            except:
-                f_a = 2000.0
-                
-            toplam_deger = f_h + f_a
-            col_t.text_input(f"{i}. Sınıf Toplam (TL)", value=f"{toplam_deger:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
-            
-            yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
-            st.write("---")
+        toplam_deger = f_h + f_a
+        col_t.text_input(f"Toplam (TL)", value=f"{toplam_deger:,.2f}", disabled=True, key=f"toplam_sinif_{i}")
+        
+        yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
+        st.write("---")
 
-        submitted_fiyat = st.form_submit_button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True)
-        if submitted_fiyat:
-            st.session_state.sinif_harclari = yeni_harc_verileri
-            st.success("✅ Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
+    if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
+        st.session_state.sinif_harclari = yeni_harc_verileri
+        st.success("✅ Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
+        st.rerun()
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
@@ -1107,6 +1106,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
-                st.success(f5 := f"❌ Başarılı! '{s3}' sistemden silindi.")
+                st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
                 import time; time.sleep(1.2)
                 st.rerun()
