@@ -375,9 +375,7 @@ if "sinif_harclari" not in st.session_state:
             h_val = 3510.0
         st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
-# --- YENİ MANTIK: SINIF BAZLI (HARÇ + AVUKAT) HESAPLAMA ---
-# 35/ alt kırılımlarında (örn: 35/1, 35/5) harç alınmıyor, sadece o sınıfın AVUKAT ücreti ekleniyor.
-# Normal 1-45 sınıflarda ise (Harç + Avukat) toplamı ekleniyor.
+# --- KESİN MANTIK: ALT SINIFLARDA (35/...) HARÇ YOK, SADECE O SINIFIN AVUKATI; ANA SINIFLARDA (1-45) HARÇ + AVUKAT ---
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
@@ -385,8 +383,12 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
-                # 35/ ile başlayan alt kırılımlar için harç alınmıyor, sadece 35. sınıfın avukat ücreti ekleniyor
-                kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
+                # Alt sınıflar (örn: 35/21): Harç alınmıyor, sadece ilgili ana sınıfın (örneğin 35. sınıfın) avukat ücreti ekleniyor
+                ana_sinif_str = p.split("/")[0].strip()
+                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
+                    kayit = st.session_state.sinif_harclari.get(int(ana_sinif_str), {"harc": 3510.0, "avukat": 2000.0})
+                else:
+                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 3510.0, "avukat": 2000.0})
                 toplam_tutar += kayit["avukat"]
             else:
                 if p.isdigit():
