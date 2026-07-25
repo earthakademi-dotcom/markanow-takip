@@ -527,7 +527,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Alanlar kompakt hale getirilmiş olup, toplam tutar anlık olarak hesaplanmaktadır.")
+    st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Bir değeri değiştirdiğinizde toplam tutar anlık olarak güncellenir.")
 
     yeni_harc_verileri = {}
     
@@ -536,8 +536,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         col_h, col_a, col_t = st.columns(3)
         mevcut_kayit = st.session_state.sinif_harclari.get(i, {"harc": 3510.0, "avukat": 2000.0})
         
-        val_h = col_h.text_input(f"Harç (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}")
-        val_a = col_a.text_input(f"Avukat (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}")
+        val_h = col_h.text_input(f"Harç (TL)", value=str(mevcut_kayit["harc"]), key=f"harc_sinif_{i}", on_change=st.rerun)
+        val_a = col_a.text_input(f"Avukat (TL)", value=str(mevcut_kayit["avukat"]), key=f"avukat_sinif_{i}", on_change=st.rerun)
         
         try:
             f_h = float(val_h)
