@@ -375,7 +375,6 @@ if "sinif_harclari" not in st.session_state:
             h_val = 3510.0
         st.session_state.sinif_harclari[i] = {"harc": h_val, "avukat": 2000.0}
 
-# --- KESİN MANTIK: HER MARKA İÇİN ANA SINIFLAR (1-45) BİRER KEZ SAYILIR (TEK HARÇ + AVUKAT), 35/ ALT SINIFLAR İÇİN SADECE İLGİLİ ANA SINIFIN AVUKATI EKLENİR ---
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
@@ -409,7 +408,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         return 0.0
 
 def sinif_harc_tutari_hesapla(sinif_str):
-    """Sadece ana sınıfların resmi kurum harç toplamını hesaplar (avukat ücreti hariç)."""
+    """Sadece ana sınıfların (1-45) harç tutarını hesaplar. Alt sınıflar (örn: 35/21) ASLA harç üretmez, böylece 35,35/21 gibi bir girişte sadece 35. sınıfın 1 adet harç ücreti toplanır."""
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_harc = 0.0
@@ -417,6 +416,7 @@ def sinif_harc_tutari_hesapla(sinif_str):
         
         for p in parcalar:
             if "/" in p:
+                # Alt sınıflar (örn: 35/21) kurum harcı üretmez, atla
                 continue
             else:
                 if p.isdigit():
@@ -555,16 +555,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     if basvuru_bekleyen_df.empty:
         st.info("Başvuru beklemede kayıt bulunmuyor.")
     else:
-        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Harç Tutarı']].copy() if 'Harç Tutarı' in basvuru_bekleyen_df.columns else basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
         
-        # Tabloya her satırın kendi harç tutarını da ekleyelim (Satış Tarihinin yanına)
+        # Sadece ana sınıfların harç tutarını satır bazında hesaplayıp tabloya ekliyoruz (Satış Tarihinin yanına)
         harc_listesi = []
         for _, row in basvuru_bekleyen_df.iterrows():
-            harc_listesi.append(f"{sinif_harc_tutari_hesapla(row.get('Sınıf', '')):,.2f} TL")
+            h_tutar = sinif_harc_tutari_hesapla(row.get('Sınıf', ''))
+            harc_listesi.append(f"{h_tutar:,.2f} TL")
+            
         ozet_df['Harç Tutarı'] = harc_listesi
         
-        # Kolon sıralamasını 'Satış Tarihi', 'Harç Tutarı' olacak şekilde ayarlayalım
-        cols_order = [c for c in ozet_df.columns if c not in ['Satış Tarihi', 'Harç Tutarı']] + ['Satış Tarihi', 'Harç Tutarı']
+        # Kolon sıralaması: Marka Adı, Sınıf, Satış Tarihi, Harç Tutarı
+        cols_order = ['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Harç Tutarı']
         ozet_df = ozet_df[cols_order]
         
         st.dataframe(ozet_df, use_container_width=True)
@@ -1120,7 +1122,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 pass
                             
                         df.to_csv(DATA_FILE, index=False)
-                        st.session_state["success_msg"] = f"✅ Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi."
+                        st.session_state["success_msg"] = `✅ Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.`
                         st.rerun()
 
                 if "success_msg" in st.session_state:
@@ -1165,7 +1167,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             u_df = pd.read_csv(USER_FILE)
             p = st.selectbox("Personel Seç", u_df["İsim"].tolist(), key="sel_sifre_degis")
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sifre_input")
-            if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
+            if st.button("Şifreyi Güncelle", key="btn_sf_gunc_elle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
