@@ -462,17 +462,55 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
                     satir_sayac += 1
         toplam_sinif_adedi += satir_sayac
 
+    toplam_satis_tutari = pd.to_numeric(basvuru_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
+
     c1, c2, c3 = st.columns(3)
     c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
     c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Adet")
-    toplam_tutar = pd.to_numeric(basvuru_bekleyen_df['Tutar'], errors='coerce').fillna(0).sum()
-    c3.metric("Toplam Başvuru Tutarı", f"{toplam_tutar:,.2f} TL")
+    c3.metric("Toplam Satış Tutarı", f"{toplam_satis_tutari:,.2f} TL")
     
+    st.write("---")
+    st.subheader("⚙️ Fiyatlandırma ve Harç Yönetimi")
+    st.write("Marka başvuru harç, tescil harç ve avukatlık hizmet ücretlerini aşağıdan belirleyebilir; toplam tutarın bu kalemlerden hesaplanmasını sağlayabilirsiniz.")
+
+    if "harc_marka" not in st.session_state: st.session_state.harc_marka = "1500"
+    if "harc_tescil" not in st.session_state: st.session_state.harc_tescil = "2500"
+    if "harc_avukat" not in st.session_state: st.session_state.harc_avukat = "2000"
+
+    with st.form("fiyatlandirma_formu"):
+        f1, f2, f3 = st.columns(3)
+        g_marka_harci = f1.text_input("Marka Başvuru Harç Ücreti (TL)", value=st.session_state.harc_marka)
+        g_tescil_harci = f2.text_input("Tescil Harç Ücreti (TL)", value=st.session_state.harc_tescil)
+        g_avukat_ucreti = f3.text_input("Avukatlık Hizmet Ücreti (TL)", value=st.session_state.harc_avukat)
+        
+        submitted_fiyat = st.form_submit_button("Hesapla / Güncelle")
+        if submitted_fiyat:
+            st.session_state.harc_marka = g_marka_harci
+            st.session_state.harc_tescil = g_tescil_harci
+            st.session_state.harc_avukat = g_avukat_ucreti
+            st.success("✅ Fiyatlandırma kalemleri güncellendi!")
+
+    try:
+        m_harc = float(st.session_state.harc_marka)
+    except: m_harc = 0.0
+    try:
+        t_harc = float(st.session_state.harc_tescil)
+    except: t_harc = 0.0
+    try:
+        a_ucret = float(st.session_state.harc_avukat)
+    except: a_ucret = 0.0
+
+    birim_basvuru_maliyeti = m_harc + a_ucret
+    toplam_hesaplanan_basvuru_tutari = toplam_marka_sayisi * birim_basvuru_maliyeti
+
+    st.info(f"💡 **Hesaplanan Toplam Başvuru Tutarı (Marka Başına Harç + Avukat Ücreti x Marka Adedi):** {toplam_hesaplanan_basvuru_tutari:,.2f} TL")
+
     st.write("---")
     if basvuru_bekleyen_df.empty:
         st.info("Başvuru beklemede kayıt bulunmuyor.")
     else:
-        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Tutar']].copy()
+        ozet_df.rename(columns={'Tutar': 'Satış Tutarı (TL)'}, inplace=True)
         st.dataframe(ozet_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
