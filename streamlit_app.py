@@ -529,12 +529,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     st.markdown("<h2>⚙️ Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
     st.write("Her bir sınıf için ayrı ayrı Harç Ücreti ve Avukat Ücretini aşağıdan güncelleyebilirsiniz. Değerleri değiştirdiğinizde toplam tutar anlık olarak güncellenir.")
 
-    yeni_harc_verileri = {}
-    
     # Her satırı bağımsız ve anlık tetiklenebilir hale getiren fragment yapısı
     @st.fragment
     def fiyatlandirma_formu():
-        nonlocal yeni_harc_verileri
+        yeni_harc_verileri = {}
         for i in range(1, 46):
             st.markdown(f"**{i}. Sınıf**")
             col_h, col_a, col_t = st.columns(3)
@@ -558,11 +556,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
             
             yeni_harc_verileri[i] = {"harc": f_h, "avukat": f_a}
             st.write("---")
+        return yeni_harc_verileri
 
-    fiyatlandirma_formu()
+    guncel_veriler = fiyatlandirma_formu()
 
     if st.button("💾 Tüm Sınıf Fiyatlarını Güncelle", use_container_width=True):
-        st.session_state.sinif_harclari = yeni_harc_verileri
+        st.session_state.sinif_harclari = guncel_veriler
         st.success("✅ Tüm sınıf harç ve avukatlık ücretleri başarıyla güncellendi!")
         st.rerun()
 
