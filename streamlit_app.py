@@ -443,6 +443,8 @@ if is_muhasebe:
     with st.sidebar.expander("📈 Raporlama", expanded=True):
         if st.button("📊 Genel Rapor Paneli", use_container_width=True):
             sayfa_degistir("Marka Tescil Raporlama")
+        if st.button("📈 Aylık Net Kar / Zarar Raporu", use_container_width=True):
+            sayfa_degistir("Aylık Net Kar / Zarar Raporu")
         if st.button("📌 Muhasebe Bekleyen Raporu", use_container_width=True):
             sayfa_degistir("Muhasebe Bekleyen Raporu")
         if st.button("⏳ Başvuru Beklemede Raporu", use_container_width=True):
@@ -527,6 +529,85 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         adet, _ = get_count_and_df(durum_kod)
         with cols[idx % 3]:
             st.metric(label=gorunen_isim, value=f"{adet} Adet")
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Raporu":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>📊 Aylık Net Kar / Zarar Raporu</h2>", unsafe_allow_html=True)
+    st.write("Satış Tarihine göre filtrelenen döneme ait KDV hariç ciro, sınıf toplam harç maliyeti ve net kar/zarar raporu aşağıdadır.")
+    
+    aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
+    col_f1, col_f2 = st.columns(2)
+    secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), key="kar_zarar_ay_sec")
+    secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year), key="kar_zarar_yil_sec")
+    secilen_ay_kod = aylar[secilen_ay_isim]
+    
+     rapor_df = df.copy()
+    
+    def net_kar_filtrele(row):
+        try:
+            s_tarih = row.get('Satış Tarihi', '')
+            if pd.isna(s_tarih) or str(s_tarih).strip() == '' or str(s_tarih).lower() == 'none': return False
+            dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
+            if pd.isna(dt): return False
+            ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
+            yil_eslesir = True if not secilen_yil.strip() else (str(dt.year) == secilen_yil.strip())
+            return ay_eslesir and yil_eslesir
+        except: return False
+            
+    if not rapor_df.empty:
+        rapor_df = rapor_df[rapor_df.apply(net_kar_filtrele, axis=1)]
+        
+    toplam_kdv_haric_ciro = 0.0
+    toplam_harc_maliyeti = 0.0
+    
+    tablo_satirlari = []
+    kdv_orani = st.session_state.kdv_orani
+    
+    for _, row in rapor_df.iterrows():
+        m_adi = row.get('Marka Adı', '')
+        s_tarih = row.get('Satış Tarihi', '')
+        sinif_str = row.get('Sınıf', '')
+        tutar_str = str(row.get('Tutar', '0')).replace(',', '.')
+        
+        try:
+            tutar_dahil = float(tutar_str)
+        except:
+            tutar_dahil = 0.0
+            
+        kdv_haric = tutar_dahil / (1 + (kdv_orani / 100.0))
+        harc_maliyeti = sinif_toplam_ucret_hesapla(sinif_str)
+        net_durum = kdv_haric - harc_maliyeti
+        
+        toplam_kdv_haric_ciro += kdv_haric
+        toplam_harc_maliyeti += harc_maliyeti
+        
+        tablo_satirlari.append({
+            "Marka Adı": m_adi,
+            "Satış Tarihi": s_tarih,
+            "Sınıf": sinif_str,
+            "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL",
+            "KDV Hariç Tutar (TL)": f"{kdv_haric:,.2f} TL",
+            "Sınıf Toplam Harç (TL)": f"{harc_maliyeti:,.2f} TL",
+            "Net Rakam (TL)": f"{net_durum:,.2f} TL"
+        })
+        
+    genel_net_kar = toplam_kdv_haric_ciro - toplam_harc_maliyeti
+    
+    st.write("---")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam KDV Hariç Ciro", f"{toplam_kdv_haric_ciro:,.2f} TL")
+    c2.metric("Toplam Sınıf Harç Maliyeti", f"{toplam_harc_maliyeti:,.2f} TL")
+    c3.metric("Toplam Net Kar / Zarar", f"{genel_net_kar:,.2f} TL")
+    st.write("---")
+    
+    if not tablo_satirlari:
+        st.info("Seçilen kriterlere uygun kayıt bulunamadı.")
+    else:
+        sonuc_gosterim_df = pd.DataFrame(tablo_satirlari)
+        st.dataframe(sonuc_gosterim_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     if st.button("⬅️ Geri Çık"):
@@ -747,7 +828,6 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         
         tutar_input = c2.text_input("Tutar (KDV Dahil, TL)", value="")
         
-        # KDV hariç hesaplama önizlemesi
         kdv_haric_gosterge = 0.0
         if tutar_input.strip():
             try:
