@@ -281,13 +281,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         sirali_sayac = 0
         for p in parcalar:
             if "/" in p:
-                ana_sinif_str = p.split("/")[0].strip()
-                if ana_sinif_str.isdigit() and 1 <= int(ana_sinif_str) <= 45:
-                    s_int = int(ana_sinif_str)
-                    kayit = st.session_state.sinif_harclari.get(s_int, {"harc": 2820.0, "avukat": 750.0})
-                else:
-                    kayit = st.session_state.sinif_harclari.get(35, {"harc": 2820.0, "avukat": 750.0})
-                toplam_tutar += kayit["avukat"]
+                continue # Alt sınıflar harç/ücret maliyeti üretmez
             else:
                 if p.isdigit():
                     s_int = int(p)
@@ -312,13 +306,11 @@ def sinif_toplam_ucret_hesapla(sinif_str):
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_tutar = 0.0
         
-        # Benzersiz ana sınıfları koruyarak sırasını tespit edelim
         gorulen_ana_siniflar = []
-        alt_sinif_sayisi = 0
         
         for p in parcalar:
             if "/" in p:
-                alt_sinif_sayisi += 1
+                continue # Alt sınıflar (örn: 35/11) maliyete yansımaz
             else:
                 if p.isdigit():
                     s_int = int(p)
@@ -328,15 +320,10 @@ def sinif_toplam_ucret_hesapla(sinif_str):
                     else:
                         gorulen_ana_siniflar.append(3)
                         
-        # Her bir benzersiz ana sınıfı sırasına göre (1. sınıf, 2. sınıf vb.) fiyatlandırıyoruz
+        # Sadece gerçek ana sınıflar sırasına göre hesaplanır (1. sınıf, 2. sınıf vb.)
         for idx, s_val in enumerate(gorulen_ana_siniflar, start=1):
             kayit = st.session_state.sinif_harclari.get(idx, {"harc": 2820.0, "avukat": 750.0})
             toplam_tutar += kayit["harc"] + kayit["avukat"]
-            
-        # Alt sınıflar (örn: 35/11) için avukat ücreti eklemesi
-        for _ in range(alt_sinif_sayisi):
-            ilk_kayit = st.session_state.sinif_harclari.get(1, {"avukat": 750.0})
-            toplam_tutar += ilk_kayit["avukat"]
             
         return toplam_tutar
     except:
