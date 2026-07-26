@@ -807,8 +807,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede R
     if tescil_bekleyen_df.empty:
         st.info("Tescil tebliğ beklemede kayıt bulunmuyor.")
     else:
-        ozet_df = tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No', 'Tescil Tebliğ Tarihi']].copy()
-        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası', 'Tescil Tebliğ Tarihi']
+        ozet_df = tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
+        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası']
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
