@@ -451,6 +451,8 @@ if is_muhasebe:
             sayfa_degistir("Başvuru Beklemede Raporu")
         if st.button("🔍 Kurum İncelemesinde Raporu", use_container_width=True):
             sayfa_degistir("Kurum İncelemesinde Raporu")
+        if st.button("📰 Yayında Raporu", use_container_width=True):
+            sayfa_degistir("Yayında Raporu")
 
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
         if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True):
@@ -747,6 +749,27 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Rapor
     else:
         ozet_df = kurum_inceleme_df[['Marka Adı', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].copy()
         ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru Numarası']
+        st.dataframe(ozet_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>📰 Yayında Raporu</h2>", unsafe_allow_html=True)
+    st.write("Yayında olan işlemlerin detaylı rapor görünümü aşağıdadır.")
+    
+    yayinda_df = df[df['Durum'].astype(str).str.strip() == "Yayında"]
+    
+    toplam_marka_sayisi = yayinda_df['Marka Adı'].nunique()
+
+    st.metric("Toplam Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    
+    st.write("---")
+    if yayinda_df.empty:
+        st.info("Yayında kayıt bulunmuyor.")
+    else:
+        ozet_df = yayinda_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
+        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası']
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
