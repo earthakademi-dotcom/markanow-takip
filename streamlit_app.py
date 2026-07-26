@@ -155,6 +155,7 @@ st.markdown(
 USER_FILE = "users.csv"
 DATA_FILE = "marka_takip.csv"
 HARC_CONFIG_FILE = "harc_config.csv"
+EK_HARC_CONFIG_FILE = "ek_harc_config.csv"
 
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
@@ -271,6 +272,22 @@ if "sinif_harclari" not in st.session_state:
         for i in range(4, 46):
             curr_h += h3
             st.session_state.sinif_harclari[i] = {"harc": curr_h, "avukat": 750.0}
+
+# --- EK HARÇ BEDELLERİ (TESCİL VE SAVUNMA) ---
+if "tescil_harc_bedeli" not in st.session_state:
+    st.session_state.tescil_harc_bedeli = 2500.0
+if "savunma_harc_bedeli" not in st.session_state:
+    st.session_state.savunma_harc_bedeli = 1500.0
+
+if os.path.exists(EK_HARC_CONFIG_FILE) and os.path.getsize(EK_HARC_CONFIG_FILE) > 0:
+    try:
+        ek_df = pd.read_csv(EK_HARC_CONFIG_FILE)
+        if "Tescil Harç Bedeli" in ek_df.columns and not ek_df.empty:
+            st.session_state.tescil_harc_bedeli = float(ek_df.iloc[0]["Tescil Harç Bedeli"])
+        if "Savunma Harç Bedeli" in ek_df.columns and not ek_df.empty:
+            st.session_state.savunma_harc_bedeli = float(ek_df.iloc[0]["Savunma Harç Bedeli"])
+    except:
+        pass
 
 def sinif_harci_ve_avukat_hesapla(sinif_str):
     try:
@@ -593,7 +610,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("🔹 **1. Sınıf Bedeli** ve **3. Sınıf Bedeli** ile **Ortak Avukat Ücretini** aşağıdaki alanlardan belirleyebilirsiniz. \n🔹 **1. Sınıf**: 1. Sınıf Bedeli \n🔹 **2. Sınıf**: 1. Sınıf + 1. Sınıf Bedeli \n🔹 **3. Sınıf**: 1. Sınıf + 1. Sınıf + 3. Sınıf Bedeli \n🔹 **4 ila 45. Sınıflar**: Önceki sınıf + 3. Sınıf Bedeli eklenerek hesaplanır.")
+    st.write("🔹 **1. Sınıf Bedeli**, **3. Sınıf Bedeli**, **Ortak Avukat Ücreti**, **Tescil Harç Bedeli** ve **Savunma Harç Bedeli** değerlerini aşağıdaki alanlardan belirleyebilirsiniz.")
 
     mevcut_h1 = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
     mevcut_h3_bedel = float(st.session_state.sinif_harclari.get(4, {"harc": 3150.0})["harc"] - st.session_state.sinif_harclari.get(3, {"harc": 3150.0})["harc"]) if len(st.session_state.sinif_harclari) >= 4 else 3150.0
@@ -605,6 +622,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     giris_h1 = col_k1.number_input("1. Sınıf Bedeli (TL)", value=float(mevcut_h1), step=50.0, format="%.2f")
     giris_h3_bedel = col_k2.number_input("3. Sınıf Bedeli (TL)", value=float(mevcut_h3_bedel), step=50.0, format="%.2f")
     ortak_avukat_input = col_k3.number_input("Tüm Sınıflar İçin Ortak Avukat Ücreti (TL)", value=float(mevcut_ortak_avukat), step=50.0, format="%.2f")
+
+    st.write("")
+    col_e1, col_e2 = st.columns(2)
+    tescil_harc_input = col_e1.number_input("Tescil Harç Bedeli (TL)", value=float(st.session_state.tescil_harc_bedeli), step=50.0, format="%.2f")
+    savunma_harc_input = col_e2.number_input("Savunma Harç Bedeli (TL)", value=float(st.session_state.savunma_harc_bedeli), step=50.0, format="%.2f")
 
     st.write("---")
 
@@ -675,7 +697,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         st.session_state.sinif_harclari = yeni_sozluk
         pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False)
         
-        st.success("🎉 Sınıf harçları ve avukat ücretleri başarıyla yeni formüle göre güncellendi!")
+        st.session_state.tescil_harc_bedeli = float(tescil_harc_input)
+        st.session_state.savunma_harc_bedeli = float(savunma_harc_input)
+        pd.DataFrame({
+            "Tescil Harç Bedeli": [st.session_state.tescil_harc_bedeli],
+            "Savunma Harç Bedeli": [st.session_state.savunma_harc_bedeli]
+        }).to_csv(EK_HARC_CONFIG_FILE, index=False)
+        
+        st.success("🎉 Sınıf harçları, avukat ücretleri ve ek harç bedelleri başarıyla kaydedildi!")
         import time; time.sleep(1.2)
         st.rerun()
 
@@ -941,7 +970,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
                 c2.markdown(f"**TESCİL SON GÜNÜ**\n\n`{son_odeme_tarihi_str}`")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", value="", key="ozel_tescil_f_no")
-                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value="2500", key="ozel_tescil_tutar")
+                
+                varsayilan_tescil_harc = str(st.session_state.tescil_harc_bedeli)
+                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_harc, key="ozel_tescil_tutar")
                 odeme_gunu_ham = c5.text_input("Ödeme Günü (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
                 st.write("")
