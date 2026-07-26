@@ -907,7 +907,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         
         st.session_state.tescil_harc_bedeli = float(tescil_harc_input)
         st.session_state.savunma_harc_bedeli = float(savunma_harc_input)
-        st.session_state.bildirim_tescil_tutar = float(bildirim_tutar_input)
+        st.session_state.bildirim_tescil_tutar = float(bildirim_tescil_tutar)
         st.session_state.kdv_orani = float(kdv_orani_input)
         
         pd.DataFrame({
@@ -1201,8 +1201,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 son_gun_giris = c2.text_input("TESCİL SON GÜNÜ", value=son_odeme_tarihi_str, key="ozel_tescil_son_gunu")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", value="", key="ozel_tescil_f_no")
                 
-                varsayilan_tescil_harc = str(st.session_state.tescil_harc_bedeli)
-                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_harc, key="ozel_tescil_tutar")
+                harc_maliyeti = sinif_toplam_ucret_hesapla(t_row.get('Sınıf', ''))
+                kdv_orani_val = st.session_state.kdv_orani
+                tescil_kdv_dahil_tutar = harc_maliyeti * (1 + (kdv_orani_val / 100.0))
+                varsayilan_tescil_tutar = f"{tescil_kdv_dahil_tutar:.2f}"
+                
+                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_tutar, key="ozel_tescil_tutar")
                 odeme_gunu_ham = c5.text_input("Müşterinin Ödeme Sözü Verdiği Tarih (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
                 st.write("")
