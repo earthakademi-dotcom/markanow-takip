@@ -449,6 +449,8 @@ if is_muhasebe:
             sayfa_degistir("Muhasebe Bekleyen Raporu")
         if st.button("⏳ Başvuru Beklemede Raporu", use_container_width=True):
             sayfa_degistir("Başvuru Beklemede Raporu")
+        if st.button("🔍 Kurum İncelemesinde Raporu", use_container_width=True):
+            sayfa_degistir("Kurum İncelemesinde Raporu")
 
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
         if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True):
@@ -726,6 +728,52 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
         ozet_df['Sınıf Toplam Harç Ücreti'] = ucret_listesi
         
         cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti']
+        ozet_df = ozet_df[cols_order]
+        
+        st.dataframe(ozet_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Raporu":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>🔍 Kurum İncelemesinde Raporu</h2>", unsafe_allow_html=True)
+    st.write("Kurum incelemesinde olan işlemlerin detaylı rapor görünümü aşağıdadır.")
+    
+    kurum_inceleme_df = df[df['Durum'].astype(str).str.strip() == "Kurum İncelemesinde"]
+    
+    toplam_marka_sayisi = kurum_inceleme_df['Marka Adı'].nunique()
+    
+    toplam_sinif_adedi = 0
+    for s_val in kurum_inceleme_df['Sınıf'].dropna():
+        toplam_sinif_adedi += sinif_adedi_hesapla(s_val)
+
+    toplam_ucret_tutari = 0.0
+    for _, row in kurum_inceleme_df.iterrows():
+        toplam_ucret_tutari += sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
+    c3.metric("Toplam Ücret Tutarı", f"{toplam_ucret_tutari:,.2f} TL")
+    
+    st.write("---")
+    if kurum_inceleme_df.empty:
+        st.info("Kurum incelemesinde kayıt bulunmuyor.")
+    else:
+        ozet_df = kurum_inceleme_df[['Marka Adı', 'Sınıf', 'Başvuru No', 'Başvuru Tarihi']].copy()
+        
+        ucret_listesi = []
+        sinif_adedi_listesi = []
+        for _, row in kurum_inceleme_df.iterrows():
+            t_tutar = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+            ucret_listesi.append(f"{t_tutar:,.2f} TL")
+            s_adet = sinif_adedi_hesapla(row.get('Sınıf', ''))
+            sinif_adedi_listesi.append(f"{s_adet} Sınıf")
+            
+        ozet_df['Sınıf Adedi'] = sinif_adedi_listesi
+        ozet_df['Sınıf Toplam Harç Ücreti'] = ucret_listesi
+        
+        cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Başvuru No', 'Başvuru Tarihi', 'Sınıf Toplam Harç Ücreti']
         ozet_df = ozet_df[cols_order]
         
         st.dataframe(ozet_df, use_container_width=True)
