@@ -538,15 +538,30 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
     st.write("Satış Tarihine göre filtrelenen döneme ait KDV hariç ciro, sınıf toplam harç maliyeti ve net kar/zarar raporu aşağıdadır.")
     
     aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
-    col_f1, col_f2 = st.columns(2)
+    
+    # Danışman listesini hazırlama ("Tümü" seçeneğiyle birlikte)
+    danismanlar_listesi = ["Tümü"]
+    if 'Danışman' in df.columns:
+        unik_danismanlar = sorted(df['Danışman'].dropna().astype(str).str.strip().str.upper().unique().tolist())
+        danismanlar_listesi.extend([d for d in unik_danismanlar if d])
+
+    col_f1, col_f2, col_f3 = st.columns(3)
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), key="kar_zarar_ay_sec")
     secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year), key="kar_zarar_yil_sec")
+    secilen_danisman_filtre = col_f3.selectbox("Danışman Seçin", danismanlar_listesi, key="kar_zarar_danisman_sec")
+    
     secilen_ay_kod = aylar[secilen_ay_isim]
     
     rapor_df = df.copy()
     
     def net_kar_filtrele(row):
         try:
+            # Danışman filtresi kontrolü
+            if secilen_danisman_filtre != "Tümü":
+                row_danisman = str(row.get('Danışman', '')).strip().upper()
+                if row_danisman != secilen_danisman_filtre:
+                    return False
+
             s_tarih = row.get('Satış Tarihi', '')
             if pd.isna(s_tarih) or str(s_tarih).strip() == '' or str(s_tarih).lower() == 'none': return False
             dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
@@ -570,6 +585,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         m_adi = row.get('Marka Adı', '')
         s_tarih = row.get('Satış Tarihi', '')
         sinif_str = row.get('Sınıf', '')
+        danisman_adi = row.get('Danışman', '')
         tutar_str = str(row.get('Tutar', '0')).replace(',', '.')
         
         try:
@@ -586,6 +602,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         
         tablo_satirlari.append({
             "Marka Adı": m_adi,
+            "Danışman": danisman_adi,
             "Satış Tarihi": s_tarih,
             "Sınıf": sinif_str,
             "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL",
