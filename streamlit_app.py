@@ -1221,16 +1221,16 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         yeni_son_gun = tarih_birlestir_ve_formatla(son_gun_giris)
                         odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
                         
-                        if odeme_gunu.strip():
+                        if tescil_fatura_no.strip():
                             idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                             df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
-                            if tescil_fatura_no.strip():
-                                df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
+                            df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
                             if yeni_tescil_tar.strip():
                                 df.at[idx, 'Tescil Tebliğ Tarihi'] = yeni_tescil_tar.strip()
                             if yeni_son_gun.strip():
                                 df.at[idx, 'Tescil Son Ödeme Tarihi'] = yeni_son_gun.strip()
-                            df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
+                            if odeme_gunu.strip():
+                                df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                             df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                             df.to_csv(DATA_FILE, index=False)
                             
@@ -1239,7 +1239,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                             st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
                             st.rerun()
                         else:
-                            st.warning("Lütfen Müşterinin Ödeme Sözü Verdiği Tarih alanını doldurunuz.")
+                            st.warning("Lütfen Tescil Fatura No alanını doldurunuz.")
 
                 with b_col2:
                     if st.button("📞 Ödeme Sözü Verenler Yap", key="ozel_odeme_sozu_btn", use_container_width=True):
@@ -1266,6 +1266,38 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                             st.rerun()
                         else:
                             st.warning("Lütfen Müşterinin Ödeme Sözü Verdiği Tarih alanını doldurunuz.")
+
+# --- ÖDEME SÖZÜ VERENLER RAPOR EKRANI ---
+elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>📞 Ödeme Sözü Verenler Raporu</h2>", unsafe_allow_html=True)
+    st.write("Müşteriden ödeme sözü alınan ve ödeme tarihi beklenen markaların detaylı rapor görünümü aşağıdadır.")
+    
+    odeme_sozu_df = df[df['Durum'].astype(str).str.strip() == "Ödeme Sözü Verenler"].copy()
+    
+    toplam_marka_sayisi = odeme_sozu_df['Marka Adı'].nunique()
+    
+    toplam_soz_tutar = 0.0
+    for _, row in odeme_sozu_df.iterrows():
+        t_str = str(row.get('Tescil Harç Tutarı', '0')).replace(',', '.')
+        try:
+            toplam_soz_tutar += float(t_str)
+        except:
+            pass
+
+    c1, c2 = st.columns(2)
+    c1.metric("Toplam Ödeme Sözü Alan Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Ödeme Sözü Tutarı", f"{toplam_soz_tutar:,.2f} TL")
+    
+    st.write("---")
+    if odeme_sozu_df.empty:
+        st.info("Ödeme sözü veren kayıt bulunmuyor.")
+    else:
+        ozet_df = odeme_sozu_df[['Marka Adı', 'Danışman', 'Sınıf', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Tarihi', 'Tescil Harç Tutarı']].copy()
+        ozet_df.columns = ['Marka Adı', 'Danışman', 'Sınıf', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Tescil Harç / Hizmet Tutarı (TL)']
+        st.dataframe(ozet_df, use_container_width=True)
 
 # --- MUHASEBE AŞAMA SAYFALARI ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
