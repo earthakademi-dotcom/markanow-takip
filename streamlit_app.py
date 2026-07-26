@@ -1520,8 +1520,16 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 pass
                             
                         df.to_csv(DATA_FILE, index=False)
-                        st.session_state["success_msg"] = f"Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi."
-                        st.rerun()
+                        
+                        # Eğer marka otomatik olarak Tescil Tebliğ Edildi Müşteri Arandı aşamasına geçtiyse, kullanıcıyı doğrudan o sayfaya yönlendiriyoruz
+                        if final_durum == "Tescil Tebliğ Edildi Müşteri Arandı":
+                            st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
+                            st.success(f"✅ Başarılı! '{secilen_marka}' markası güncellendi ve 'Tescil Tebliğ Edildi Müşteri Arandı' ekranına taşındı.")
+                            import time; time.sleep(1.2)
+                            st.rerun()
+                        else:
+                            st.success(f"Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
+                            st.rerun()
 
                 if "success_msg" in st.session_state:
                     st.success(st.session_state["success_msg"])
