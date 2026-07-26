@@ -1208,7 +1208,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 
                 harc_maliyeti = sinif_toplam_ucret_hesapla(t_row.get('Sınıf', ''))
                 kdv_orani_val = st.session_state.kdv_orani
-                tescil_kdv_dahil_tutar = harc_maliyeti * (1 + (kdv_orani / 100.0))
+                tescil_kdv_dahil_tutar = harc_maliyeti * (1 + (kdv_orani_val / 100.0))
                 varsayilan_tescil_tutar = f"{tescil_kdv_dahil_tutar:.2f}"
                 
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_tutar, key="ozel_tescil_tutar")
