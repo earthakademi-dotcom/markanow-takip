@@ -534,13 +534,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     for s_val in muhasebe_bekleyen_df['Sınıf'].dropna():
         toplam_sinif_adedi += sinif_adedi_hesapla(s_val)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
-    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
-    
     toplam_tutar = 0.0
     for _, row in muhasebe_bekleyen_df.iterrows():
         toplam_tutar += sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
     c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
     
     st.write("---")
