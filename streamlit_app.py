@@ -473,8 +473,6 @@ if is_muhasebe:
             sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True):
             sayfa_degistir("Tescil Tebliğ Beklemede")
-        if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True):
-            sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
         if st.button("⚡ Tescil Tebliğ Edildi Müşteri Arandı Ekranı", use_container_width=True):
             sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı Ekranı")
         if st.button("⏳ Tescil Kurum Ödemesi Bekleyen", use_container_width=True):
