@@ -760,22 +760,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Rapor
     if kurum_inceleme_df.empty:
         st.info("Kurum incelemesinde kayıt bulunmuyor.")
     else:
-        ozet_df = kurum_inceleme_df[['Marka Adı', 'Sınıf', 'Başvuru No', 'Başvuru Tarihi']].copy()
-        
-        ucret_listesi = []
-        sinif_adedi_listesi = []
-        for _, row in kurum_inceleme_df.iterrows():
-            t_tutar = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
-            ucret_listesi.append(f"{t_tutar:,.2f} TL")
-            s_adet = sinif_adedi_hesapla(row.get('Sınıf', ''))
-            sinif_adedi_listesi.append(f"{s_adet} Sınıf")
-            
-        ozet_df['Sınıf Adedi'] = sinif_adedi_listesi
-        ozet_df['Sınıf Toplam Harç Ücreti'] = ucret_listesi
-        
-        cols_order = ['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Başvuru No', 'Başvuru Tarihi', 'Sınıf Toplam Harç Ücreti']
-        ozet_df = ozet_df[cols_order]
-        
+        ozet_df = kurum_inceleme_df[['Marka Adı', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].copy()
+        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru Numarası']
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
