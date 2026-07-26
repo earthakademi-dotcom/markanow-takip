@@ -475,6 +475,8 @@ if is_muhasebe:
             sayfa_degistir("Tescil Tebliğ Beklemede")
         if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True):
             sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
+        if st.button("⚡ Tescil Tebliğ Edildi Müşteri Arandı Ekranı", use_container_width=True):
+            sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı Ekranı")
         if st.button("⏳ Tescil Kurum Ödemesi Bekleyen", use_container_width=True):
             sayfa_degistir("Tescil Kurum Ödemesi Bekleyen")
         if st.button("📞 Ödeme Sözü Verenler", use_container_width=True):
@@ -1154,14 +1156,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                     st.success(st.session_state["success_msg"])
                     del st.session_state["success_msg"]
 
-# --- TESCİL TEBLİĞ EDİLİ MÜŞTERİ ARANDI EKRANI ---
-elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Müşteri Arandı":
+# --- TESCİL TEBLİĞ EDİLDİ MÜŞTERİ ARANDI ÖZEL İŞLEM EKRANI ---
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Müşteri Arandı Ekranı":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>💳 Tescil Tebliğ Edildi Müşteri Arandı Ekranı</h2>", unsafe_allow_html=True)
     
-    tescil_df = df[(df['Durum'].astype(str).str.strip().isin(["Tescil Tebliğ Beklemede", "Tescil Kurum Ödemesi Bekleyen", "Ödeme Sözü Verenler"])) & 
+    tescil_df = df[(df['Durum'].astype(str).str.strip().isin(["Tescil Tebliğ Beklemede", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Ödeme Sözü Verenler"])) & 
                    (df['Tescil Tebliğ Tarihi'].astype(str).str.strip() != "") & 
                    (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() != "nan")]
     
@@ -1206,7 +1208,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 
                 harc_maliyeti = sinif_toplam_ucret_hesapla(t_row.get('Sınıf', ''))
                 kdv_orani_val = st.session_state.kdv_orani
-                tescil_kdv_dahil_tutar = harc_maliyeti * (1 + (kdv_orani_val / 100.0))
+                tescil_kdv_dahil_tutar = harc_maliyeti * (1 + (kdv_orani / 100.0))
                 varsayilan_tescil_tutar = f"{tescil_kdv_dahil_tutar:.2f}"
                 
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_tutar, key="ozel_tescil_tutar")
@@ -1484,7 +1486,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         elif sonraki_asama == "Tescil Tebliğ Beklemede":
                             final_durum = "Tescil Tebliğ Beklemede"
 
-                        # OTOMATİK GEÇİŞ KURALI: Tescil Tebliğ Beklemede sekmesindeyken tarih girilip güncellendiyse otomatik olarak Tescil Tebliğ Edildi Müşteri Arandı aşamasına geçirilir
                         if secilen_asama == "Tescil Tebliğ Beklemede" and tescil_tar.strip() and tescil_tar.strip().lower() != 'nan':
                             final_durum = "Tescil Tebliğ Edildi Müşteri Arandı"
 
@@ -1521,9 +1522,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             
                         df.to_csv(DATA_FILE, index=False)
                         
-                        # Eğer marka otomatik olarak Tescil Tebliğ Edildi Müşteri Arandı aşamasına geçtiyse, kullanıcıyı doğrudan o sayfaya yönlendiriyoruz
                         if final_durum == "Tescil Tebliğ Edildi Müşteri Arandı":
-                            st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
+                            st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı Ekranı"
                             st.success(f"✅ Başarılı! '{secilen_marka}' markası güncellendi ve 'Tescil Tebliğ Edildi Müşteri Arandı' ekranına taşındı.")
                             import time; time.sleep(1.2)
                             st.rerun()
