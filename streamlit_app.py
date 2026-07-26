@@ -756,9 +756,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>📰 Yayında Raporu</h2>", unsafe_allow_html=True)
-    st.write("Yayında olan işlemlerin detaylı rapor görünümü aşağıdadır.")
+    st.write("Yayında olan işlemlerin detaylı rapor görünümü ve kalan süre takibi aşağıdadır.")
     
-    yayinda_df = df[df['Durum'].astype(str).str.strip() == "Yayında"]
+    yayinda_df = df[df['Durum'].astype(str).str.strip() == "Yayında"].copy()
     
     toplam_marka_sayisi = yayinda_df['Marka Adı'].nunique()
 
@@ -768,8 +768,31 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
     if yayinda_df.empty:
         st.info("Yayında kayıt bulunmuyor.")
     else:
+        bugun = datetime.now().date()
+        kalan_gunler = []
+        
+        for _, r_item in yayinda_df.iterrows():
+            b_tarih_str = str(r_item.get('Yayın Bitiş Tarihi', '')).strip()
+            try:
+                dt_bitis = pd.to_datetime(b_tarih_str, format='%d/%m/%Y').date()
+                fark_gun = (dt_bitis - bugun).days
+                if fark_gun < 0:
+                    kalan_gunler.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+                elif fark_gun == 0:
+                    kalan_gunler.append("Bugün Son Gün! ⚠️")
+                else:
+                    kalan_gunler.append(f"{fark_gun} Gün Kaldı")
+            except:
+                kalan_gunler.append("Bilinmiyor")
+
         ozet_df = yayinda_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
-        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası']
+        ozet_df['Kalan Süre'] = kalan_gunler
+        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası', 'Kalan Süre']
+        
+        # Kolon sırasını ayarlama (Yayın Bitiş Tarihi'nin hemen yanında veya en sonda dikkat çekici olması için)
+        cols_sirasi = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']
+        ozet_df = ozet_df[cols_sirasi]
+        
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
