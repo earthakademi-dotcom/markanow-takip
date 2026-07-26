@@ -23,6 +23,7 @@ st.markdown(
     .stDateInput label, 
     .stNumberInput label, 
     .stMultiSelect label,
+    .stCheckbox label,
     div[data-testid="stMarkdownContainer"] p,
     .stDataFrame {
         color: #FFFFFF !important;
@@ -730,6 +731,9 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         s_tarihi_ham = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
         tutar = c2.text_input("Tutar (TL)", value="")
         
+        st.write("")
+        bilgilendirme_onayi = st.checkbox("4 ila 6 ay sonra tescil ödemesinin 16.000 TL + KDV olduğunu müşteriye bildirdim.")
+        
         submitted = st.form_submit_button("Satışı Kaydet")
         if submitted:
             dogru_tarihi = tarih_birlestir_ve_formatla(dogru_tarihi_ham)
@@ -748,6 +752,8 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
             
             if eksik_alanlar:
                 st.error(f"❌ Lütfen boş bırakılan zorunlu alanları doldurunuz: {', '.join(eksik_alanlar)}")
+            elif not bilgilendirme_onayi:
+                st.error("❌ Lütfen 4 ila 6 ay sonra tescil ödemesinin 16.000 TL + KDV olduğunu müşteriye bildirdiğinizi onaylayın.")
             else:
                 new_row = {
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
