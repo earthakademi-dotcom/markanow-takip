@@ -332,7 +332,12 @@ def sinif_toplam_ucret_hesapla(sinif_str):
 def sinif_adedi_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        gercek_siniflar = [p for p in parcalar if "/" not in p]
+        gercek_siniflar = set()
+        for p in parcalar:
+            if "/" not in p and p.isdigit():
+                s_int = int(p)
+                if 1 <= s_int <= 45:
+                    gercek_siniflar.add(s_int)
         return len(gercek_siniflar)
     except:
         return 0
@@ -1239,4 +1244,4 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
                 import time; time.sleep(1.2)
-                st.rer0un()
+                st.rerun()
