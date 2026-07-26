@@ -1214,7 +1214,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 odeme_gunu_ham = c5.text_input("Müşterinin Ödeme Sözü Verdiği Tarih (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
                 st.write("")
-                b_col1, b_col2, b_col3 = st.columns(3)
+                b_col1, b_col2 = st.columns(2)
                 
                 with b_col1:
                     if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn", use_container_width=True):
@@ -1268,32 +1268,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         else:
                             st.warning("Lütfen Müşterinin Ödeme Sözü Verdiği Tarih alanını doldurunuz.")
 
-                with b_col3:
-                    if st.button("🔄 Ödeme Tarihini Ertele / Güncelle", key="ozel_odeme_ertele_btn", use_container_width=True):
-                        yeni_odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
-                        if yeni_odeme_gunu.strip():
-                            idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
-                            df.at[idx, 'Durum'] = "Ödeme Sözü Verenler"
-                            df.at[idx, 'Ödeme Tarihi'] = yeni_odeme_gunu.strip()
-                            if tescil_fatura_no.strip():
-                                df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
-                            if tescil_tutar.strip():
-                                df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
-                            df.to_csv(DATA_FILE, index=False)
-                            
-                            st.success(f"🔄 Başarılı! '{secilen_tescil_marka}' markasının ödeme tarihi {yeni_odeme_gunu} olarak ertelendi ve güncellendi.")
-                            import time; time.sleep(1.2)
-                            st.rerun()
-                        else:
-                            st.warning("Lütfen geçerli yeni bir ödeme tarihi giriniz.")
-
 # --- ÖDEME SÖZÜ VERENLER RAPOR EKRANI ---
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown("<h2>📞 Ödeme Sözü Verenler Raporu</h2>", unsafe_allow_html=True)
-    st.write("Müşteriden ödeme sözü alınan ve ödeme tarihi beklenen markaların detaylı rapor görünümü aşağıdadır.")
+    st.markdown("<h2>📞 Ödeme Sözü Verenler Raporu ve Erteleme Paneli</h2>", unsafe_allow_html=True)
+    st.write("Müşteriden ödeme sözü alınan ve ödeme tarihi beklenen markaların listesi ve tarih güncelleme alanı aşağıdadır.")
     
     odeme_sozu_df = df[df['Durum'].astype(str).str.strip() == "Ödeme Sözü Verenler"].copy()
     
@@ -1318,6 +1299,32 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler":
         ozet_df = odeme_sozu_df[['Marka Adı', 'Danışman', 'Sınıf', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Tarihi', 'Tescil Harç Tutarı']].copy()
         ozet_df.columns = ['Marka Adı', 'Danışman', 'Sınıf', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Tescil Harç / Hizmet Tutarı (TL)']
         st.dataframe(ozet_df, use_container_width=True)
+        
+        st.write("---")
+        st.subheader("🔄 Ödeme Tarihi Ertele / Güncelle")
+        
+        marka_listesi_soz = odeme_sozu_df['Marka Adı'].astype(str).tolist()
+        secilen_erteleme_marka = st.selectbox("Erteleme / Güncelleme Yapılacak Markayı Seçin", options=marka_listesi_soz, key="sel_erteleme_marka")
+        
+        if secilen_erteleme_marka:
+            e_row = odeme_sozu_df[odeme_sozu_df['Marka Adı'].astype(str) == secilen_erteleme_marka].iloc[0]
+            mevcut_soz_tar = str(e_row.get('Ödeme Tarihi', '')) if pd.notna(e_row.get('Ödeme Tarihi')) and str(e_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y")
+            
+            with st.form("form_erteleme_islem"):
+                yeni_erteleme_tar_ham = st.text_input("Yeni Ödeme Sözü Tarihi (GG/AA/YYYY)", value=mevcut_soz_tar)
+                submitted_ertele = st.form_submit_button("🔄 Ödeme Tarihini Ertele ve Güncelle", use_container_width=True)
+                
+                if submitted_ertele:
+                    yeni_tarih_duzgun = tarih_birlestir_ve_formatla(yeni_erteleme_tar_ham)
+                    if yeni_tarih_duzgun.strip():
+                        idx = df.index[df['Marka Adı'].astype(str) == str(secilen_erteleme_marka)][0]
+                        df.at[idx, 'Ödeme Tarihi'] = yeni_tarih_duzgun.strip()
+                        df.to_csv(DATA_FILE, index=False)
+                        st.success(f"✅ Başarılı! '{secilen_erteleme_marka}' markasının ödeme tarihi {yeni_tarih_duzgun} olarak ertelendi ve güncellendi.")
+                        import time; time.sleep(1.2)
+                        st.rerun()
+                    else:
+                        st.warning("Lütfen geçerli yeni bir ödeme tarihi giriniz.")
 
 # --- MUHASEBE AŞAMA SAYFALARI ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
