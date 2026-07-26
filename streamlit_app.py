@@ -543,7 +543,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
     secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year), key="kar_zarar_yil_sec")
     secilen_ay_kod = aylar[secilen_ay_isim]
     
-     rapor_df = df.copy()
+    rapor_df = df.copy()
     
     def net_kar_filtrele(row):
         try:
