@@ -539,6 +539,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
     
     aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     
+    # Otomatik yıl seçeneklerini toplama
+    mevcut_yil_str = str(datetime.now().year)
+    yillar_kumesi = {mevcut_yil_str}
+    if 'Satış Tarihi' in df.columns:
+        for t_str in df['Satış Tarihi'].dropna():
+            try:
+                dt_temp = pd.to_datetime(t_str, format='%d/%m/%Y', errors='coerce')
+                if pd.isna(dt_temp): dt_temp = pd.to_datetime(t_str, errors='coerce')
+                if not pd.isna(dt_temp):
+                    yillar_kumesi.add(str(dt_temp.year))
+            except:
+                pass
+    yillar_listesi = sorted(list(yillar_kumesi), reverse=True)
+    
     # Danışman listesini hazırlama ("Tümü" seçeneğiyle birlikte)
     danismanlar_listesi = ["Tümü"]
     if 'Danışman' in df.columns:
@@ -547,7 +561,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
 
     col_f1, col_f2, col_f3 = st.columns(3)
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), key="kar_zarar_ay_sec")
-    secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year), key="kar_zarar_yil_sec")
+    
+    # Yıl filtresi selectbox (ok işaretli otomatik liste)
+    varsayilan_yil_index = yillar_listesi.index(mevcut_yil_str) if mevcut_yil_str in yillar_listesi else 0
+    secilen_yil = col_f2.selectbox("Yıl", options=yillar_listesi, index=varsayilan_yil_index, key="kar_zarar_yil_sec")
+    
     secilen_danisman_filtre = col_f3.selectbox("Danışman Seçin", danismanlar_listesi, key="kar_zarar_danisman_sec")
     
     secilen_ay_kod = aylar[secilen_ay_isim]
@@ -568,7 +586,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
             if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
             if pd.isna(dt): return False
             ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
-            yil_eslesir = True if not secilen_yil.strip() else (str(dt.year) == secilen_yil.strip())
+            yil_eslesir = True if not str(secilen_yil).strip() else (str(dt.year) == str(secilen_yil).strip())
             return ay_eslesir and yil_eslesir
         except: return False
             
