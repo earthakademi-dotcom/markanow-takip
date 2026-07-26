@@ -1217,32 +1217,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 b_col1, b_col2 = st.columns(2)
                 
                 with b_col1:
-                    if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn", use_container_width=True):
-                        yeni_tescil_tar = tarih_birlestir_ve_formatla(tescil_tarihi_giris)
-                        yeni_son_gun = tarih_birlestir_ve_formatla(son_gun_giris)
-                        odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
-                        
-                        if tescil_fatura_no.strip():
-                            idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
-                            df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
-                            df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
-                            if yeni_tescil_tar.strip():
-                                df.at[idx, 'Tescil Tebliğ Tarihi'] = yeni_tescil_tar.strip()
-                            if yeni_son_gun.strip():
-                                df.at[idx, 'Tescil Son Ödeme Tarihi'] = yeni_son_gun.strip()
-                            if odeme_gunu.strip():
-                                df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
-                            df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
-                            df.to_csv(DATA_FILE, index=False)
-                            
-                            st.success(f"✅ Başarılı! '{secilen_tescil_marka}' markası 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı.")
-                            import time; time.sleep(1.2)
-                            st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
-                            st.rerun()
-                        else:
-                            st.warning("Lütfen Tescil Fatura No alanını doldurunuz.")
-
-                with b_col2:
                     if st.button("📞 Ödeme Sözü Verenler Yap", key="ozel_odeme_sozu_btn", use_container_width=True):
                         yeni_tescil_tar = tarih_birlestir_ve_formatla(tescil_tarihi_giris)
                         yeni_son_gun = tarih_birlestir_ve_formatla(son_gun_giris)
@@ -1267,6 +1241,32 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                             st.rerun()
                         else:
                             st.warning("Lütfen Müşterinin Ödeme Sözü Verdiği Tarih alanını doldurunuz.")
+
+                with b_col2:
+                    if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn", use_container_width=True):
+                        yeni_tescil_tar = tarih_birlestir_ve_formatla(tescil_tarihi_giris)
+                        yeni_son_gun = tarih_birlestir_ve_formatla(son_gun_giris)
+                        odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
+                        
+                        if tescil_fatura_no.strip():
+                            idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
+                            df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
+                            df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
+                            if yeni_tescil_tar.strip():
+                                df.at[idx, 'Tescil Tebliğ Tarihi'] = yeni_tescil_tar.strip()
+                            if yeni_son_gun.strip():
+                                df.at[idx, 'Tescil Son Ödeme Tarihi'] = yeni_son_gun.strip()
+                            if odeme_gunu.strip():
+                                df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
+                            df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
+                            df.to_csv(DATA_FILE, index=False)
+                            
+                            st.success(f"✅ Başarılı! '{secilen_tescil_marka}' markası 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı.")
+                            import time; time.sleep(1.2)
+                            st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
+                            st.rerun()
+                        else:
+                            st.warning("Lütfen Tescil Fatura No alanını doldurunuz.")
 
 # --- ÖDEME SÖZÜ VERENLER RAPOR EKRANI ---
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler":
