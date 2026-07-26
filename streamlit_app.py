@@ -304,9 +304,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
 def sinif_toplam_ucret_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
-        toplam_tutar = 0.0
-        
-        gorulen_ana_siniflar = []
+        gorulen_ana_siniflar = set()
         
         for p in parcalar:
             if "/" in p:
@@ -316,15 +314,18 @@ def sinif_toplam_ucret_hesapla(sinif_str):
                     s_int = int(p)
                     if 1 <= s_int <= 45:
                         if s_int not in gorulen_ana_siniflar:
-                            gorulen_ana_siniflar.append(s_int)
+                            gorulen_ana_siniflar.add(s_int)
                     else:
-                        gorulen_ana_siniflar.append(3)
+                        gorulen_ana_siniflar.add(3)
                         
-        for idx, s_val in enumerate(gorulen_ana_siniflar, start=1):
-            kayit = st.session_state.sinif_harclari.get(idx, {"harc": 2820.0, "avukat": 750.0})
-            toplam_tutar += kayit["harc"] + kayit["avukat"]
+        adet = len(gorulen_ana_siniflar)
+        if adet < 1:
+            adet = 1
+        if adet > 45:
+            adet = 45
             
-        return toplam_tutar
+        kayit = st.session_state.sinif_harclari.get(adet, {"harc": 2820.0, "avukat": 750.0})
+        return kayit["harc"] + kayit["avukat"]
     except:
         return 0.0
 
@@ -1238,4 +1239,4 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
                 u_df.to_csv(USER_FILE, index=False)
                 st.success(f"❌ Başarılı! '{s3}' sistemden silindi.")
                 import time; time.sleep(1.2)
-                st.rerun()
+                st.rer0un()
