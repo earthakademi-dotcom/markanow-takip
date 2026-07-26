@@ -1202,18 +1202,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 c1, c2, c3, c4, c5 = st.columns(5)
                 tescil_tarihi_giris = c1.text_input("Tescil Tebliğ Tarihi", value=tescil_tarihi_str, disabled=True, key="ozel_tescil_teblig_tarihi")
                 son_gun_giris = c2.text_input("TESCİL SON GÜNÜ", value=son_odeme_tarihi_str, disabled=True, key="ozel_tescil_son_gunu")
-                tescil_fatura_no = c3.text_input("Tescil Fatura No", value="", key="ozel_tescil_f_no")
+                tescil_fatura_no = c3.text_input("Tescil Fatura No", value=str(t_row.get('Fatura No', '')) if pd.notna(t_row.get('Fatura No')) and str(t_row.get('Fatura No')) != 'nan' else "", key="ozel_tescil_f_no")
                 
                 harc_maliyeti = sinif_toplam_ucret_hesapla(t_row.get('Sınıf', ''))
                 kdv_orani_val = st.session_state.kdv_orani
                 tescil_kdv_dahil_tutar = harc_maliyeti * (1 + (kdv_orani_val / 100.0))
-                varsayilan_tescil_tutar = f"{tescil_kdv_dahil_tutar:.2f}"
                 
-                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_tutar, key="ozel_tescil_tutar")
+                mevcut_harc_tutari_str = str(t_row.get('Tescil Harç Tutarı', '')) if pd.notna(t_row.get('Tescil Harç Tutarı')) and str(t_row.get('Tescil Harç Tutarı')) != 'nan' else f"{tescil_kdv_dahil_tutar:.2f}"
+                
+                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=mevcut_harc_tutari_str, key="ozel_tescil_tutar")
                 odeme_gunu_ham = c5.text_input("Müşterinin Ödeme Sözü Verdiği Tarih (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
                 st.write("")
-                b_col1, b_col2 = st.columns(2)
+                b_col1, b_col2, b_col3 = st.columns(3)
                 
                 with b_col1:
                     if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn", use_container_width=True):
@@ -1266,6 +1267,25 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                             st.rerun()
                         else:
                             st.warning("Lütfen Müşterinin Ödeme Sözü Verdiği Tarih alanını doldurunuz.")
+
+                with b_col3:
+                    if st.button("🔄 Ödeme Tarihini Ertele / Güncelle", key="ozel_odeme_ertele_btn", use_container_width=True):
+                        yeni_odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
+                        if yeni_odeme_gunu.strip():
+                            idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
+                            df.at[idx, 'Durum'] = "Ödeme Sözü Verenler"
+                            df.at[idx, 'Ödeme Tarihi'] = yeni_odeme_gunu.strip()
+                            if tescil_fatura_no.strip():
+                                df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
+                            if tescil_tutar.strip():
+                                df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
+                            df.to_csv(DATA_FILE, index=False)
+                            
+                            st.success(f"🔄 Başarılı! '{secilen_tescil_marka}' markasının ödeme tarihi {yeni_odeme_gunu} olarak ertelendi ve güncellendi.")
+                            import time; time.sleep(1.2)
+                            st.rerun()
+                        else:
+                            st.warning("Lütfen geçerli yeni bir ödeme tarihi giriniz.")
 
 # --- ÖDEME SÖZÜ VERENLER RAPOR EKRANI ---
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler":
@@ -1369,7 +1389,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 import time; time.sleep(1.2)
                                 st.rerun()
                             else:
-                                st.warning("Lütfen Fatura No ve Fatura Tarihi alanlarını doldurun.")
+                                st.warning("Lütfen Fatura No and Fatura Tarihi alanlarını doldurun.")
                     st.write("---")
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
