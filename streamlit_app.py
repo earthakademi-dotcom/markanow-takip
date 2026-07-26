@@ -1448,7 +1448,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     sonraki_asama = ""
                     if secilen_asama != "Başvuru Beklemede":
                         mevcut_sonraki_asama = str(s_row.get('Sonraki Aşama Seçimi', '')) if pd.notna(s_row.get('Sonraki Aşama Seçimi')) else ""
-                        secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"]
+                        secenekler = ["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede", "Tescil Tebliğ Edildi Müşteri Arandı"]
                         secilen_asama_indeks = secenekler.index(mevcut_sonraki_asama) if mevcut_sonraki_asama in secenekler else 0
 
                         sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=secenekler, index=secilen_asama_indeks, key=f"form_sonraki_asama_{secilen_marka}")
@@ -1461,7 +1461,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 
                     if sonraki_asama == "İtiraz Tebliğ Beklemede":
                         itiraz_tar_ham = c2.text_input("İtiraz Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar if mevcut_itiraz_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_itiraz_tar_{secilen_marka}")
-                    elif sonraki_asama == "Tescil Tebliğ Beklemede":
+                    elif sonraki_asama in ["Tescil Tebliğ Beklemede", "Tescil Tebliğ Edildi Müşteri Arandı"]:
                         tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_tescil_tar if mevcut_tescil_tar != 'nan' else datetime.now().strftime("%d/%m/%Y"), key=f"form_tescil_tar_{secilen_marka}")
 
                     submitted_update = st.form_submit_button("💾 Kaydı Güncelle")
@@ -1483,6 +1483,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             final_durum = "İtiraz Geldi - Savunma Bekliyor"
                         elif sonraki_asama == "Tescil Tebliğ Beklemede":
                             final_durum = "Tescil Tebliğ Beklemede"
+                        elif sonraki_asama == "Tescil Tebliğ Edildi Müşteri Arandı":
+                            final_durum = "Tescil Tebliğ Edildi Müşteri Arandı"
+
+                        # Alternatif olarak kullanıcı tescil tarihi girip sonraki aşamayı seçmemişse otomatik tebliğ edildi aşamasına taşıma kuralı
+                        if secilen_asama == "Tescil Tebliğ Beklemede" and tescil_tar.strip() and not sonraki_asama:
+                            final_durum = "Tescil Tebliğ Edildi Müşteri Arandı"
 
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = final_durum
