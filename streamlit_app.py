@@ -1203,7 +1203,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 
                 varsayilan_tescil_harc = str(st.session_state.tescil_harc_bedeli)
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)", value=varsayilan_tescil_harc, key="ozel_tescil_tutar")
-                odeme_gunu_ham = c5.text_input("Ödeme Günü (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
+                
+                # Müşterinin ödeme sözü verdiği tarihi temsil eden alan etiketi güncellendi
+                odeme_gunu_ham = c5.text_input("Müşterinin Ödeme Sözü Verdiği Tarih (GG/AA/YYYY)", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) and str(t_row.get('Ödeme Tarihi')) != 'nan' else datetime.now().strftime("%d/%m/%Y"), key="ozel_odeme_gunu_input")
                 
                 st.write("")
                 if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", key="ozel_tescil_onay_btn"):
@@ -1222,7 +1224,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
                         st.rerun()
                     else:
-                        st.warning("Lütfen Ödeme Günü alanını doldurunuz.")
+                        st.warning("Lütfen Müşterinin Ödeme Sözü Verdiği Tarih alanını doldurunuz.")
 
 # --- MUHASEBE AŞAMA SAYFALARI ---
 elif is_muhasebe and st.session_state.aktif_sayfa in [
