@@ -1197,8 +1197,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 
                 c1, c2, c3, c4, c5 = st.columns(5)
-                tescil_tarihi_giris = c1.text_input("Tescil Tebliğ Tarihi", value=tescil_tarihi_str, key="ozel_tescil_teblig_tarihi")
-                son_gun_giris = c2.text_input("TESCİL SON GÜNÜ", value=son_odeme_tarihi_str, key="ozel_tescil_son_gunu")
+                tescil_tarihi_giris = c1.text_input("Tescil Tebliğ Tarihi", value=tescil_tarihi_str, disabled=True, key="ozel_tescil_teblig_tarihi")
+                son_gun_giris = c2.text_input("TESCİL SON GÜNÜ", value=son_odeme_tarihi_str, disabled=True, key="ozel_tescil_son_gunu")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", value="", key="ozel_tescil_f_no")
                 
                 harc_maliyeti = sinif_toplam_ucret_hesapla(t_row.get('Sınıf', ''))
