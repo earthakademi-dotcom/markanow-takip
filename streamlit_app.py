@@ -506,12 +506,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     st.write("Sistemdeki tüm markaların güncel aşama durumlarına göre sayısal dağılımı aşağıdadır.")
     
     def get_count_and_df(asama_adi):
-        if asama_adi == "Tescil Tebliğ Beklemede":
-            sub_df = df[(df['Durum'].astype(str).str.strip() == asama_adi) & 
-                        ((df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") | 
-                         (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan"))]
-        else:
-            sub_df = df[df['Durum'].astype(str).str.strip() == asama_adi]
+        sub_df = df[df['Durum'].astype(str).str.strip() == asama_adi]
         return len(sub_df), sub_df
 
     rapor_kalemleri = [
@@ -789,7 +784,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
         ozet_df['Kalan Süre'] = kalan_gunler
         ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası', 'Kalan Süre']
         
-        # Kolon sırasını ayarlama (Yayın Bitiş Tarihi'nin hemen yanında veya en sonda dikkat çekici olması için)
         cols_sirasi = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']
         ozet_df = ozet_df[cols_sirasi]
         
@@ -1223,10 +1217,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
         arama_metni = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...", key=f"arama_{secilen_asama}")
         
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
-    
-    if secilen_asama == "Tescil Tebliğ Beklemede":
-        asama_df = asama_df[(asama_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") | 
-                           (asama_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")]
 
     if arama_metni.strip():
         asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
