@@ -281,7 +281,7 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
         sirali_sayac = 0
         for p in parcalar:
             if "/" in p:
-                continue # Alt sınıflar harç/ücret maliyeti üretmez
+                continue # Alt sınıflar harç maliyeti üretmez
             else:
                 if p.isdigit():
                     s_int = int(p)
