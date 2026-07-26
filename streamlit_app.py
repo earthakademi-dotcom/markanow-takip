@@ -312,8 +312,8 @@ def sinif_toplam_ucret_hesapla(sinif_str):
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         toplam_tutar = 0.0
         
-        # Gerçek ana sınıfları doğru sırayla toplamak için listeliyoruz
-        gercek_ana_siniflar = []
+        # Benzersiz ana sınıfları koruyarak sırasını tespit edelim
+        gorulen_ana_siniflar = []
         alt_sinif_sayisi = 0
         
         for p in parcalar:
@@ -323,18 +323,18 @@ def sinif_toplam_ucret_hesapla(sinif_str):
                 if p.isdigit():
                     s_int = int(p)
                     if 1 <= s_int <= 45:
-                        gercek_ana_siniflar.append(s_int)
+                        if s_int not in gorulen_ana_siniflar:
+                            gorulen_ana_siniflar.append(s_int)
                     else:
-                        gercek_ana_siniflar.append(3)
+                        gorulen_ana_siniflar.append(3)
                         
-        # Sınıfları sırasıyla toplama (1. sınıf, 2. sınıf, 3. sınıf vb. tablosundaki karşılıklarına göre)
-        for idx, s_int in enumerate(gercek_ana_siniflar, start=1):
+        # Her bir benzersiz ana sınıfı sırasına göre (1. sınıf, 2. sınıf vb.) fiyatlandırıyoruz
+        for idx, s_val in enumerate(gorulen_ana_siniflar, start=1):
             kayit = st.session_state.sinif_harclari.get(idx, {"harc": 2820.0, "avukat": 750.0})
             toplam_tutar += kayit["harc"] + kayit["avukat"]
             
-        # Alt sınıflar (örneğin 35/11) için sadece avukat ücreti eklenir (veya yapılandırılmış avukat ücreti)
+        # Alt sınıflar (örn: 35/11) için avukat ücreti eklemesi
         for _ in range(alt_sinif_sayisi):
-            # İlk sınıfın avukat ücretini baz alıyoruz
             ilk_kayit = st.session_state.sinif_harclari.get(1, {"avukat": 750.0})
             toplam_tutar += ilk_kayit["avukat"]
             
@@ -1214,7 +1214,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             
             if submitted_personel:
                 if n.strip():
-                    u_df = pd.read_csv(USER_FILE) if os.path.exists(USER_FILE) else pd.DataFrame(columns=["İsim", "Shifre"])
+                    u_df = pd.read_csv(USER_FILE) if os.path.exists(USER_FILE) else pd.DataFrame(columns=["İsim", "Şifre"])
                     yeni_isim = n.strip().upper()
                     
                     if yeni_isim in u_df["İsim"].values:
@@ -1236,7 +1236,6 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
             s2 = st.text_input("Yeni Şifre", type="password", key="new_sf_input")
             if st.button("Şifreyi Güncelle", key="btn_sf_guncelle"):
                 u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
-                u_df.to_csv(USER_FILE, inis=False) # corrected typo in code
                 u_df.to_csv(USER_FILE, index=False)
                 st.success("✅ Başarılı! Şifre güncellendi.")
                 import time; time.sleep(1.2)
@@ -1245,7 +1244,7 @@ elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     with t3:
         if os.path.exists(USER_FILE):
             u_df = pd.read_csv(USER_FILE)
-            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].translate(str.maketrans('','')) if hasattr(u_df["İsim"], 'translate') else u_df["İsim"].tolist(), key="sel_sil_personel")
+            s3 = st.selectbox("Silinecek Personel", u_df["İsim"].tolist(), key="sel_sil_personel")
             if st.button("Danışmanı Sil", key="btn_danisman_sil"):
                 u_df = u_df[u_df["İsim"] != s3]
                 u_df.to_csv(USER_FILE, index=False)
