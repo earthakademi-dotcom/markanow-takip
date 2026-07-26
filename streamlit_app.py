@@ -274,13 +274,15 @@ if "sinif_harclari" not in st.session_state:
             curr_h += h3
             st.session_state.sinif_harclari[i] = {"harc": curr_h, "avukat": 750.0}
 
-# --- EK HARÇ BEDELLERİ (TESCİL VE SAVUNMA) VE BİLGİLENDİRME METNİ ---
+# --- EK HARÇ BEDELLERİ VE KDV ORANI ---
 if "tescil_harc_bedeli" not in st.session_state:
     st.session_state.tescil_harc_bedeli = 2500.0
 if "savunma_harc_bedeli" not in st.session_state:
     st.session_state.savunma_harc_bedeli = 1500.0
 if "bildirim_tescil_tutar" not in st.session_state:
     st.session_state.bildirim_tescil_tutar = 16000.0
+if "kdv_orani" not in st.session_state:
+    st.session_state.kdv_orani = 20.0
 
 if os.path.exists(EK_HARC_CONFIG_FILE) and os.path.getsize(EK_HARC_CONFIG_FILE) > 0:
     try:
@@ -291,6 +293,8 @@ if os.path.exists(EK_HARC_CONFIG_FILE) and os.path.getsize(EK_HARC_CONFIG_FILE) 
             st.session_state.savunma_harc_bedeli = float(ek_df.iloc[0]["Savunma Harç Bedeli"])
         if "Bildirim Tescil Tutar" in ek_df.columns and not ek_df.empty:
             st.session_state.bildirim_tescil_tutar = float(ek_df.iloc[0]["Bildirim Tescil Tutar"])
+        if "KDV Oranı" in ek_df.columns and not ek_df.empty:
+            st.session_state.kdv_orani = float(ek_df.iloc[0]["KDV Oranı"])
     except:
         pass
 
@@ -615,7 +619,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         sayfa_degistir("Ana Sayfa")
         
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
-    st.write("🔹 **1. Sınıf Bedeli**, **3. Sınıf Bedeli**, **Ortak Avukat Ücreti**, **Tescil Harç Bedeli**, **Savunma Harç Bedeli** ve **Danışman Bilgilendirme Tescil Ücreti** değerlerini aşağıdaki alanlardan belirleyebilirsiniz.")
+    st.write("🔹 **1. Sınıf Bedeli**, **3. Sınıf Bedeli**, **Ortak Avukat Ücreti**, **Tescil Harç Bedeli**, **Savunma Harç Bedeli**, **Bildirim Tescil Ücreti** ve **KDV Oranı (%)** değerlerini aşağıdaki alanlardan belirleyebilirsiniz.")
 
     mevcut_h1 = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
     mevcut_h3_bedel = float(st.session_state.sinif_harclari.get(4, {"harc": 3150.0})["harc"] - st.session_state.sinif_harclari.get(3, {"harc": 3150.0})["harc"]) if len(st.session_state.sinif_harclari) >= 4 else 3150.0
@@ -629,10 +633,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
     ortak_avukat_input = col_k3.number_input("Tüm Sınıflar İçin Ortak Avukat Ücreti (TL)", value=float(mevcut_ortak_avukat), step=50.0, format="%.2f")
 
     st.write("")
-    col_e1, col_e2, col_e3 = st.columns(3)
+    col_e1, col_e2, col_e3, col_e4 = st.columns(4)
     tescil_harc_input = col_e1.number_input("Tescil Harç Bedeli (TL)", value=float(st.session_state.tescil_harc_bedeli), step=50.0, format="%.2f")
     savunma_harc_input = col_e2.number_input("Savunma Harç Bedeli (TL)", value=float(st.session_state.savunma_harc_bedeli), step=50.0, format="%.2f")
     bildirim_tutar_input = col_e3.number_input("Bildirim Tescil Ödemesi (TL)", value=float(st.session_state.bildirim_tescil_tutar), step=100.0, format="%.2f")
+    kdv_orani_input = col_e4.number_input("KDV Oranı (%)", value=float(st.session_state.kdv_orani), step=1.0, format="%.2f")
 
     st.write("---")
 
@@ -706,14 +711,16 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         st.session_state.tescil_harc_bedeli = float(tescil_harc_input)
         st.session_state.savunma_harc_bedeli = float(savunma_harc_input)
         st.session_state.bildirim_tescil_tutar = float(bildirim_tutar_input)
+        st.session_state.kdv_orani = float(kdv_orani_input)
         
         pd.DataFrame({
             "Tescil Harç Bedeli": [st.session_state.tescil_harc_bedeli],
             "Savunma Harç Bedeli": [st.session_state.savunma_harc_bedeli],
-            "Bildirim Tescil Tutar": [st.session_state.bildirim_tescil_tutar]
+            "Bildirim Tescil Tutar": [st.session_state.bildirim_tescil_tutar],
+            "KDV Oranı": [st.session_state.kdv_orani]
         }).to_csv(EK_HARC_CONFIG_FILE, index=False)
         
-        st.success("🎉 Sınıf harçları, avukat ücretleri ve bildirim tescil tutarı başarıyla kaydedildi!")
+        st.success("🎉 Sınıf harçları, avukat ücretleri, bildirim tescil tutarı ve KDV oranı başarıyla kaydedildi!")
         import time; time.sleep(1.2)
         st.rerun()
 
@@ -737,8 +744,20 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         sinif = c2.multiselect("Sınıf Seçimi", SINIFLAR)
         odeme = c2.selectbox("Ödeme Türü", ["EFT", "Kredi Kartı"])
         s_tarihi_ham = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
-        tutar = c2.text_input("Tutar (TL)", value="")
         
+        tutar_input = c2.text_input("Tutar (KDV Dahil, TL)", value="")
+        
+        # KDV hariç hesaplama önizlemesi
+        kdv_haric_gosterge = 0.0
+        if tutar_input.strip():
+            try:
+                temiz_tutar = float(tutar_input.strip().replace(",", "."))
+                kdv_orani = st.session_state.kdv_orani
+                kdv_haric_gosterge = temiz_tutar / (1 + (kdv_orani / 100.0))
+                c2.markdown(f"💡 **KDV Hariç Tutar:** `{kdv_haric_gosterge:,.2f} TL` *(KDV: %{kdv_orani:g})*")
+            except:
+                pass
+
         st.write("")
         guncel_bildirim_tutar_str = f"{st.session_state.bildirim_tescil_tutar:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         bilgilendirme_onayi = st.checkbox(f"4 ila 6 ay sonra tescil ödemesinin {guncel_bildirim_tutar_str} TL + KDV olduğunu müşteriye bildirdim.")
@@ -757,7 +776,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
             if not dogru_tarihi.strip(): eksik_alanlar.append("Doğum Tarihi")
             if not sinif: eksik_alanlar.append("Sınıf Seçimi")
             if not s_tarihi.strip(): eksik_alanlar.append("Satış Tarihi")
-            if not tutar.strip(): eksik_alanlar.append("Tutar")
+            if not tutar_input.strip(): eksik_alanlar.append("Tutar (KDV Dahil)")
             
             if eksik_alanlar:
                 st.error(f"❌ Lütfen boş bırakılan zorunlu alanları doldurunuz: {', '.join(eksik_alanlar)}")
@@ -767,7 +786,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                 new_row = {
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
                     "Doğum Tarihi": dogru_tarihi.strip(), "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
-                    "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
+                    "Satış Tarihi": s_tarihi.strip(), "Tutar": tutar_input.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
@@ -901,7 +920,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                     y_sinif = c2.text_input("Sınıf", value=str(d_row.get('Sınıf', '')))
                     y_odeme = c2.text_input("Ödeme Türü", value=str(d_row.get('Ödeme', '')))
                     y_s_tarih = c2.text_input("Satış Tarihi", value=str(d_row.get('Satış Tarihi', '')))
-                    y_tutar = c2.text_input("Tutar (TL)", value=str(d_row.get('Tutar', '')))
+                    y_tutar = c2.text_input("Tutar (KDV Dahil, TL)", value=str(d_row.get('Tutar', '')))
                     y_danisman = c2.text_input("Danışman", value=str(d_row.get('Danışman', '')))
 
                     b_col1, b_col2, b_col3 = st.columns([1, 1, 2])
@@ -1064,7 +1083,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             st.subheader("✅ Onay Bekleyen Satışları Faturalandır ve Başvuru Beklemede'ye Al")
             for i, row in asama_df.iterrows():
                 with st.container():
-                    st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
+                    st.markdown(f"Marka: **{row['Marka Adı']}** | Satışı Giren Danışman: *{row['Danışman']}* | Tutar (KDV Dahil): **{row['Tutar']} TL**")
                     c1, c2, c3 = st.columns([1.5, 1.5, 1])
                     f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
                     f_tarih_ham = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
