@@ -453,6 +453,8 @@ if is_muhasebe:
             sayfa_degistir("Kurum İncelemesinde Raporu")
         if st.button("📰 Yayında Raporu", use_container_width=True):
             sayfa_degistir("Yayında Raporu")
+        if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True):
+            sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
 
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
         if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True):
@@ -787,6 +789,26 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
         cols_sirasi = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']
         ozet_df = ozet_df[cols_sirasi]
         
+        st.dataframe(ozet_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede Raporu":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>📌 Tescil Tebliğ Beklemede Raporu</h2>", unsafe_allow_html=True)
+    st.write("Tescil tebliğ aşamasında olan ve işlem bekleyen markaların detaylı rapor görünümü aşağıdadır.")
+    
+    tescil_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede"].copy()
+    
+    toplam_marka_sayisi = tescil_bekleyen_df['Marka Adı'].nunique()
+    st.metric("Toplam Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    
+    st.write("---")
+    if tescil_bekleyen_df.empty:
+        st.info("Tescil tebliğ beklemede kayıt bulunmuyor.")
+    else:
+        ozet_df = tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No', 'Tescil Tebliğ Tarihi']].copy()
+        ozet_df.columns = ['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası', 'Tescil Tebliğ Tarihi']
         st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
