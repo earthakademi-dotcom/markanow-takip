@@ -132,12 +132,12 @@ EK_HARC_CONFIG_FILE = "ek_harc_config.csv"
 
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
-OPERASYON_YETKILILERI = ["SELEN", "DENİZ", "ALİ OSMAN", "ATA"]
+OPERASYON_YETKILILERI = ["SELEN", "DENİZ", "ALİ OSMAN"]
 
 def load_users():
     default_users = pd.DataFrame({
-        "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ", "ATA"],
-        "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
+        "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ"],
+        "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
     })
     if not os.path.exists(USER_FILE) or os.path.getsize(USER_FILE) == 0:
         default_users.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
@@ -342,7 +342,7 @@ if not st.session_state.kullanici:
 
 aktif_kullanici_ad = str(st.session_state.kullanici).strip().upper()
 is_admin = (aktif_kullanici_ad == "ALİ OSMAN YELBEY")
-is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN", "ELİF YILDIZ", "ATA"])
+is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN", "ELİF YILDIZ"])
 
 if "aktif_sayfa" not in st.session_state: st.session_state.aktif_sayfa = "Ana Sayfa"
 
