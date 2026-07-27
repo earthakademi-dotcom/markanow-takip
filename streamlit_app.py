@@ -382,7 +382,7 @@ if is_muhasebe:
         if st.button("📅 Ödeme Sözü Verenler Raporu", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
-        if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
+        if st.button("💰 Fiyatlandırma dan Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
     
     with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True): sayfa_degistir("Muhasebe Onayı Bekliyor")
@@ -1340,6 +1340,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
             if secilen_marka:
                 s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                
+                # Tescil Tebliğ Tarihine göre 2 ay ekleyip hafta sonu / resmi tatil kontrolü ile Tescil Son Ödeme Tarihi hesaplama
+                mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
+                hesaplanan_son_odeme = ""
+                if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
+                    try:
+                        parsed_t = datetime.strptime(mevcut_tescil_teblig, "%d/%m/%Y")
+                        eklenen_iki_ay = ay_ekle(parsed_t, 2)
+                        kontrol_edilen_dt = resmi_tatil_ve_tatil_kontrol(eklenen_iki_ay)
+                        hesaplanan_son_odeme = kontrol_edilen_dt.strftime("%d/%m/%Y")
+                    except:
+                        hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
+                
                 with st.form(f"form_guncelle_{secilen_marka}"):
                     c1, c2 = st.columns(2)
                     tum_durumlar = ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]
@@ -1352,13 +1365,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
                     yayin_bitis = c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
                     
-                    tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "", disabled=True)
+                    tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
                     tescil_harc_tutar_val = c2.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
+                    
+                    # Tescil Ödeme Son Günü gösterim alanı
+                    c1.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = yeni_durum
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
+                        if hesaplanan_son_odeme:
+                            df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                         
                         veriyi_kaydet_ve_yedekle(df)
                         
