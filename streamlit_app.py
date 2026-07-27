@@ -188,6 +188,17 @@ def resmi_tatil_ve_tatil_kontrol(dt):
             break
     return dt
 
+def hesapla_tescil_son_odeme(tescil_tarihi_str):
+    if not tescil_tarihi_str or str(tescil_tarihi_str).strip() == "" or str(tescil_tarihi_str).lower() == "nan":
+        return ""
+    try:
+        parsed_t_tar = datetime.strptime(str(tescil_tarihi_str).strip(), "%d/%m/%Y")
+        hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
+        son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
+        return son_odeme_dt.strftime("%d/%m/%Y")
+    except:
+        return str(tescil_tarihi_str)
+
 def tarih_birlestir_ve_formatla(tarih_str):
     if not tarih_str: return ""
     temiz = "".join(filter(str.isdigit, str(tarih_str)))
@@ -242,6 +253,19 @@ def load_data():
                 d_temp[col] = d_temp[col].fillna("0")
         
     d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
+    
+    # TÜM KAYITLARIN TESCİL SON ÖDEME TARİHLERİNİ DOĞRU MANTIKLA GÜNCELLE
+    degisiklik_var = False
+    for idx_row, row_data in d_temp.iterrows():
+        t_teblig = str(row_data.get('Tescil Tebliğ Tarihi', '')).strip()
+        if t_teblig and t_teblig.lower() != 'nan':
+            dogru_son_odeme = hesapla_tescil_son_odeme(t_teblig)
+            if dogru_son_odeme and str(row_data.get('Tescil Son Ödeme Tarihi', '')) != dogru_son_odeme:
+                d_temp.at[idx_row, 'Tescil Son Ödeme Tarihi'] = dogru_son_odeme
+                degisiklik_var = True
+    if degisiklik_var:
+        veriyi_kaydet_ve_yedekle(d_temp)
+        
     return d_temp
 
 if "sinif_harclari" not in st.session_state:
@@ -1132,20 +1156,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
                 tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '')
                 
-                son_odeme_tarihi_str = ""
-                if tescil_tarihi_str and str(tescil_tarihi_str).strip() != '' and str(tescil_tarihi_str).lower() != 'nan':
-                    try:
-                        parsed_t_tar = datetime.strptime(str(tescil_tarihi_str).strip(), "%d/%m/%Y")
-                        hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
-                        son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
-                        son_odeme_tarihi_str = son_odeme_dt.strftime("%d/%m/%Y")
-                        
-                        idx_temp = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
-                        if str(df.at[idx_temp, 'Tescil Son Ödeme Tarihi']) != son_odeme_tarihi_str:
-                            df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
-                            veriyi_kaydet_ve_yedekle(df)
-                    except:
-                        son_odeme_tarihi_str = str(t_row.get('Tescil Son Ödeme Tarihi', ''))
+                son_odeme_tarihi_str = hesapla_tescil_son_odeme(tescil_tarihi_str)
+                if son_odeme_tarihi_str:
+                    idx_temp = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
+                    if str(df.at[idx_temp, 'Tescil Son Ödeme Tarihi']) != son_odeme_tarihi_str:
+                        df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
+                        veriyi_kaydet_ve_yedekle(df)
                 
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 c_op, c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1, 1])
@@ -1356,10 +1372,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         st.warning("⚠️ Lütfen Tescil Tebliğ Tarihini giriniz.")
                     else:
                         try:
-                            parsed_t_tar = datetime.strptime(tescil_tar, "%d/%m/%Y")
-                            hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
-                            son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
-                            son_odeme_str = son_odeme_dt.strftime("%d/%m/%Y")
+                            son_odeme_str = hesapla_tescil_son_odeme(tescil_tar)
 
                             idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                             df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar
@@ -1382,15 +1395,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
             
             mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
-            hesaplanan_son_odeme = ""
-            if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
-                try:
-                    parsed_t = datetime.strptime(mevcut_tescil_teblig, "%d/%m/%Y")
-                    eklenen_iki_ay = ay_ekle(parsed_t, 2)
-                    kontrol_edilen_dt = resmi_tatil_ve_tatil_kontrol(eklenen_iki_ay)
-                    hesaplanan_son_odeme = kontrol_edilen_dt.strftime("%d/%m/%Y")
-                except:
-                    hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
+            hesaplanan_son_odeme = hesapla_tescil_son_odeme(mevcut_tescil_teblig)
             
             with st.form(f"form_guncelle_odeme_sozu_{secilen_marka}"):
                 c1, c2, c3 = st.columns(3)
@@ -1464,15 +1469,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
             
             mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
-            hesaplanan_son_odeme = ""
-            if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
-                try:
-                    parsed_t = datetime.strptime(mevcut_tescil_teblig, "%d/%m/%Y")
-                    eklenen_iki_ay = ay_ekle(parsed_t, 2)
-                    kontrol_edilen_dt = resmi_tatil_ve_tatil_kontrol(eklenen_iki_ay)
-                    hesaplanan_son_odeme = kontrol_edilen_dt.strftime("%d/%m/%Y")
-                except:
-                    hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
+            hesaplanan_son_odeme = hesapla_tescil_son_odeme(mevcut_tescil_teblig)
             
             with st.form(f"form_guncelle_{secilen_marka}"):
                 c1, c2 = st.columns(2)
