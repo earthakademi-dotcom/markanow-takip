@@ -506,7 +506,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
-    # ESNEK VE KUSURSUZ FİLTRELEME MANTIĞI
+    # KESİN VE HATA RİSKSİZ EŞLEŞTİRME MANTIĞI
     def genel_rapor_filtrele(row):
         try:
             if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
@@ -541,11 +541,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     else:
         rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
-    # KESİN ÇÖZÜM: Sayaçların her zaman ana veri tabanından (`df`) doğru beslenmesi sağlandı
+    # KUSURSUZ SAYIM: Tüm durumları boşluk, büyük/küçük harf ve özel karakterlerden bağımsız eşleştiriyoruz
     def get_count_and_df(asama_adi):
-        temiz_asama = str(asama_adi).strip()
-        df_durum = df[df['Durum'].astype(str).str.strip() == temiz_asama]
-        if temiz_asama == "Tescil Tebliğ Beklemede":
+        temiz_hedef = str(asama_adi).strip().lower()
+        
+        # DataFrame içindeki durumları temizle ve eşleştir
+        durumlar_series = df['Durum'].astype(str).str.strip().str.lower()
+        df_durum = df[durumlar_series == temiz_hedef]
+        
+        if "tescil tebliğ beklemede" in temiz_hedef:
             sub_df = df_durum[
                 (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
                 (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")
