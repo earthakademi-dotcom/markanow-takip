@@ -634,6 +634,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         st.session_state.secilen_kz_yil = mevcut_yil_str if mevcut_yil_str in yillar_listesi else "Tümü"
         st.session_state.secilen_kz_personel = "Tümü"
 
+    if "secilen_kz_personel" not in st.session_state:
+        st.session_state.secilen_kz_personel = "Tümü"
+
     col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1])
     varsayilan_yil_index = yillar_listesi.index(st.session_state.secilen_kz_yil) if st.session_state.secilen_kz_yil in yillar_listesi else 0
     varsayilan_ay_index = list(aylar.keys()).index(st.session_state.secilen_kz_ay) if st.session_state.secilen_kz_ay in aylar else 0
@@ -740,9 +743,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     st.write("---")
     
     ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
-    ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']])
-    ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
-    st.dataframe(ozet_df[['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti']], use_container_width=True)
+    if not ozet_df.empty:
+        ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']])
+        ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
+        gosterge_df = ozet_df[['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti']]
+    else:
+        gosterge_df = pd.DataFrame(columns=['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti'])
+    st.dataframe(gosterge_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -759,9 +766,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     st.write("---")
     
     ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
-    ozet_df['Sınıf Adedi'] = [f"{sinif_adedi_hesapla(row.get('Sınıf', ''))} Sınıf" for _, row in basvuru_bekleyen_df.iterrows()]
-    ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))}:,.2f TL" for _, row in basvuru_bekleyen_df.iterrows()]
-    st.dataframe(ozet_df, use_container_width=True)
+    if not ozet_df.empty:
+        ozet_df['Sınıf Adedi'] = [f"{sinif_adedi_hesapla(row.get('Sınıf', ''))} Sınıf" for _, row in basvuru_bekleyen_df.iterrows()]
+        ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))}:,.2f TL" for _, row in basvuru_bekleyen_df.iterrows()]
+        gosterge_df = ozet_df
+    else:
+        gosterge_df = pd.DataFrame(columns=['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Sınıf Adedi', 'Sınıf Toplam Harç Ücreti'])
+    st.dataframe(gosterge_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -773,9 +784,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Rapor
     kurum_ozet_df = kurum_inceleme_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].copy()
     if not kurum_ozet_df.empty:
         kurum_ozet_df.insert(kurum_ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in kurum_ozet_df['Sınıf']])
+        gosterge_df = kurum_ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'})
     else:
-        kurum_ozet_df['Sınıf Adedi'] = []
-    st.dataframe(kurum_ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+        gosterge_df = pd.DataFrame(columns=['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru Numarası'])
+    st.dataframe(gosterge_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -796,7 +808,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
         except: kalan_gunler.append("Bilinmiyor")
     ozet_df = yayinda_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
     ozet_df['Kalan Süre'] = kalan_gunler
-    st.dataframe(ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'})[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']], use_container_width=True)
+    if not ozet_df.empty:
+        gosterge_df = ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'})[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']]
+    else:
+        gosterge_df = pd.DataFrame(columns=['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası'])
+    st.dataframe(gosterge_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -804,7 +820,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede R
     tescil_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede"].copy()
     st.metric("Toplam Marka Adedi", f"{tescil_bekleyen_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+    gosterge_df = tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}) if not tescil_bekleyen_df.empty else pd.DataFrame(columns=['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru Numarası'])
+    st.dataframe(gosterge_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -812,7 +829,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Rap
     arandi_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Edildi Müşteri Arandı"].copy()
     st.metric("Toplam Marka Adedi", f"{arandi_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
+    rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy() if not arandi_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi'])
     st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Raporu":
@@ -835,7 +852,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Rap
         except:
             kalan_gunler_listesi.append("Bilinmiyor")
 
-    rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']].copy()
+    rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']].copy() if not sozu_verenler_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı'])
     rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
     
     kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']
