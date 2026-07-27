@@ -254,7 +254,6 @@ def load_data():
         
     d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
     
-    # TÜM KAYITLARIN TESCİL SON ÖDEME TARİHLERİNİ DOĞRU MANTIKLA GÜNCELLE
     degisiklik_var = False
     for idx_row, row_data in d_temp.iterrows():
         t_teblig = str(row_data.get('Tescil Tebliğ Tarihi', '')).strip()
@@ -900,8 +899,26 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Kurum Ödemesi Bekl
     st.metric("Toplam Marka Adedi", f"{kurum_odeme_bekleyen_df['Marka Adı'].nunique()} Adet")
     st.write("---")
     
-    rapor_goruntule_df = kurum_odeme_bekleyen_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi']].copy() if not kurum_odeme_bekleyen_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi'])
-    st.dataframe(rapor_goruntule_df.rename(columns={'Ödeme Tarihi': 'Ödeme Günü'}), use_container_width=True)
+    bugun = datetime.now().date()
+    kalan_gunler_listesi = []
+    for _, r_item in kurum_odeme_bekleyen_df.iterrows():
+        son_odeme_str = str(r_item.get('Tescil Son Ödeme Tarihi', '')).strip()
+        try:
+            dt_son = pd.to_datetime(son_odeme_str, format='%d/%m/%Y').date()
+            fark_gun = (dt_son - bugun).days
+            if fark_gun < 0: kalan_gunler_listesi.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+            elif fark_gun == 0: kalan_gunler_listesi.append("Bugün Son Gün! ⚠️")
+            else: kalan_gunler_listesi.append(f"{fark_gun} Gün Kaldı")
+        except:
+            kalan_gunler_listesi.append("Bilinmiyor")
+
+    rapor_goruntule_df = kurum_odeme_bekleyen_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi']].copy() if not kurum_odeme_bekleyen_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi'])
+    rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
+    
+    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Fatura No', 'Fatura Tarihi']
+    rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
+
+    st.dataframe(rapor_goruntule_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
