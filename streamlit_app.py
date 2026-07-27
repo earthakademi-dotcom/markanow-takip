@@ -480,12 +480,28 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
             except: pass
     yillar_listesi = ["Tümü"] + sorted(list(yillar_kumesi), reverse=True)
 
-    f_col1, f_col2 = st.columns(2)
-    secilen_rapor_yil = f_col1.selectbox("Yıl Seçin", options=yillar_listesi, index=1 if mevcut_yil_str in yillar_listesi else 0, key="genel_ rapor_yil_sec")
-    secilen_rapor_ay_isim = f_col2.selectbox("Ay Seçin", options=list(aylar_secenek.keys()), key="genel_rapor_ay_sec")
-    secilen_rapor_ay_kod = aylar_secenek[secilen_rapor_ay_isim]
+    if "genel_rapor_filtrelendi" not in st.session_state:
+        st.session_state.genel_rapor_filtrelendi = False
+        st.session_state.secilen_rapor_yil = "Tümü"
+        st.session_state.secilen_rapor_ay_isim = "Tümü"
 
-    # Filtreleme fonksiyonu
+    f_col1, f_col2, f_col3 = st.columns([1, 1, 1])
+    varsayilan_yil_idx = yillar_listesi.index(mevcut_yil_str) if mevcut_yil_str in yillar_listesi else 0
+    secilen_rapor_yil = f_col1.selectbox("Yıl Seçin", options=yillar_listesi, index=varsayilan_yil_idx, key="genel_rapor_yil_sec")
+    secilen_rapor_ay_isim = f_col2.selectbox("Ay Seçin", options=list(aylar_secenek.keys()), key="genel_rapor_ay_sec")
+    
+    with f_col3:
+        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+        filtrele_basildi = st.button("🔍 Filtrele", use_container_width=True)
+
+    if filtrele_basildi:
+        st.session_state.genel_rapor_filtrelendi = True
+        st.session_state.secilen_rapor_yil = secilen_rapor_yil
+        st.session_state.secilen_rapor_ay_isim = secilen_rapor_ay_isim
+
+    secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
+    aktif_yil = st.session_state.secilen_rapor_yil
+
     def genel_rapor_filtrele(row):
         try:
             s_tarih = row.get('Satış Tarihi', '')
@@ -495,7 +511,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
             if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
             if pd.isna(dt): return False
 
-            yil_uyusur = True if secilen_rapor_yil == "Tümü" else (str(dt.year) == str(secilen_rapor_yil))
+            yil_uyusur = True if aktif_yil == "Tümü" else (str(dt.year) == str(aktif_yil))
             ay_uyusur = True if secilen_rapor_ay_kod is None else (f"{dt.month:02d}" == secilen_rapor_ay_kod)
             return yil_uyusur and ay_uyusur
         except: return False
