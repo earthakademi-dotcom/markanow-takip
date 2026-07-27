@@ -925,7 +925,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     with top_col2: arama_metni = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...")
     
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
-    # DÜZELTME: Tescil Tebliğ Beklemede ekranında tarih filtresi kaldırıldı, böylece Durumu bu olan tüm kayıtlar eksiksiz listelenir.
         
     if arama_metni.strip(): asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
     
@@ -1042,6 +1041,37 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         import time; time.sleep(1.2)
                         st.session_state.aktif_sayfa = secilen_sonraki_asama
                         st.rerun()
+        elif secilen_asama == "Tescil Tebliğ Beklemede":
+            st.subheader("✏️ Tescil Tebliğ Tarihini Girin")
+            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
+            if secilen_marka:
+                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                with st.form(f"form_guncelle_tescil_teblig_{secilen_marka}"):
+                    c1, c2 = st.columns(2)
+                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                    c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                    c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')), disabled=True)
+                    
+                    c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
+                    c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
+                    
+                    tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)*", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                    
+                    if st.form_submit_button("💾 Kaydet ve Müşteri Arandı Aşamasına Geç"):
+                        tescil_tar = tarih_birlestir_ve_formatla(tescil_tar_ham)
+                        if not tescil_tar.strip():
+                            st.warning("⚠️ Lütfen Tescil Tebliğ Tarihini giriniz.")
+                        else:
+                            idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar
+                            df.at[idx, 'Durum'] = "Tescil Tebliğ Edildi Müşteri Arandı"
+                            
+                            veriyi_kaydet_ve_yedekle(df)
+                            
+                            st.success("✅ Başarılı! Tescil Tebliğ Edildi Müşteri Arandı aşamasına aktarıldı.")
+                            import time; time.sleep(1.2)
+                            st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
+                            st.rerun()
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
