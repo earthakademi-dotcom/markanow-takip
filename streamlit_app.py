@@ -155,6 +155,7 @@ st.markdown(
 # --- TANIMLAMALAR VE VERİ YÜKLEME ---
 USER_FILE = "users.csv"
 DATA_FILE = "marka_takip.csv"
+BACKUP_FILE = "marka_takip_yedek.csv"
 HARC_CONFIG_FILE = "harc_config.csv"
 EK_HARC_CONFIG_FILE = "ek_harc_config.csv"
 
@@ -212,6 +213,14 @@ def tarih_birlestir_ve_formatla(tarih_str):
         return f"{temiz[:2]}/{temiz[2:4]}/{temiz[4:]}"
     return tarih_str.strip()
 
+def veriyi_kaydet_ve_yedekle(df_to_save):
+    """Veriyi ana dosyaya yazar ve anında otomatik yedek alır."""
+    df_to_save.to_csv(DATA_FILE, index=False)
+    try:
+        df_to_save.to_csv(BACKUP_FILE, index=False)
+    except:
+        pass
+
 def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
@@ -220,15 +229,24 @@ def load_data():
         "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı"
     ]
     
-    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
+    # Ana dosya yoksa veya boşsa, yedekten kurtarmayı dene
+    if (not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0) and os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
+        try:
+            d_temp = pd.read_csv(BACKUP_FILE, dtype=str)
+            d_temp.to_csv(DATA_FILE, index=False) # Ana dosyayı yedekten geri yükle
+        except:
+            d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
+    elif not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-        d_temp.to_csv(DATA_FILE, index=False)
+        veriyi_kaydet_ve_yedekle(d_temp)
     else:
         try:
             d_temp = pd.read_csv(DATA_FILE, dtype=str)
+            if d_temp.empty and os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
+                d_temp = pd.read_csv(BACKUP_FILE, dtype=str)
         except pd.errors.EmptyDataError:
             d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
-            d_temp.to_csv(DATA_FILE, index=False)
+            veriyi_kaydet_ve_yedekle(d_temp)
             
     if "ID" in d_temp.columns:
         d_temp = d_temp.drop(columns=["ID"])
@@ -431,7 +449,6 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 
 st.sidebar.write("---")
 
-# TÜM KULLANICILAR İÇİN ORTAK MENÜ ÖĞELERİ (SATIŞ GİRİŞ VE LİSTELEME)
 if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
     sayfa_degistir("Yeni Satış Giriş")
 if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
@@ -989,8 +1006,8 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                guncel_df.to_csv(DATA_FILE, index=False)
-                st.success("✅ Satış başarıyla kaydedildi ve onay için muhasebeye gönderildi!")
+                veriyi_kaydet_ve_yedekle(guncel_df) # OTOMATİK YEDEKLEME
+                st.success("✅ Satış başarıyla kaydedildi, otomatik yedek alındı ve onay için muhasebeye gönderildi!")
                 st.info("Ana sayfaya yönlendiriliyorsunuz, lütfen bekleyin...")
                 import time; time.sleep(1.5)
                 st.session_state.aktif_sayfa = "Ana Sayfa"
@@ -1004,7 +1021,6 @@ elif st.session_state.aktif_sayfa == "Satışlarım":
     mevcut_yil = str(datetime.now().year)
     st.markdown(f"<h2>📅 Satışlarım / Tüm Satışlar (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
     
-    # TÜM SATIŞLARIN GÖSTERİLMESİ İÇİN KULLANICI FİLTRESİ KALDIRILDI
     listeleme_df = df.copy()
     
     def bu_ay_faturalanan(row):
@@ -1042,7 +1058,6 @@ elif st.session_state.aktif_sayfa == "Genel Satışlarım":
     secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year))
     secilen_ay_kod = aylar[secilen_ay_isim]
     
-    # TÜM SATIŞLARIN GÖSTERİLMESİ İÇİN KULLANICI FİLTRESİ KALDIRILDI
     listeleme_df = df.copy()
     
     def genel_filtrele(row):
@@ -1138,13 +1153,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Tutar'] = y_tutar.strip()
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
-                        df.to_csv(DATA_FILE, index=False)
-                        st.session_state["success_msg"] = f"Başarılı! '{secilen_duzenle_marka}' markasına ait bilgiler güncellendi."
+                        veriyi_kaydet_ve_yedekle(df) # OTOMATİK YEDEKLEME
+                        st.session_state["success_msg"] = f"Başarılı! '{secilen_duzenle_marka}' markasına ait bilgiler güncellendi ve yedeklendi."
                         st.rerun()
 
                     if submitted_delete:
                         df_yeni = df[df['Marka Adı'].astype(str) != secilen_duzenle_marka]
-                        df_yeni.to_csv(DATA_FILE, index=False)
+                        veriyi_kaydet_ve_yedekle(df_yeni) # OTOMATİK YEDEKLEME
                         st.session_state["success_msg"] = f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt silindi!"
                         st.rerun()
 
@@ -1191,7 +1206,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         
                         idx_temp = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                         df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
-                        df.to_csv(DATA_FILE, index=False)
+                        veriyi_kaydet_ve_yedekle(df)
                     except:
                         son_odeme_tarihi_str = ""
 
@@ -1231,7 +1246,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                                 df.at[idx, 'Tescil Son Ödeme Tarihi'] = yeni_son_gun.strip()
                             df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                             df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
-                            df.to_csv(DATA_FILE, index=False)
+                            veriyi_kaydet_ve_yedekle(df)
                             
                             st.success(f"✅ Başarılı! '{secilen_tescil_marka}' markası 'Ödeme Sözü Verenler' aşamasına taşındı.")
                             import time; time.sleep(1.2)
@@ -1257,7 +1272,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                             if odeme_gunu.strip():
                                 df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                             df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
-                            df.to_csv(DATA_FILE, index=False)
+                            veriyi_kaydet_ve_yedekle(df)
                             
                             st.success(f"✅ Başarılı! '{secilen_tescil_marka}' markası 'Tescil Kurum Ödemesi Bekleyen' aşamasına taşındı.")
                             import time; time.sleep(1.2)
@@ -1317,7 +1332,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler":
                     if yeni_tarih_duzgun.strip():
                         idx = df.index[df['Marka Adı'].astype(str) == str(secilen_erteleme_marka)][0]
                         df.at[idx, 'Ödeme Tarihi'] = yeni_tarih_duzgun.strip()
-                        df.to_csv(DATA_FILE, index=False)
+                        veriyi_kaydet_ve_yedekle(df)
                         st.success(f"✅ Başarılı! '{secilen_erteleme_marka}' markasının ödeme tarihi {yeni_tarih_duzgun} olarak ertelendi ve güncellendi.")
                         import time; time.sleep(1.2)
                         st.rerun()
@@ -1389,7 +1404,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 df.at[idx, 'Durum'] = "Başvuru Beklemede"
                                 df.at[idx, 'Fatura No'] = f_no.strip()
                                 df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
-                                df.to_csv(DATA_FILE, index=False)
+                                veriyi_kaydet_ve_yedekle(df)
                                 st.success(f"✅ Başarılı! '{row['Marka Adı']}' onaylandı ve 'Başvuru Beklemede' aşamasına taşındı.")
                                 import time; time.sleep(1.2)
                                 st.rerun()
@@ -1543,15 +1558,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             except:
                                 pass
                             
-                        df.to_csv(DATA_FILE, index=False)
+                        veriyi_kaydet_ve_yedekle(df)
                         
                         if final_durum == "Tescil Tebliğ Edildi Müşteri Arandı":
                             st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı Ekranı"
-                            st.success(f"✅ Başarılı! '{secilen_marka}' markası güncellendi ve 'Tescil Tebliğ Edildi Müşteri Arandı' ekranına taşındı.")
+                            st.success(f"✅ Başarılı! '{secilen_marka}' markası güncellendi ve yedeklendi.")
                             import time; time.sleep(1.2)
                             st.rerun()
                         else:
-                            st.success(f"Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi.")
+                            st.success(f"Başarılı! '{secilen_marka}' markasının aşaması '{final_durum}' olarak güncellendi ve yedeklendi.")
                             st.rerun()
 
                 if "success_msg" in st.session_state:
