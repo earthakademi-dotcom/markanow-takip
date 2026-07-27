@@ -461,7 +461,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
     
-    aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylul": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
+    aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     mevcut_yil_str = str(datetime.now().year)
     yillar_kumesi = {mevcut_yil_str}
     
@@ -535,8 +535,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     else:
         rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
-    # KESİN VE SORUNSUZ SAYIM MANTIĞI:
-    # Sayım doğrudan filtrelenmiş veriden (rapor_filtrelenmis_df) yapılır ve ek tarih engelleri kaldırılmıştır.
     def get_count_and_df(asama_adi):
         temiz_hedef = str(asama_adi).strip().lower()
         
@@ -544,12 +542,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
             d_str = str(d_val).strip().lower()
             if not d_str or d_str == 'nan':
                 return False
-            # Birebir veya kapsayıcı eşleşme
             if temiz_hedef == d_str:
                 return True
             if temiz_hedef in d_str or d_str in temiz_hedef:
                 return True
-            # Kelime bazlı esnek eşleştirmeler
             if "yayında" in temiz_hedef and "yayında" in d_str:
                 return True
             if "muhasebe" in temiz_hedef and "muhasebe" in d_str:
@@ -574,7 +570,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         ("Tescillendi", "Tescillendi 🎉"), ("Reddedildi", "Reddedildi ❌")
     ]
 
-    # GÖZLEM / HATA AYIKLAMA ALANI (Veritabanındaki markaların durumlarını anlık gösterir)
     with st.expander("🔍 Sistemdeki Kayıtların Durum Özetini Görmek İçin Tıklayın (Hata Ayıklama)", expanded=False):
         if not df.empty and 'Marka Adı' in df.columns:
             st.dataframe(df[['Marka Adı', 'Durum', 'Satış Tarihi', 'Danışman']], use_container_width=True)
@@ -600,7 +595,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
                 if pd.isna(dt_temp): dt_temp = pd.to_datetime(t_str, errors='coerce')
                 if not pd.isna(dt_temp): yillar_kumesi.add(str(dt_temp.year))
             except: pass
-    yillar_listesi = sorted(list(yillar_kumesi), reverse=True)
+    
+    # Yıl filtresine en üste "Tümü" seçeneği eklendi
+    yillar_listesi = ["Tümü"] + sorted(list(yillar_kumesi), reverse=True)
+
     danismanlar_listesi = ["Tümü"]
     if 'Danışman' in df.columns:
         unik_danismanlar = sorted(df['Danışman'].dropna().astype(str).str.strip().str.upper().unique().tolist())
@@ -624,7 +622,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
             if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
             if pd.isna(dt): return False
             ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
-            yil_eslesir = True if not str(secilen_yil).strip() else (str(dt.year) == str(secilen_yil).strip())
+            yil_eslesir = True if secilen_yil == "Tümü" else (str(dt.year) == str(secilen_yil).strip())
             return ay_eslesir and yil_eslesir
         except: return False
         
@@ -910,7 +908,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
     danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
