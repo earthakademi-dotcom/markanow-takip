@@ -1388,24 +1388,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             
             with st.form(f"form_guncelle_{secilen_marka}"):
                 c1, c2 = st.columns(2)
-                tum_durumlar = ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]
-                yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0)
-                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
                 
-                b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
-                b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
+                b_tarih_ham = c1.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
+                y_tar_ham = c2.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
                 
-                y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
-                yayin_bitis = c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
+                yayin_bitis = c1.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
+                tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
                 
-                tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
-                tescil_harc_tutar_val = c2.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
-                
-                c1.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
+                tescil_harc_tutar_val = c1.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
+                c2.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
                 
                 if st.form_submit_button("💾 Kaydı Güncelle"):
                     idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                    df.at[idx, 'Durum'] = yeni_durum
                     df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
                     if hesaplanan_son_odeme:
                         df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
