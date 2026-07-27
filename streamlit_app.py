@@ -378,6 +378,7 @@ if is_muhasebe:
         if st.button("🔍 Kurum İncelemesinde Raporu", use_container_width=True): sayfa_degistir("Kurum İncelemesinde Raporu")
         if st.button("📰 Yayında Raporu", use_container_width=True): sayfa_degistir("Yayında Raporu")
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
+        if st.button("💳 Tescil Tebliğ Arandı Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Arandı Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
         if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
@@ -806,6 +807,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede R
     if tescil_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
     else: st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>💳 Tescil Tebliğ Arandı Raporu</h2>", unsafe_allow_html=True)
+    arandi_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Edildi Müşteri Arandı"].copy()
+    st.metric("Toplam Marka Adedi", f"{arandi_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    if arandi_df.empty: 
+        st.info("Kayıt bulunmuyor.")
+    else: 
+        rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Tescil Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
+        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Fatura No': 'Fatura No', 'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
+
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
@@ -1078,7 +1091,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 c_op, c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 1, 1, 1, 1, 1])
                 
-                # Otomatik Operasyon Yetkilisi Belirleme Kuralı
                 if aktif_kullanici_ad in OPERASYON_YETKILILERI:
                     otomatik_op = aktif_kullanici_ad
                 else:
