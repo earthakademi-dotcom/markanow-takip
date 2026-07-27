@@ -650,13 +650,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         
     if not rapor_df.empty: rapor_df = rapor_df[rapor_df.apply(net_kar_filtrele, axis=1)]
     
-    toplam_kdv_haric_ciro, toplam_harc_maliyeti = 0.0, 0.0
+    toplam_kdv_haric_ciro, toplam_kdv_tutari, toplam_harc_maliyeti = 0.0, 0.0, 0.0
     tablo_satirlari = []
     kdv_orani = st.session_state.kdv_orani
     
     for idx_r, row in rapor_df.iterrows():
         tutar_dahil = float(str(row.get('Tutar', '0')).replace(',', '.')) if str(row.get('Tutar', '0')).strip() else 0.0
         kdv_haric = tutar_dahil / (1 + (kdv_orani / 100.0))
+        kdv_tutari = tutar_dahil - kdv_haric
         
         sabit_maliyet_val = row.get('Sabitlenen Maliyet', '')
         if pd.notna(sabit_maliyet_val) and str(sabit_maliyet_val).strip() != '' and str(sabit_maliyet_val).lower() != 'nan':
@@ -666,11 +667,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
                 harc_maliyeti = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
         else:
             harc_maliyeti = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
-            df.at[idx_r, 'Sabitlenen Maliyet'] = str(harc_maliyeti)
+            df.at[idx_r, 'Sabitlenen Maliyet'] = str(harc_maliyetleri if 'harc_maliyeti' in locals() else harc_maliyeti)
             veriyi_kaydet_ve_yedekle(df)
 
         net_durum = kdv_haric - harc_maliyeti
         toplam_kdv_haric_ciro += kdv_haric
+        toplam_kdv_tutari += kdv_tutari
         toplam_harc_maliyeti += harc_maliyeti
         
         # Kaç Sınıf hesaplaması
@@ -681,15 +683,16 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         tablo_satirlari.append({
             "Marka Adı": row.get('Marka Adı', ''), "Danışman": row.get('Danışman', ''), "Satış Tarihi": row.get('Satış Tarihi', ''),
             "Sınıf": sinif_degeri, "Kaç Sınıf": kac_sinif_metin, "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL", "KDV Hariç Tutar (TL)": f"{kdv_haric:,.2f} TL",
-            "Sınıf Toplam Harç (TL)": f"{harc_maliyeti:,.2f} TL", "Net Rakam (TL)": f"{net_durum:,.2f} TL"
+            "KDV (TL)": f"{kdv_tutari:,.2f} TL", "Sınıf Toplam Harç (TL)": f"{harc_maliyeti:,.2f} TL", "Net Rakam (TL)": f"{net_durum:,.2f} TL"
         })
     genel_net_kar = toplam_kdv_haric_ciro - toplam_harc_maliyeti
     
     st.write("---")
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Toplam KDV Hariç Ciro", f"{toplam_kdv_haric_ciro:,.2f} TL")
-    c2.metric("Toplam Sınıf Harç Maliyeti", f"{toplam_harc_maliyeti:,.2f} TL")
-    c3.metric("Toplam Net Kar / Zarar", f"{genel_net_kar:,.2f} TL")
+    c2.metric("Toplam KDV", f"{toplam_kdv_tutari:,.2f} TL")
+    c3.metric("Toplam Sınıf Harç Maliyeti", f"{toplam_harc_maliyeti:,.2f} TL")
+    c4.metric("Toplam Net Kar / Zarar", f"{genel_net_kar:,.2f} TL")
     st.write("---")
     if not tablo_satirlari: st.info("Seçilen kriterlere uygun kayıt bulunamadı.")
     else: st.dataframe(pd.DataFrame(tablo_satirlari), use_container_width=True)
