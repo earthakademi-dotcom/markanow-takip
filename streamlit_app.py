@@ -146,10 +146,8 @@ def load_users():
         if len(u_df.columns) <= 1:
             u_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=',', dtype=str)
         
-        # Sütun isimleri temizliği ve kontrolü
         u_df.columns = [c.strip() for c in u_df.columns]
         if "İsim" not in u_df.columns or "Şifre" not in u_df.columns:
-            # Eğer eski bozuk formatlı dosyaysa düzelt
             if len(u_df.columns) == 1 and "," in u_df.columns[0]:
                 u_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=',', dtype=str)
                 u_df.columns = [c.strip() for c in u_df.columns]
@@ -390,8 +388,8 @@ if is_muhasebe:
         if st.button("📰 Yayında", use_container_width=True): sayfa_degistir("Yayında")
         if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True): sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede")
-        if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
         if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True): sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
+        if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
         if st.button("⏳ Tescil Kurum Ödemesi Bekleyen", use_container_width=True): sayfa_degistir("Tescil Kurum Ödemesi Bekleyen")
         if st.button("📄 Tescil Kuruma Ödendi", use_container_width=True): sayfa_degistir("Tescil Kuruma Ödendi")
         if st.button("🎉 Tescillendi", use_container_width=True): sayfa_degistir("Tescillendi")
