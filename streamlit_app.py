@@ -925,8 +925,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     with top_col2: arama_metni = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...")
     
     asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
-    if secilen_asama == "Tescil Tebliğ Beklemede":
-        asama_df = asama_df[(asama_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") | (asama_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")]
+    # DÜZELTME: Tescil Tebliğ Beklemede ekranında tarih filtresi kaldırıldı, böylece Durumu bu olan tüm kayıtlar eksiksiz listelenir.
         
     if arama_metni.strip(): asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
     
@@ -1035,7 +1034,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                        # DÜZELTME: Seçilen aşama (İtiraz Geldi - Savunma Bekliyor veya Tescil Tebliğ Beklemede) tam olarak duruma atanıyor
                         df.at[idx, 'Durum'] = secilen_sonraki_asama
                         
                         veriyi_kaydet_ve_yedekle(df)
