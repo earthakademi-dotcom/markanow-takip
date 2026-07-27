@@ -133,7 +133,6 @@ EK_HARC_CONFIG_FILE = "ek_harc_config.csv"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
-# --- FONKSİYONLAR ---
 if not os.path.exists(USER_FILE):
     pd.DataFrame({
         "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ"],
@@ -170,17 +169,13 @@ def tarih_birlestir_ve_formatla(tarih_str):
         return f"{temiz[:2]}/{temiz[2:4]}/{temiz[4:]}"
     return tarih_str.strip()
 
-# YEDEKLEME SİSTEMİ (TÜM KAYITLAR BURADAN GEÇER)
 def veriyi_kaydet_ve_yedekle(df_to_save):
-    # Ana Dosya
     df_to_save.to_csv(DATA_FILE, index=False, encoding='utf-8-sig', sep=';')
-    # Yedek Dosya (Silinmelere Karşı Sigorta)
     try:
         df_to_save.to_csv(BACKUP_FILE, index=False, encoding='utf-8-sig', sep=';')
     except:
         pass
 
-# VERİ YÜKLEME VE KURTARMA SİSTEMİ
 def load_data():
     zorunlu_kolonlar = [
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
@@ -188,13 +183,11 @@ def load_data():
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
         "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı"
     ]
-    
-    # Ana dosya yoksa veya boşsa, yedekten kurtarmayı dene
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         if os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
             d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig', sep=';')
             if len(d_temp.columns) <= 1: d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig', sep=',')
-            veriyi_kaydet_ve_yedekle(d_temp) # Ana dosyayı onar
+            veriyi_kaydet_ve_yedekle(d_temp)
         else:
             d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
             veriyi_kaydet_ve_yedekle(d_temp)
@@ -212,7 +205,6 @@ def load_data():
             
     if "ID" in d_temp.columns:
         d_temp = d_temp.drop(columns=["ID"])
-        
     for col in zorunlu_kolonlar:
         if col not in d_temp.columns: d_temp[col] = ""
         
@@ -225,7 +217,6 @@ def load_data():
     d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
 
-# --- HARÇ VE FİYATLANDIRMA AYARLARI ---
 if "sinif_harclari" not in st.session_state:
     st.session_state.sinif_harclari = {}
     if os.path.exists(HARC_CONFIG_FILE) and os.path.getsize(HARC_CONFIG_FILE) > 0:
@@ -306,7 +297,6 @@ def sinif_adedi_hesapla(sinif_str):
         return len(gercek_siniflar)
     except: return 0
 
-# --- KULLANICI GİRİŞ SİSTEMİ ---
 if "kullanici" not in st.session_state: st.session_state.kullanici = None
 query_params = st.query_params
 if not st.session_state.kullanici and "user" in query_params: st.session_state.kullanici = query_params["user"]
@@ -346,7 +336,6 @@ def sayfa_degistir(sayfa_adi):
     st.session_state.aktif_sayfa = sayfa_adi
     st.rerun()
 
-# --- SOL MENÜ ---
 st.sidebar.markdown(f"### 👤 Kullanıcı: {st.session_state.kullanici}")
 if is_admin: st.sidebar.markdown("👑 Rol: **Admin**")
 elif is_muhasebe: st.sidebar.markdown("💰 Rol: **Muhasebe / Yönetici**")
@@ -460,7 +449,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
                 if "Sıfırdan Kur" in islem_turu: final_df = yuklenen_df
                 else: final_df = pd.concat([df, yuklenen_df], ignore_index=True)
                 
-                # YEDEKLEME FONKSİYONU ÇAĞRILDI
                 veriyi_kaydet_ve_yedekle(final_df) 
                 
                 st.success("🎉 Başarılı! Tüm geçmiş satışlar ve durumlar sisteme aktarıldı ve yedeklendi.")
@@ -753,8 +741,6 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                
-                # YEDEKLEME FONKSİYONU ÇAĞRILDI
                 veriyi_kaydet_ve_yedekle(guncel_df)
                 
                 st.success("✅ Satış başarıyla kaydedildi ve yedeklendi!")
@@ -766,16 +752,44 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     mevcut_ay, mevcut_yil = datetime.now().strftime("%m"), str(datetime.now().year)
     st.markdown(f"<h2>📅 Satışlarım (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
+    
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
     danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
+    
+    def guvenli_bu_ay_filtrele(row):
+        try:
+            f_tar = row.get('Fatura Tarihi', '')
+            if pd.isna(f_tar) or str(f_tar).strip() == '' or str(f_tar).lower() == 'nan':
+                return False
+            dt = pd.to_datetime(str(f_tar).strip(), format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt):
+                dt = pd.to_datetime(str(f_tar).strip(), errors='coerce')
+            if pd.isna(dt):
+                return False
+            return f"{dt.month:02d}" == mevcut_ay and str(dt.year) == mevcut_yil
+        except:
+            return False
+
     if not danisman_df.empty:
-        danisman_df = danisman_df[danisman_df.apply(lambda r: str(r.get('Fatura Tarihi', '')).strip() != '' and f"{pd.to_datetime(r.get('Fatura Tarihi', ''), format='%d/%m/%Y', errors='coerce').month:02d}" == mevcut_ay, axis=1)]
+        danisman_df = danisman_df[danisman_df.apply(guvenli_bu_ay_filtrele, axis=1)]
+        
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
+    
+    toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
+    c1, c2 = st.columns(2)
+    c1.metric("Bu Ay Satış Adedi", len(danisman_df))
+    c2.metric("Bu Ay Toplam Ciro (TL)", f"{toplam_ciro:,.2f} TL")
+    st.write("---")
+    
+    if not danisman_df.empty and 'Sınıf' in danisman_df.columns:
+        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in danisman_df['Sınıf']]
+        danisman_df.insert(danisman_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
+
     st.dataframe(danisman_df, use_container_width=True)
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>📊 Genel Satışlar</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
     danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
@@ -831,14 +845,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Tutar'] = y_tutar.strip()
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
-                        # YEDEKLEME FONKSİYONU ÇAĞRILDI
                         veriyi_kaydet_ve_yedekle(df)
                         st.session_state["success_msg"] = f"Başarılı! '{secilen_duzenle_marka}' bilgileri güncellendi ve yedeklendi."
                         st.rerun()
                         
                     if submitted_delete:
                         df_yeni = df[df['Marka Adı'].astype(str) != secilen_duzenle_marka]
-                        # YEDEKLEME FONKSİYONU ÇAĞRILDI
                         veriyi_kaydet_ve_yedekle(df_yeni)
                         st.session_state["success_msg"] = f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt silindi!"
                         st.rerun()
@@ -873,7 +885,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         son_odeme_tarihi_str = resmi_tatil_ve_tatil_kontrol(ay_ekle(parsed_t_tar, 2)).strftime("%d/%m/%Y")
                         idx_temp = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                         df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
-                        # YEDEKLEME FONKSİYONU ÇAĞRILDI
                         veriyi_kaydet_ve_yedekle(df)
                     except: son_odeme_tarihi_str = ""
                     
@@ -894,7 +905,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
                         
-                        # YEDEKLEME FONKSİYONU ÇAĞRILDI
                         veriyi_kaydet_ve_yedekle(df)
                         
                         st.success(f"✅ Başarılı! İşlem kaydedildi ve yedeklendi.")
@@ -942,12 +952,35 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 df.at[idx, 'Fatura No'] = f_no.strip()
                                 df.at[idx, 'Fatura Tarihi'] = f_tarih.strip()
                                 
-                                # YEDEKLEME FONKSİYONU ÇAĞRILDI
                                 veriyi_kaydet_ve_yedekle(df)
                                 
                                 st.success(f"✅ Onaylandı ve yedeklendi.")
                                 import time; time.sleep(1.2); st.rerun()
                             else: st.warning("Lütfen alanları doldurun.")
+        elif secilen_asama == "Başvuru Beklemede":
+            st.subheader("✏️ Başvuru Bilgilerini Girin ve Kurum İncelemesine Aktarın")
+            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
+            if secilen_marka:
+                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                with st.form(f"form_guncelle_{secilen_marka}"):
+                    c1, c2 = st.columns(2)
+                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                    
+                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
+                    b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "")
+                    
+                    if st.form_submit_button("💾 Kaydı Güncelle"):
+                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                        df.at[idx, 'Başvuru No'] = b_no.strip()
+                        df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
+                        df.at[idx, 'Durum'] = "Kurum İncelemesinde"
+                        
+                        veriyi_kaydet_ve_yedekle(df)
+                        
+                        st.success(f"Başarılı! Kayıt güncellendi ve yedeklendi.")
+                        import time; time.sleep(1.2)
+                        st.session_state.aktif_sayfa = "Kurum İncelemesinde"
+                        st.rerun()
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
@@ -979,7 +1012,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'İtiraz Tarihi'] = tarih_birlestir_ve_formatla(itiraz_tar_ham)
                         df.at[idx, 'Tescil Tebliğ Tarihi'] = tarih_birlestir_ve_formatla(tescil_tar_ham)
                         
-                        # YEDEKLEME FONKSİYONU ÇAĞRILDI
                         veriyi_kaydet_ve_yedekle(df)
                         
                         st.session_state["success_msg"] = f"Başarılı! Kayıt güncellendi ve yedeklendi."
