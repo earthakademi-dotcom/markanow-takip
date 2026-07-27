@@ -1078,21 +1078,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 c_op, c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 1, 1, 1, 1, 1])
                 
-                kayitli_op = str(t_row.get('Operasyon Yetkilisi', '')).strip().upper()
-                if kayitli_op in OPERASYON_YETKILILERI:
-                    varsayilan_op = kayitli_op
-                elif aktif_kullanici_ad in OPERASYON_YETKILILERI:
-                    varsayilan_op = aktif_kullanici_ad
+                # Otomatik Operasyon Yetkilisi Belirleme Kuralı
+                if aktif_kullanici_ad in OPERASYON_YETKILILERI:
+                    otomatik_op = aktif_kullanici_ad
                 else:
-                    varsayilan_op = OPERASYON_YETKILILERI[0]
+                    kayitli_op = str(t_row.get('Operasyon Yetkilisi', '')).strip().upper()
+                    otomatik_op = kayitli_op if kayitli_op in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0]
                 
-                op_yetkilisi_input = c_op.selectbox("Operasyon Yetkilisi*", options=OPERASYON_YETKILILERI, index=OPERASYON_YETKILILERI.index(varsayilan_op))
+                op_yetkilisi_input = c_op.text_input("Operasyon Yetkilisi*", value=otomatik_op, disabled=True)
                 
                 c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
                 c2.markdown(f"**TESCİL SON GÜNÜ**\n\n`{son_odeme_tarihi_str}`")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", value="")
-                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)*", value=str(st.session_state.tescil_harc_bedeli))
-                odeme_gunu_ham = c5.text_input("Ödeme Günü", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) else datetime.now().strftime("%d/%m/%Y"))
+                tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)*", value="")
+                odeme_gunu_ham = c5.text_input("Ödeme Günü", value="")
                 odeme_sozu_tarihi_ham = c6.text_input("Ödeme Sözü Tarihi", value=str(t_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(t_row.get('Ödeme Sözü Tarihi')) else "")
                 
                 b_col1, b_col2 = st.columns(2)
