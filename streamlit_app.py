@@ -461,7 +461,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
     
-    aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
+    aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylul": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     mevcut_yil_str = str(datetime.now().year)
     yillar_kumesi = {mevcut_yil_str}
     
@@ -535,7 +535,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     else:
         rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
-    # KESİN VE KAPSAYICI SAYIM MANTIĞI: Veritabanındaki tüm durumları esnek eşleştiriyoruz
+    # KESİN VE SORUNSUZ SAYIM MANTIĞI:
+    # Sayım doğrudan filtrelenmiş veriden (rapor_filtrelenmis_df) yapılır ve ek tarih engelleri kaldırılmıştır.
     def get_count_and_df(asama_adi):
         temiz_hedef = str(asama_adi).strip().lower()
         
@@ -543,29 +544,25 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
             d_str = str(d_val).strip().lower()
             if not d_str or d_str == 'nan':
                 return False
-            # Birebir veya parça eşleşmesi
+            # Birebir veya kapsayıcı eşleşme
+            if temiz_hedef == d_str:
+                return True
             if temiz_hedef in d_str or d_str in temiz_hedef:
                 return True
-            # Kelime bazlı akıllı eşleştirmeler
+            # Kelime bazlı esnek eşleştirmeler
             if "yayında" in temiz_hedef and "yayında" in d_str:
                 return True
-            if "muhasebe onayı" in temiz_hedef and "muhasebe" in d_str:
+            if "muhasebe" in temiz_hedef and "muhasebe" in d_str:
                 return True
-            if "başvuru beklemede" in temiz_hedef and "başvuru" in d_str:
+            if "başvuru" in temiz_hedef and "başvuru" in d_str:
                 return True
-            if "kurum incelemesinde" in temiz_hedef and "kurum" in d_str:
+            if "kurum" in temiz_hedef and "kurum" in d_str:
                 return True
-            if "tescil tebliğ beklemede" in temiz_hedef and "tescil tebliğ" in d_str:
+            if "tescil tebliğ" in temiz_hedef and "tescil tebliğ" in d_str:
                 return True
             return False
 
-        sub_df = df[df['Durum'].apply(durum_eslesiyor)]
-        
-        if "tescil tebliğ beklemede" in temiz_hedef:
-            sub_df = sub_df[
-                (sub_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
-                (sub_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")
-            ]
+        sub_df = rapor_filtrelenmis_df[rapor_filtrelenmis_df['Durum'].apply(durum_eslesiyor)]
         return len(sub_df), sub_df
         
     rapor_kalemleri = [
@@ -913,7 +910,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown(f"<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
     danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
