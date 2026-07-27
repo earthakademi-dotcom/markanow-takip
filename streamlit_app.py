@@ -738,12 +738,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
     c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
     c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
     st.write("---")
-    if muhasebe_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
-    else:
-        ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
-        ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']])
-        ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
-        st.dataframe(ozet_df[['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti']], use_container_width=True)
+    
+    ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+    ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']])
+    ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
+    st.dataframe(ozet_df[['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti']], use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -758,12 +757,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu"
     c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
     c3.metric("Toplam Başvuru Ücret Tutarı", f"{toplam_tutar:,.2f} TL")
     st.write("---")
-    if basvuru_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
-    else:
-        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
-        ozet_df['Sınıf Adedi'] = [f"{sinif_adedi_hesapla(row.get('Sınıf', ''))} Sınıf" for _, row in basvuru_bekleyen_df.iterrows()]
-        ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))}:,.2f TL" for _, row in basvuru_bekleyen_df.iterrows()]
-        st.dataframe(ozet_df, use_container_width=True)
+    
+    ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+    ozet_df['Sınıf Adedi'] = [f"{sinif_adedi_hesapla(row.get('Sınıf', ''))} Sınıf" for _, row in basvuru_bekleyen_df.iterrows()]
+    ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))}:,.2f TL" for _, row in basvuru_bekleyen_df.iterrows()]
+    st.dataframe(ozet_df, use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -771,11 +769,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Rapor
     kurum_inceleme_df = df[df['Durum'].astype(str).str.strip() == "Kurum İncelemesinde"]
     st.metric("Toplam Marka Adedi", f"{kurum_inceleme_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    if kurum_inceleme_df.empty: st.info("Kayıt bulunmuyor.")
-    else: 
-        kurum_ozet_df = kurum_inceleme_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].copy()
+    
+    kurum_ozet_df = kurum_inceleme_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].copy()
+    if not kurum_ozet_df.empty:
         kurum_ozet_df.insert(kurum_ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in kurum_ozet_df['Sınıf']])
-        st.dataframe(kurum_ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+    else:
+        kurum_ozet_df['Sınıf Adedi'] = []
+    st.dataframe(kurum_ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -783,21 +783,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
     yayinda_df = df[df['Durum'].astype(str).str.strip() == "Yayında"].copy()
     st.metric("Toplam Marka Adedi", f"{yayinda_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    if yayinda_df.empty: st.info("Kayıt bulunmuyor.")
-    else:
-        bugun = datetime.now().date()
-        kalan_gunler = []
-        for _, r_item in yayinda_df.iterrows():
-            try:
-                dt_bitis = pd.to_datetime(str(r_item.get('Yayın Bitiş Tarihi', '')).strip(), format='%d/%m/%Y').date()
-                fark_gun = (dt_bitis - bugun).days
-                if fark_gun < 0: kalan_gunler.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
-                elif fark_gun == 0: kalan_gunler.append("Bugün Son Gün! ⚠️")
-                else: kalan_gunler.append(f"{fark_gun} Gün Kaldı")
-            except: kalan_gunler.append("Bilinmiyor")
-        ozet_df = yayinda_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
-        ozet_df['Kalan Süre'] = kalan_gunler
-        st.dataframe(ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'})[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']], use_container_width=True)
+    
+    bugun = datetime.now().date()
+    kalan_gunler = []
+    for _, r_item in yayinda_df.iterrows():
+        try:
+            dt_bitis = pd.to_datetime(str(r_item.get('Yayın Bitiş Tarihi', '')).strip(), format='%d/%m/%Y').date()
+            fark_gun = (dt_bitis - bugun).days
+            if fark_gun < 0: kalan_gunler.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+            elif fark_gun == 0: kalan_gunler.append("Bugün Son Gün! ⚠️")
+            else: kalan_gunler.append(f"{fark_gun} Gün Kaldı")
+        except: kalan_gunler.append("Bilinmiyor")
+    ozet_df = yayinda_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
+    ozet_df['Kalan Süre'] = kalan_gunler
+    st.dataframe(ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'})[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']], use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -805,8 +804,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede R
     tescil_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede"].copy()
     st.metric("Toplam Marka Adedi", f"{tescil_bekleyen_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    if tescil_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
-    else: st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+    st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -814,11 +812,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Rap
     arandi_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Edildi Müşteri Arandı"].copy()
     st.metric("Toplam Marka Adedi", f"{arandi_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    if arandi_df.empty: 
-        st.info("Kayıt bulunmuyor.")
-    else: 
-        rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
-        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
+    rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
+    st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -826,30 +821,27 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Rap
     sozu_verenler_df = df[df['Durum'].astype(str).str.strip() == "Ödeme Sözü Verenler"].copy()
     st.metric("Toplam Marka Adedi", f"{sozu_verenler_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    if sozu_verenler_df.empty: 
-        st.info("Kayıt bulunmuyor.")
-    else: 
-        bugun = datetime.now().date()
-        kalan_gunler_listesi = []
-        for _, r_item in sozu_verenler_df.iterrows():
-            son_odeme_str = str(r_item.get('Tescil Son Ödeme Tarihi', '')).strip()
-            try:
-                dt_son = pd.to_datetime(son_odeme_str, format='%d/%m/%Y').date()
-                fark_gun = (dt_son - bugun).days
-                if fark_gun < 0: kalan_gunler_listesi.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
-                elif fark_gun == 0: kalan_gunler_listesi.append("Bugün Son Gün! ⚠️")
-                else: kalan_gunler_listesi.append(f"{fark_gun} Gün Kaldı")
-            except:
-                kalan_gunler_listesi.append("Bilinmiyor")
+    
+    bugun = datetime.now().date()
+    kalan_gunler_listesi = []
+    for _, r_item in sozu_verenler_df.iterrows():
+        son_odeme_str = str(r_item.get('Tescil Son Ödeme Tarihi', '')).strip()
+        try:
+            dt_son = pd.to_datetime(son_odeme_str, format='%d/%m/%Y').date()
+            fark_gun = (dt_son - bugun).days
+            if fark_gun < 0: kalan_gunler_listesi.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+            elif fark_gun == 0: kalan_gunler_listesi.append("Bugün Son Gün! ⚠️")
+            else: kalan_gunler_listesi.append(f"{fark_gun} Gün Kaldı")
+        except:
+            kalan_gunler_listesi.append("Bilinmiyor")
 
-        rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']].copy()
-        rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
-        
-        # Sütun sırasını düzenleme (Tescil Son Ödeme Tarihi yanına Kalan Süre)
-        kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']
-        rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
-        
-        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
+    rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']].copy()
+    rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
+    
+    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']
+    rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
+    
+    st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -1201,22 +1193,23 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
         
     if arama_metni.strip(): asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
     
-    if asama_df.empty: st.info(f"'{secilen_asama}' aşamasında kayıt bulunmuyor.")
-    else:
-        st.dataframe(asama_df, use_container_width=True)
-        st.write("---")
-        
-        if secilen_asama == "Muhasebe Onayı Bekliyor":
-            st.subheader("✅ Onay Bekleyen Satışları Faturalandır")
+    st.dataframe(asama_df, use_container_width=True)
+    st.write("---")
+    
+    if secilen_asama == "Muhasebe Onayı Bekliyor":
+        st.subheader("✅ Onay Bekleyen Satışları Faturalandır")
+        if asama_df.empty:
+            st.info("Bu aşamada kayıt bulunmuyor.")
+        else:
             for i, row in asama_df.iterrows():
                 with st.container():
                     st.markdown(f"Marka: **{row['Marka Adı']}** | Danışman: *{row['Danışman']}* | Tutar: **{row['Tutar']} TL**")
                     c1, c2, c3 = st.columns([1.5, 1.5, 1])
-                    f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}")
-                    f_tarih_ham = c2.text_input("Fatura Tarihi", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}")
+                    f_no = c1.text_input("Fatura No", key=f"f_no_{row['Marka Adı']}_{i}")
+                    f_tarih_ham = c2.text_input("Fatura Tarihi", value=datetime.now().strftime("%d/%m/%Y"), key=f"f_tar_{row['Marka Adı']}_{i}")
                     with c3:
                         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                        if st.button("✅ Onayla", key=f"onay_btn_{row['Marka Adı']}"):
+                        if st.button("✅ Onayla", key=f"onay_btn_{row['Marka Adı']}_{i}"):
                             f_tarih = tarih_birlestir_ve_formatla(f_tarih_ham)
                             if f_no.strip() and f_tarih.strip():
                                 idx = df.index[df['Marka Adı'].astype(str) == str(row['Marka Adı'])][0]
@@ -1229,180 +1222,185 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 st.success(f"✅ Onaylandı ve yedeklendi.")
                                 import time; time.sleep(1.2); st.rerun()
                             else: st.warning("Lütfen alanları doldurun.")
-        elif secilen_asama == "Başvuru Beklemede":
-            st.subheader("✏️ Başvuru Bilgilerini Girin ve Kurum İncelemesine Aktarın")
-            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
-            if secilen_marka:
-                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
-                with st.form(f"form_guncelle_{secilen_marka}"):
-                    c1, c2 = st.columns(2)
-                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+    elif secilen_asama == "Başvuru Beklemede":
+        st.subheader("✏️ Başvuru Bilgilerini Girin ve Kurum İncelemesine Aktarın")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            with st.form(f"form_guncelle_{secilen_marka}"):
+                c1, c2 = st.columns(2)
+                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                
+                b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
+                b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "")
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'Başvuru No'] = b_no.strip()
+                    df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
+                    df.at[idx, 'Durum'] = "Kurum İncelemesinde"
                     
-                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                    b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "")
+                    veriyi_kaydet_ve_yedekle(df)
                     
-                    if st.form_submit_button("💾 Kaydı Güncelle"):
-                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                        df.at[idx, 'Başvuru No'] = b_no.strip()
-                        df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
-                        df.at[idx, 'Durum'] = "Kurum İncelemesinde"
-                        
-                        veriyi_kaydet_ve_yedekle(df)
-                        
-                        st.success(f"Başarılı! Kayıt güncellendi ve yedeklendi.")
-                        import time; time.sleep(1.2)
-                        st.session_state.aktif_sayfa = "Kurum İncelemesinde"
-                        st.rerun()
-        elif secilen_asama == "Kurum İncelemesinde":
-            st.subheader("✏️ Yayın Tarihini Girin ve Yayına Aktarın")
-            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
-            if secilen_marka:
-                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
-                with st.form(f"form_guncelle_kurum_{secilen_marka}"):
-                    c1, c2 = st.columns(2)
-                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
-                    c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                    st.success(f"Başarılı! Kayıt güncellendi ve yedeklendi.")
+                    import time; time.sleep(1.2)
+                    st.session_state.aktif_sayfa = "Kurum İncelemesinde"
+                    st.rerun()
+    elif secilen_asama == "Kurum İncelemesinde":
+        st.subheader("✏️ Yayın Tarihini Girin ve Yayına Aktarın")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            with st.form(f"form_guncelle_kurum_{secilen_marka}"):
+                c1, c2 = st.columns(2)
+                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                
+                yayin_tar_ham = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value="")
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    yayin_tar = tarih_birlestir_ve_formatla(yayin_tar_ham)
+                    if yayin_tar.strip():
+                        try:
+                            dt_yayin = datetime.strptime(yayin_tar, "%d/%m/%Y")
+                            dt_bitis = ay_ekle(dt_yayin, 2)
+                            dt_bitis_kontrol = resmi_tatil_ve_tatil_kontrol(dt_bitis)
+                            yayin_bitis_str = dt_bitis_kontrol.strftime("%d/%m/%Y")
+                            
+                            idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                            df.at[idx, 'Yayın Tarihi'] = yayin_tar
+                            df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis_str
+                            df.at[idx, 'Durum'] = "Yayında"
+                            
+                            veriyi_kaydet_ve_yedekle(df)
+                            
+                            st.success("Güncellendi!")
+                            import time; time.sleep(1.2)
+                            st.session_state.aktif_sayfa = "Yayında"
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
+                    else:
+                        st.warning("Lütfen Yayın Tarihi alanını doldurunuz.")
+    elif secilen_asama == "Yayında":
+        st.subheader("✏️ Sonraki Aşamayı Seçin ve Güncelleyin")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            with st.form(f"form_guncelle_yayinda_{secilen_marka}"):
+                c1, c2 = st.columns(2)
+                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
+                c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
+                
+                sonraki_asama_secenekleri = ["İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede"]
+                secilen_sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=sonraki_asama_secenekleri)
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'Durum'] = secilen_sonraki_asama
                     
-                    yayin_tar_ham = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value="")
+                    veriyi_kaydet_ve_yedekle(df)
                     
-                    if st.form_submit_button("💾 Kaydı Güncelle"):
-                        yayin_tar = tarih_birlestir_ve_formatla(yayin_tar_ham)
-                        if yayin_tar.strip():
-                            try:
-                                dt_yayin = datetime.strptime(yayin_tar, "%d/%m/%Y")
-                                dt_bitis = ay_ekle(dt_yayin, 2)
-                                dt_bitis_kontrol = resmi_tatil_ve_tatil_kontrol(dt_bitis)
-                                yayin_bitis_str = dt_bitis_kontrol.strftime("%d/%m/%Y")
-                                
-                                idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                                df.at[idx, 'Yayın Tarihi'] = yayin_tar
-                                df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis_str
-                                df.at[idx, 'Durum'] = "Yayında"
-                                
-                                veriyi_kaydet_ve_yedekle(df)
-                                
-                                st.success("Güncellendi!")
-                                import time; time.sleep(1.2)
-                                st.session_state.aktif_sayfa = "Yayında"
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
-                        else:
-                            st.warning("Lütfen Yayın Tarihi alanını doldurunuz.")
-        elif secilen_asama == "Yayında":
-            st.subheader("✏️ Sonraki Aşamayı Seçin ve Güncelleyin")
-            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
-            if secilen_marka:
-                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
-                with st.form(f"form_guncelle_yayinda_{secilen_marka}"):
-                    c1, c2 = st.columns(2)
-                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
-                    c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
-                    c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
-                    c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
-                    
-                    sonraki_asama_secenekleri = ["İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede"]
-                    secilen_sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=sonraki_asama_secenekleri)
-                    
-                    if st.form_submit_button("💾 Kaydı Güncelle"):
-                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                        df.at[idx, 'Durum'] = secilen_sonraki_asama
-                        
-                        veriyi_kaydet_ve_yedekle(df)
-                        
-                        st.success("Güncellendi!")
-                        import time; time.sleep(1.2)
-                        st.session_state.aktif_sayfa = secilen_sonraki_asama
-                        st.rerun()
-        elif secilen_asama == "Tescil Tebliğ Beklemede":
-            st.subheader("✏️ Tescil Tebliğ Tarihini Girin")
-            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
-            if secilen_marka:
-                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
-                with st.form(f"form_guncelle_tescil_teblig_{secilen_marka}"):
-                    c1, c2 = st.columns(2)
-                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
-                    c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
-                    c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')), disabled=True)
-                    
-                    c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
-                    c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
-                    
-                    tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)*", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
-                    
-                    if st.form_submit_button("💾 Kaydet ve Müşteri Arandı Aşamasına Geç"):
-                        tescil_tar = tarih_birlestir_ve_formatla(tescil_tar_ham)
-                        if not tescil_tar.strip():
-                            st.warning("⚠️ Lütfen Tescil Tebliğ Tarihini giriniz.")
-                        else:
-                            try:
-                                parsed_t_tar = datetime.strptime(tescil_tar, "%d/%m/%Y")
-                                hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
-                                son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
-                                son_odeme_str = son_odeme_dt.strftime("%d/%m/%Y")
+                    st.success("Güncellendi!")
+                    import time; time.sleep(1.2)
+                    st.session_state.aktif_sayfa = secilen_sonraki_asama
+                    st.rerun()
+    elif secilen_asama == "Tescil Tebliğ Beklemede":
+        st.subheader("✏️ Tescil Tebliğ Tarihini Girin")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            with st.form(f"form_guncelle_tescil_teblig_{secilen_marka}"):
+                c1, c2 = st.columns(2)
+                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')), disabled=True)
+                
+                c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
+                c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
+                
+                tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)*", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                
+                if st.form_submit_button("💾 Kaydet ve Müşteri Arandı Aşamasına Geç"):
+                    tescil_tar = tarih_birlestir_ve_formatla(tescil_tar_ham)
+                    if not tescil_tar.strip():
+                        st.warning("⚠️ Lütfen Tescil Tebliğ Tarihini giriniz.")
+                    else:
+                        try:
+                            parsed_t_tar = datetime.strptime(tescil_tar, "%d/%m/%Y")
+                            hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
+                            son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
+                            son_odeme_str = son_odeme_dt.strftime("%d/%m/%Y")
 
-                                idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                                df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar
-                                df.at[idx, 'Tescil Son Ödeme Tarihi'] = son_odeme_str
-                                df.at[idx, 'Durum'] = "Tescil Tebliğ Edildi Müşteri Arandı"
-                                
-                                veriyi_kaydet_ve_yedekle(df)
-                                
-                                st.success("✅ Başarılı! Tescil Tebliğ Edildi Müşteri Arandı aşamasına aktarıldı.")
-                                import time; time.sleep(1.2)
-                                st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
-        else:
-            st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
-            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
-            if secilen_marka:
-                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                            idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar
+                            df.at[idx, 'Tescil Son Ödeme Tarihi'] = son_odeme_str
+                            df.at[idx, 'Durum'] = "Tescil Tebliğ Edildi Müşteri Arandı"
+                            
+                            veriyi_kaydet_ve_yedekle(df)
+                            
+                            st.success("✅ Başarılı! Tescil Tebliğ Edildi Müşteri Arandı aşamasına aktarıldı.")
+                            import time; time.sleep(1.2)
+                            st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
+    else:
+        st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            
+            mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
+            hesaplanan_son_odeme = ""
+            if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
+                try:
+                    parsed_t = datetime.strptime(mevcut_tescil_teblig, "%d/%m/%Y")
+                    eklenen_iki_ay = ay_ekle(parsed_t, 2)
+                    kontrol_edilen_dt = resmi_tatil_ve_tatil_kontrol(eklenen_iki_ay)
+                    hesaplanan_son_odeme = kontrol_edilen_dt.strftime("%d/%m/%Y")
+                except:
+                    hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
+            
+            with st.form(f"form_guncelle_{secilen_marka}"):
+                c1, c2 = st.columns(2)
+                tum_durumlar = ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]
+                yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0)
+                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                 
-                mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
-                hesaplanan_son_odeme = ""
-                if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
-                    try:
-                        parsed_t = datetime.strptime(mevcut_tescil_teblig, "%d/%m/%Y")
-                        eklenen_iki_ay = ay_ekle(parsed_t, 2)
-                        kontrol_edilen_dt = resmi_tatil_ve_tatil_kontrol(eklenen_iki_ay)
-                        hesaplanan_son_odeme = kontrol_edilen_dt.strftime("%d/%m/%Y")
-                    except:
-                        hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
+                b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
                 
-                with st.form(f"form_guncelle_{secilen_marka}"):
-                    c1, c2 = st.columns(2)
-                    tum_durumlar = ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]
-                    yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0)
-                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
+                yayin_bitis = c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
+                
+                tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
+                tescil_harc_tutar_val = c2.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
+                
+                c1.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'Durum'] = yeni_durum
+                    df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
+                    if hesaplanan_son_odeme:
+                        df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                     
-                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
-                    b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
+                    veriyi_kaydet_ve_yedekle(df)
                     
-                    y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
-                    yayin_bitis = c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
+                    st.session_state["success_msg"] = f"Başarılı! Kayıt güncellendi ve yedeklendi."
+                    st.rerun()
                     
-                    tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
-                    tescil_harc_tutar_val = c2.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
-                    
-                    c1.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
-                    
-                    if st.form_submit_button("💾 Kaydı Güncelle"):
-                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                        df.at[idx, 'Durum'] = yeni_durum
-                        df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
-                        if hesaplanan_son_odeme:
-                            df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
-                        
-                        veriyi_kaydet_ve_yedekle(df)
-                        
-                        st.session_state["success_msg"] = f"Başarılı! Kayıt güncellendi ve yedeklendi."
-                        st.rerun()
-                        
-                if "success_msg" in st.session_state:
-                    st.success(st.session_state["success_msg"])
-                    del st.session_state["success_msg"]
+            if "success_msg" in st.session_state:
+                st.success(st.session_state["success_msg"])
+                del st.session_state["success_msg"]
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
