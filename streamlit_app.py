@@ -438,6 +438,7 @@ if is_muhasebe:
         if st.button("⏳ Başvuru Beklemede Raporu", use_container_width=True): sayfa_degistir("Başvuru Beklemede Raporu")
         if st.button("🔍 Kurum İncelemesinde Raporu", use_container_width=True): sayfa_degistir("Kurum İncelemesinde Raporu")
         if st.button("📰 Yayında Raporu", use_container_width=True): sayfa_degistir("Yayında Raporu")
+        if st.button("⚠️ İtiraz Savunma Bekliyor Raporu", use_container_width=True): sayfa_degistir("İtiraz Savunma Bekliyor Raporu")
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
         if st.button("💳 Tescil Tebliğ Arandı Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Arandı Raporu")
         if st.button("📅 Ödeme Sözü Verenler Raporu", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler Raporu")
@@ -875,6 +876,34 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
     else:
         gosterge_df = pd.DataFrame(columns=['Marka Adı', 'Satış Tarihi', 'Kalan Süre', 'Başvuru Numarası'])
     st.dataframe(gosterge_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "İtiraz Savunma Bekliyor Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>⚠️ İtiraz Savunma Bekliyor Raporu</h2>", unsafe_allow_html=True)
+    itiraz_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "İtiraz Geldi - Savunma Bekliyor"].copy()
+    st.metric("Toplam Marka Adedi", f"{itiraz_bekleyen_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    
+    bugun = datetime.now().date()
+    kalan_gunler_listesi = []
+    for _, r_item in itiraz_bekleyen_df.iterrows():
+        savunma_son_str = str(r_item.get('Savunma Son Günü', '')).strip()
+        try:
+            dt_son = pd.to_datetime(savunma_son_str, format='%d/%m/%Y').date()
+            fark_gun = (dt_son - bugun).days
+            if fark_gun < 0: kalan_gunler_listesi.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+            elif fark_gun == 0: kalan_gunler_listesi.append("Bugün Son Gün! ⚠️")
+            else: kalan_gunler_listesi.append(f"{fark_gun} Gün Kaldı")
+        except:
+            kalan_gunler_listesi.append("Bilinmiyor")
+
+    rapor_goruntule_df = itiraz_bekleyen_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Başvuru No']].copy() if not itiraz_bekleyen_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Başvuru No'])
+    rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
+    
+    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Kalan Süre', 'Başvuru No']
+    rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
+    
+    st.dataframe(rapor_goruntule_df.rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -1405,14 +1434,17 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
         secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
         if secilen_marka:
             s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            
+            mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) and str(s_row.get('İtiraz Tarihi')).lower() != 'nan' else ""
+            hesaplanan_savunma_son = hesapla_savunma_son_gun(mevcut_itiraz_tar)
+            
             with st.form(f"form_guncelle_itiraz_teblig_{secilen_marka}"):
                 c1, c2 = st.columns(2)
-                c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
-                c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
-                c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
+                c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
                 
-                mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) and str(s_row.get('İtiraz Tarihi')).lower() != 'nan' else ""
                 itiraz_tar_ham = c1.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)*", value=mevcut_itiraz_tar)
+                c2.text_input("Savunma Son Günü", value=hesaplanan_savunma_son, disabled=True)
                 
                 if st.form_submit_button("💾 Kaydı Güncelle ve Savunma Son Gününü Hesapla"):
                     itiraz_tar = tarih_birlestir_ve_formatla(itiraz_tar_ham)
