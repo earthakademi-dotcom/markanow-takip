@@ -506,7 +506,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
-    # KESİN ÇÖZÜM: "Tümü" seçildiğinde verinin eksiksiz gelmesini sağlayan kusursuz filtre
+    # KESİN ÇÖZÜM: "Tümü" seçildiğinde veya filtresiz kullanımda verinin eksiksiz yansımasını sağlayan kusursuz mantık
     def genel_rapor_filtrele(row):
         try:
             if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
@@ -536,7 +536,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         except: 
             return True
 
-    # Eğer "Tümü" seçiliyse filtreyi bypass et, doğrudan tüm veri setini kullan
     if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
         rapor_filtrelenmis_df = df.copy() if not df.empty else df.copy()
     else:
@@ -544,7 +543,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
 
     def get_count_and_df(asama_adi):
         temiz_asama = str(asama_adi).strip()
-        df_durum = rapor_filtrelenmis_df[rapor_filtrelenmis_df['Durum'].astype(str).str.strip() == temiz_asama]
+        df_durum = df[df['Durum'].astype(str).str.strip() == temiz_asama]
         if temiz_asama == "Tescil Tebliğ Beklemede":
             sub_df = df_durum[
                 (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
