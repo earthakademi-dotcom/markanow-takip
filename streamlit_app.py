@@ -1666,6 +1666,49 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         import time; time.sleep(1.2)
                         st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
                         st.rerun()
+    elif secilen_asama in ["Savunma Ücret Alındı", "Savunma Yapılmadı"]:
+        st.subheader("✏️ Savunma ve Marka Bilgilerini Güncelle")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi, key=f"sec_marka_{secilen_asama}") if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip().isin(["Savunma Ücret Alındı", "Savunma Yapıldı", secilen_asama])) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            
+            mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) and str(s_row.get('İtiraz Tarihi')).lower() != 'nan' else ""
+            mevcut_savunma_yapildigi_tar = str(s_row.get('Savunma Yapıldığı Tarih', '')) if pd.notna(s_row.get('Savunma Yapıldığı Tarih')) and str(s_row.get('Savunma Yapıldığı Tarih')).lower() != 'nan' else ""
+            mevcut_ucret = str(s_row.get('Savunma Ücreti KDV Dahil', '')) if pd.notna(s_row.get('Savunma Ücreti KDV Dahil')) else ""
+            mevcut_evrak = str(s_row.get('Evrak Numarası', '')) if pd.notna(s_row.get('Evrak Numarası')) else ""
+            mevcut_ucret_alindi = str(s_row.get('Savunma Ücreti Alındı', 'Hayır')).strip().lower() == 'evet'
+
+            with st.form(f"form_guncelle_savunma_detay_{secilen_marka}"):
+                c1, c2, c3 = st.columns(3)
+                c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                
+                itiraz_tar_ham = c1.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)", value=mevcut_itiraz_tar)
+                savunma_yapildigi_tar_ham = c2.text_input("Savunma Yapıldığı Tarih (GG/AA/YYYY)", value=mevcut_savunma_yapildigi_tar)
+                
+                savunma_ucret_input = c3.text_input("Savunma Ücreti (KDV Dahil, TL)", value=mevcut_ucret)
+                evrak_no_input = c1.text_input("Evrak Numarası", value=mevcut_evrak)
+                savunma_ucreti_alindi_check = c2.checkbox("Savunma Ücreti Alındı", value=mevcut_ucret_alindi)
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    itiraz_tar = tarih_birlestir_ve_formatla(itiraz_tar_ham)
+                    savunma_yapildigi_tar = tarih_birlestir_ve_formatla(savunma_yapildigi_tar_ham)
+                    
+                    idx = df.index[(df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'İtiraz Tarihi'] = itiraz_tar
+                    df.at[idx, 'Savunma Yapıldığı Tarih'] = savunma_yapildigi_tar
+                    df.at[idx, 'Savunma Ücreti KDV Dahil'] = savunma_ucret_input.strip()
+                    df.at[idx, 'Evrak Numarası'] = evrak_no_input.strip()
+                    df.at[idx, 'Savunma Ücreti Alındı'] = "Evet" if savunma_ucreti_alindi_check else "Hayır"
+                    
+                    if itiraz_tar:
+                        df.at[idx, 'Savunma Son Günü'] = hesapla_savunma_son_gun(itiraz_tar)
+                        
+                    veriyi_kaydet_ve_yedekle(df)
+                    st.success("✅ Başarılı! Kayıt güncellendi and yedeklendi.")
+                    import time; time.sleep(1.2)
+                    st.rerun()
     else:
         st.subheader("✏️ Marka Bilgilerini and Durumunu Güncelle")
         marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
