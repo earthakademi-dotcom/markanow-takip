@@ -1499,7 +1499,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 st.write("")
                 btn_col1, btn_col2, btn_col3 = st.columns(3)
                 submitted_update = btn_col1.form_submit_button("💾 Kaydı Güncelle and Savunma Son Gününü Hesapla")
-                submitted_savunmayapildi = btn_col2.form_submit_button("📋 Savunma Yapıldı Yap")
+                submitted_savunmayapildi = btn_col2.form_submit_button("📋 Savunma Ücret Alındı")
                 submitted_savunmayapilmadi = btn_col3.form_submit_button("❌ Savunma Yapılmadı Yap")
                 
                 if submitted_update:
