@@ -178,7 +178,7 @@ def resmi_tatil_ve_tatil_kontrol(dt):
         haftanin_gunu = dt.weekday()
         ay_gun = (dt.day, dt.month)
         if haftanin_gunu >= 5:
-            dt += timedelta(days=(2 if haftanin_gunu == 5 else 1))
+            dt += timedelta(days=(1 if haftanin_gunu == 5 else 2))
         elif ay_gun in resmi_tatiller:
             dt += timedelta(days=1)
         else:
@@ -388,8 +388,8 @@ if is_muhasebe:
         if st.button("📰 Yayında", use_container_width=True): sayfa_degistir("Yayında")
         if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True): sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede")
-        if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True): sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
         if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
+        if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True): sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
         if st.button("⏳ Tescil Kurum Ödemesi Bekleyen", use_container_width=True): sayfa_degistir("Tescil Kurum Ödemesi Bekleyen")
         if st.button("📄 Tescil Kuruma Ödendi", use_container_width=True): sayfa_degistir("Tescil Kuruma Ödendi")
         if st.button("🎉 Tescillendi", use_container_width=True): sayfa_degistir("Tescillendi")
@@ -469,7 +469,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
                 
                 veriyi_kaydet_ve_yedekle(final_df) 
                 
-                st.success("🎉 Başarılı! Tüm geçmiş satışlar ve durumlar sisteme aktarıldı ve yedeklendi.")
+                st.success("🎉 Başarılı! Tüm geçmiş satışlar ve durumлар sisteme aktarıldı ve yedeklendi.")
                 import time; time.sleep(1.5)
                 st.session_state.aktif_sayfa = "Ana Sayfa"
                 st.rerun()
@@ -1048,17 +1048,22 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
             if secilen_tescil_marka:
                 t_row = tescil_df[tescil_df['Marka Adı'].astype(str) == secilen_tescil_marka].iloc[0]
                 tescil_tarihi_str = t_row.get('Tescil Tebliğ Tarihi', '')
-                son_odeme_tarihi_str = t_row.get('Tescil Son Ödeme Tarihi', '')
                 
-                if not son_odeme_tarihi_str or son_odeme_tarihi_str == 'nan':
+                son_odeme_tarihi_str = ""
+                if tescil_tarihi_str and str(tescil_tarihi_str).strip() != '' and str(tescil_tarihi_str).lower() != 'nan':
                     try:
-                        parsed_t_tar = datetime.strptime(tescil_tarihi_str.strip(), "%d/%m/%Y")
-                        son_odeme_tarihi_str = resmi_tatil_ve_tatil_kontrol(ay_ekle(parsed_t_tar, 2)).strftime("%d/%m/%Y")
+                        parsed_t_tar = datetime.strptime(str(tescil_tarihi_str).strip(), "%d/%m/%Y")
+                        hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
+                        son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
+                        son_odeme_tarihi_str = son_odeme_dt.strftime("%d/%m/%Y")
+                        
                         idx_temp = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
-                        df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
-                        veriyi_kaydet_ve_yedekle(df)
-                    except: son_odeme_tarihi_str = ""
-                    
+                        if str(df.at[idx_temp, 'Tescil Son Ödeme Tarihi']) != son_odeme_tarihi_str:
+                            df.at[idx_temp, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
+                            veriyi_kaydet_ve_yedekle(df)
+                    except:
+                        son_odeme_tarihi_str = str(t_row.get('Tescil Son Ödeme Tarihi', ''))
+                
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 c1, c2, c3, c4, c5 = st.columns([1.1, 1.1, 1.1, 1.1, 1])
                 c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
@@ -1075,6 +1080,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                         if tescil_fatura_no.strip(): df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
                         df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_tutar.strip()
+                        if son_odeme_tarihi_str:
+                            df.at[idx, 'Tescil Son Ödeme Tarihi'] = son_odeme_tarihi_str
                         
                         veriyi_kaydet_ve_yedekle(df)
                         
@@ -1232,16 +1239,25 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         if not tescil_tar.strip():
                             st.warning("⚠️ Lütfen Tescil Tebliğ Tarihini giriniz.")
                         else:
-                            idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                            df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar
-                            df.at[idx, 'Durum'] = "Tescil Tebliğ Edildi Müşteri Arandı"
-                            
-                            veriyi_kaydet_ve_yedekle(df)
-                            
-                            st.success("✅ Başarılı! Tescil Tebliğ Edildi Müşteri Arandı aşamasına aktarıldı.")
-                            import time; time.sleep(1.2)
-                            st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
-                            st.rerun()
+                            try:
+                                parsed_t_tar = datetime.strptime(tescil_tar, "%d/%m/%Y")
+                                hesaplanan_bitis = ay_ekle(parsed_t_tar, 2)
+                                son_odeme_dt = resmi_tatil_ve_tatil_kontrol(hesaplanan_bitis)
+                                son_odeme_str = son_odeme_dt.strftime("%d/%m/%Y")
+
+                                idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                                df.at[idx, 'Tescil Tebliğ Tarihi'] = tescil_tar
+                                df.at[idx, 'Tescil Son Ödeme Tarihi'] = son_odeme_str
+                                df.at[idx, 'Durum'] = "Tescil Tebliğ Edildi Müşteri Arandı"
+                                
+                                veriyi_kaydet_ve_yedekle(df)
+                                
+                                st.success("✅ Başarılı! Tescil Tebliğ Edildi Müşteri Arandı aşamasına aktarıldı.")
+                                import time; time.sleep(1.2)
+                                st.session_state.aktif_sayfa = "Tescil Tebliğ Edildi Müşteri Arandı"
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
@@ -1266,7 +1282,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'Durum'] = yeni_durum
                         df.at[idx, 'Başvuru No'] = b_no.strip()
                         df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
-                        df.at[idx, 'Tescil Tebliğ Tarihi'] = tarih_birlestir_ve_formatla(tescil_tar_ham)
+                        t_teblig_ yeni = tarih_birlestir_ve_formatla(tescil_tar_ham)
+                        df.at[idx, 'Tescil Tebliğ Tarihi'] = t_teblig_yeni if 't_teblig_yeni' in locals() else tarih_birlestir_ve_formatla(tescil_tar_ham)
                         
                         veriyi_kaydet_ve_yedekle(df)
                         
