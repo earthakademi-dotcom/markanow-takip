@@ -97,7 +97,7 @@ st.markdown(
                 if (isDateLike) {
                     input.dataset.slashFixed = "true";
                     const formatValue = (el) => {
-                        let val = el.value.replace(/\\D/g, "");
+                        let val = el.value.replace(/\D/g, "");
                         if (val.length > 8) val = val.slice(0, 8);
                         let formatted = "";
                         if (val.length > 0) { formatted += val.substring(0, 2); }
@@ -384,7 +384,7 @@ if st.session_state.aktif_sayfa == "Ana Sayfa":
 elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📂 Toplu Excel / CSV Veri Yükleme Paneli</h2>", unsafe_allow_html=True)
-    st.write("Geçmiş tüm satışlarınızı ve durumlarını tek seferde sisteme yüklemek için aşağıdaki şablonu indirebilir ve Excel'de doldurarak yükleyebilirsiniz.")
+    st.write("Geçmiş tüm satışlarınızı ve durumlarını tek seferde sisteme yüklemek için aşağıdaki örnek CSV şablonunu indirebilir ve Excel'de açarak doldurup yükleyebilirsiniz.")
     
     ornek_data = {
         "Marka Adı": ["Örnek Marka A", "Örnek Marka B"],
@@ -414,22 +414,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
         "Tescil Harç Tutarı": ["", ""]
     }
     ornek_df = pd.DataFrame(ornek_data)
-    
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        ornek_df.to_excel(writer, index=False, sheet_name='Satislar')
-    excel_data = output.getvalue()
+    csv_veri = ornek_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
 
     st.download_button(
-        label="📥 Örnek Excel Şablonunu İndir (.xlsx)",
-        data=excel_data,
-        file_name="markanow_satis_sablonu.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        label="📥 Örnek CSV Şablonunu İndir",
+        data=csv_veri,
+        file_name="markanow_satis_sablonu.csv",
+        mime="text/csv",
         use_container_width=True
     )
     
     st.write("---")
-    yuklenen_dosya = st.file_uploader("Doldurduğunuz Excel (.xlsx) veya CSV (.csv) Dosyasını Seçin", type=["csv", "xlsx"])
+    yuklenen_dosya = st.file_uploader("Doldurduğunuz CSV (.csv) veya Excel (.xlsx) Dosyasını Seçin", type=["csv", "xlsx"])
     
     if yuklenen_dosya is not None:
         try:
