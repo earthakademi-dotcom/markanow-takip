@@ -1070,8 +1070,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 c2.markdown(f"**TESCİL SON GÜNÜ**\n\n`{son_odeme_tarihi_str}`")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No*", value="")
                 tescil_tutar = c4.text_input("Tescil Harç / Hizmet Tutarı (TL)*", value=str(st.session_state.tescil_harc_bedeli))
-                odeme_gunu_ham = c5.text_input("Ödeme Günü", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) else datetime.now().strftime("%d/%m/%Y"))
-                odeme_sozu_tarihi_ham = c6.text_input("Ödeme Sözü Tarihi", value=str(t_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(t_row.get('Ödeme Sözü Tarihi')) else "")
+                odeme_gunu_ham = c5.text_input("Ödeme Günü*", value=str(t_row.get('Ödeme Tarihi', '')) if pd.notna(t_row.get('Ödeme Tarihi')) else datetime.now().strftime("%d/%m/%Y"))
+                odeme_sozu_tarihi_ham = c6.text_input("Ödeme Sözü Tarihi*", value=str(t_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(t_row.get('Ödeme Sözü Tarihi')) else "")
                 
                 b_col1, b_col2 = st.columns(2)
                 with b_col1:
@@ -1099,9 +1099,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 with b_col2:
                     if st.button("📅 Ödeme Sözü Verildi Yap", use_container_width=True):
                         odeme_sozu_tarihi = tarih_birlestir_ve_formatla(odeme_sozu_tarihi_ham)
-                        if not tescil_fatura_no.strip():
-                            st.warning("⚠️ Lütfen Tescil Fatura No alanını doldurunuz.")
-                        elif not tescil_tutar.strip():
+                        if not tescil_tutar.strip():
                             st.warning("⚠️ Lütfen Tescil Harç / Hizmet Tutarı alanını doldurunuz.")
                         elif not odeme_sozu_tarihi.strip():
                             st.warning("⚠️ Lütfen Ödeme Sözü Tarihi alanını doldurunuz.")
