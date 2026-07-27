@@ -817,8 +817,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Rap
     if arandi_df.empty: 
         st.info("Kayıt bulunmuyor.")
     else: 
-        rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Tescil Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
-        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Fatura No': 'Fatura No', 'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
+        rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
+        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -829,8 +829,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Rap
     if sozu_verenler_df.empty: 
         st.info("Kayıt bulunmuyor.")
     else: 
-        rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Tescil Fatura No', 'Tescil Harç Tutarı']].copy()
-        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Fatura No': 'Fatura No', 'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
+        rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']].copy()
+        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
