@@ -466,13 +466,49 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
 elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
+    
+    # --- YIL VE AY FİLTRELEME ALANI ---
+    aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
+    mevcut_yil_str = str(datetime.now().year)
+    yillar_kumesi = {mevcut_yil_str}
+    if 'Satış Tarihi' in df.columns:
+        for t_str in df['Satış Tarihi'].dropna():
+            try:
+                dt_temp = pd.to_datetime(t_str, format='%d/%m/%Y', errors='coerce')
+                if pd.isna(dt_temp): dt_temp = pd.to_datetime(t_str, errors='coerce')
+                if not pd.isna(dt_temp): yillar_kumesi.add(str(dt_temp.year))
+            except: pass
+    yillar_listesi = ["Tümü"] + sorted(list(yillar_kumesi), reverse=True)
+
+    f_col1, f_col2 = st.columns(2)
+    secilen_rapor_yil = f_col1.selectbox("Yıl Seçin", options=yillar_listesi, index=1 if mevcut_yil_str in yillar_listesi else 0, key="genel_ rapor_yil_sec")
+    secilen_rapor_ay_isim = f_col2.selectbox("Ay Seçin", options=list(aylar_secenek.keys()), key="genel_rapor_ay_sec")
+    secilen_rapor_ay_kod = aylar_secenek[secilen_rapor_ay_isim]
+
+    # Filtreleme fonksiyonu
+    def genel_rapor_filtrele(row):
+        try:
+            s_tarih = row.get('Satış Tarihi', '')
+            if pd.isna(s_tarih) or str(s_tarih).strip() == '' or str(s_tarih).lower() == 'nan':
+                return False
+            dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
+            if pd.isna(dt): return False
+
+            yil_uyusur = True if secilen_rapor_yil == "Tümü" else (str(dt.year) == str(secilen_rapor_yil))
+            ay_uyusur = True if secilen_rapor_ay_kod is None else (f"{dt.month:02d}" == secilen_rapor_ay_kod)
+            return yil_uyusur and ay_uyusur
+        except: return False
+
+    rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
+
     def get_count_and_df(asama_adi):
         if asama_adi == "Tescil Tebliğ Beklemede":
-            sub_df = df[(df['Durum'].astype(str).str.strip() == asama_adi) &
-                        ((df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
-                         (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan"))]
+            sub_df = rapor_filtrelenmis_df[(rapor_filtrelenmis_df['Durum'].astype(str).str.strip() == asama_adi) &
+                                          ((rapor_filtrelenmis_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
+                                           (rapor_filtrelenmis_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan"))]
         else:
-            sub_df = df[df['Durum'].astype(str).str.strip() == asama_adi]
+            sub_df = rapor_filtrelenmis_df[rapor_filtrelenmis_df['Durum'].astype(str).str.strip() == asama_adi]
         return len(sub_df), sub_df
         
     rapor_kalemleri = [
@@ -483,6 +519,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
         ("Tescillendi", "Tescillendi 🎉"), ("Reddedildi", "Reddedildi ❌")
     ]
+    st.write("---")
     cols = st.columns(3)
     for idx, (gorunen_isim, durum_kod) in enumerate(rapor_kalemleri):
         adet, _ = get_count_and_df(durum_kod)
