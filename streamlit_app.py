@@ -600,7 +600,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Rapor
     st.metric("Toplam Marka Adedi", f"{kurum_inceleme_df['Marka Adı'].nunique()} Adet")
     st.write("---")
     if kurum_inceleme_df.empty: st.info("Kayıt bulunmuyor.")
-    else: st.dataframe(kurum_inceleme_df[['Marka Adı', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+    else: 
+        kurum_ozet_df = kurum_inceleme_df[['Marka Adı', 'Sınıf', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].copy()
+        kurum_ozet_df.insert(kurum_ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in kurum_ozet_df['Sınıf']])
+        st.dataframe(kurum_ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -633,7 +636,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede R
     if tescil_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
     else: st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
-elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
+elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma dan ve Harç Yönetimi" or is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
     
