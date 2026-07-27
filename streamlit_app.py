@@ -212,7 +212,7 @@ def load_data():
     gecerli_durumlar = [
         "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
         "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-        "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Ödeme Sözü Verenler", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
+        "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
     ]
     d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
@@ -366,7 +366,7 @@ if is_muhasebe:
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
-        if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
+        if st.button("💰 Fiyatlandırma dan ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
     
     with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True): sayfa_degistir("Muhasebe Onayı Bekliyor")
@@ -375,9 +375,9 @@ if is_muhasebe:
         if st.button("📰 Yayında", use_container_width=True): sayfa_degistir("Yayında")
         if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True): sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede")
+        if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
         if st.button("💳 Tescil Tebliğ Edildi Müşteri Arandı", use_container_width=True): sayfa_degistir("Tescil Tebliğ Edildi Müşteri Arandı")
         if st.button("⏳ Tescil Kurum Ödemesi Bekleyen", use_container_width=True): sayfa_degistir("Tescil Kurum Ödemesi Bekleyen")
-        if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
         if st.button("📄 Tescil Kuruma Ödendi", use_container_width=True): sayfa_degistir("Tescil Kuruma Ödendi")
         if st.button("🎉 Tescillendi", use_container_width=True): sayfa_degistir("Tescillendi")
         if st.button("❌ Reddedildi", use_container_width=True): sayfa_degistir("Reddedildi")
@@ -474,8 +474,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         ("Muhasebe Onayı Bekliyor", "Muhasebe Onayı Bekliyor"), ("Başvuru Beklemede", "Başvuru Beklemede"),
         ("Kurum İncelemesinde", "Kurum İncelemesinde"), ("Yayında", "Yayında"),
         ("İtiraz / Savunma Bekliyor", "İtiraz Geldi - Savunma Bekliyor"), ("Tescil Tebliğ Beklemede", "Tescil Tebliğ Beklemede"),
-        ("Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Tebliğ Edildi Müşteri Arandı"), ("Tescil Kurum Ödemesi Bekleyen", "Tescil Kurum Ödemesi Bekleyen"),
-        ("Ödeme Sözü Verenler", "Ödeme Sözü Verenler"), ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
+        ("Ödeme Sözü Verenler", "Ödeme Sözü Verenler"), ("Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Tebliğ Edildi Müşteri Arandı"), ("Tescil Kurum Ödemesi Bekleyen", "Tescil Kurum Ödemesi Bekleyen"),
+        ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
         ("Tescillendi", "Tescillendi 🎉"), ("Reddedildi", "Reddedildi ❌")
     ]
     cols = st.columns(3)
@@ -917,7 +917,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
 elif is_muhasebe and st.session_state.aktif_sayfa in [
     "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
     "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-    "Tescil Kurum Ödemesi Bekleyen", "Ödeme Sözü Verenler", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
+    "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
 ]:
     secilen_asama = st.session_state.aktif_sayfa
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
@@ -1020,6 +1020,31 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                                 st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
                         else:
                             st.warning("Lütfen Yayın Tarihi alanını doldurunuz.")
+        elif secilen_asama == "Yayında":
+            st.subheader("✏️ Sonraki Aşamayı Seçin ve Güncelleyin")
+            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
+            if secilen_marka:
+                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                with st.form(f"form_guncelle_yayinda_{secilen_marka}"):
+                    c1, c2 = st.columns(2)
+                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                    c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                    c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
+                    c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
+                    
+                    sonraki_asama_secenekleri = ["İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede"]
+                    secilen_sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=sonraki_asama_secenekleri)
+                    
+                    if st.form_submit_button("💾 Kaydı Güncelle"):
+                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                        df.at[idx, 'Durum'] = secilen_sonraki_asama
+                        
+                        veriyi_kaydet_ve_yedekle(df)
+                        
+                        st.success("Güncellendi!")
+                        import time; time.sleep(1.2)
+                        st.session_state.aktif_sayfa = secilen_sonraki_asama
+                        st.rerun()
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
@@ -1027,7 +1052,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
                 with st.form(f"form_guncelle_{secilen_marka}"):
                     c1, c2 = st.columns(2)
-                    tum_durumlar = ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]
+                    tum_durumlar = ["Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]
                     yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0)
                     c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                     
