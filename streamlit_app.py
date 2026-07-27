@@ -280,6 +280,9 @@ def load_data():
         
     d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
     
+    # Eski kayıtlar için "Savunma Yapıldı" ibaresini "Savunma Ücret Alındı" ile eşitleme/dönüştürme
+    d_temp['Durum'] = d_temp['Durum'].replace("Savunma Yapıldı", "Savunma Ücret Alındı")
+    
     degisiklik_var = False
     for idx_row, row_data in d_temp.iterrows():
         t_teblig = str(row_data.get('Tescil Tebliğ Tarihi', '')).strip()
@@ -444,7 +447,7 @@ if is_muhasebe:
         if st.button("🔍 Kurum İncelemesinde Raporu", use_container_width=True): sayfa_degistir("Kurum İncelemesinde Raporu")
         if st.button("📰 Yayında Raporu", use_container_width=True): sayfa_degistir("Yayında Raporu")
         if st.button("⚠️ İtiraz Savunma Bekliyor Raporu", use_container_width=True): sayfa_degistir("İtiraz Savunma Bekliyor Raporu")
-        if st.button("📋 Savunma Yapıldı Raporu", use_container_width=True): sayfa_degistir("Savunma Yapıldı Raporu")
+        if st.button("📋 Savunma Ücret Alındı Raporu", use_container_width=True): sayfa_degistir("Savunma Ücret Alındı Raporu")
         if st.button("❌ Savunma Yapılmadı Raporu", use_container_width=True): sayfa_degistir("Savunma Yapılmadı Raporu")
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
         if st.button("💳 Tescil Tebliğ Arandı Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Arandı Raporu")
@@ -460,7 +463,7 @@ if is_muhasebe:
         if st.button("🔍 Kurum İncelemesinde", use_container_width=True): sayfa_degistir("Kurum İncelemesinde")
         if st.button("📰 Yayında", use_container_width=True): sayfa_degistir("Yayında")
         if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True): sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
-        if st.button("📋 Savunma Ücret Alındı", use_container_width=True): sayfa_degistir("Savunma Yapıldı")
+        if st.button("📋 Savunma Ücret Alındı", use_container_width=True): sayfa_degistir("Savunma Ücret Alındı")
         if st.button("❌ Savunma Yapılmadı", use_container_width=True): sayfa_degistir("Savunma Yapılmadı")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede")
         if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
@@ -641,6 +644,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
                 return True
             if temiz_hedef in d_str or d_str in temiz_hedef:
                 return True
+            if "savunma ücret" in temiz_hedef and ("savunma ücret" in d_str or "savunma yapıldı" in d_str):
+                return True
             if "yayında" in temiz_hedef and "yayında" in d_str:
                 return True
             if "muhasebe" in temiz_hedef and "muhasebe" in d_str:
@@ -659,7 +664,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     rapor_kalemleri = [
         ("Muhasebe Onayı Bekliyor", "Muhasebe Onayı Bekliyor"), ("Başvuru Beklemede", "Başvuru Beklemede"),
         ("Kurum İncelemesinde", "Kurum İncelemesinde"), ("Yayında", "Yayında"),
-        ("İtiraz / Savunma Bekliyor", "İtiraz Geldi - Savunma Bekliyor"), ("Savunma Yapıldı", "Savunma Yapıldı"), ("Savunma Yapılmadı", "Savunma Yapılmadı"), ("Tescil Tebliğ Beklemede", "Tescil Tebliğ Beklemede"),
+        ("İtiraz / Savunma Bekliyor", "İtiraz Geldi - Savunma Bekliyor"), ("Savunma Ücret Alındı", "Savunma Ücret Alındı"), ("Savunma Yapılmadı", "Savunma Yapılmadı"), ("Tescil Tebliğ Beklemede", "Tescil Tebliğ Beklemede"),
         ("Ödeme Sözü Verenler", "Ödeme Sözü Verenler"), ("Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Tebliğ Edildi Müşteri Arandı"), ("Tescil Kurum Ödemesi Bekleyen", "Tescil Kurum Ödemesi Bekleyen"),
         ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
         ("Tescillendi", "Tescillendi 🎉"), ("Reddedildi", "Reddedildi ❌")
@@ -915,10 +920,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "İtiraz Savunma Bekliyor R
     
     st.dataframe(rapor_goruntule_df.rename(columns={'Başvuru No': 'Başvuru Numarası', 'Savunma Ücreti KDV Dahil': 'Savunma Ücreti (KDV Dahil)'}), use_container_width=True)
 
-elif is_muhasebe and st.session_state.aktif_sayfa == "Savunma Yapıldı Raporu":
+elif is_muhasebe and st.session_state.aktif_sayfa == "Savunma Ücret Alındı Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>📋 Savunma Yapıldı Raporu</h2>", unsafe_allow_html=True)
-    savunma_yapildi_df = df[df['Durum'].astype(str).str.strip() == "Savunma Yapıldı"].copy()
+    st.markdown("<h2>📋 Savunma Ücret Alındı Raporu</h2>", unsafe_allow_html=True)
+    savunma_yapildi_df = df[df['Durum'].astype(str).str.strip().isin(["Savunma Ücret Alındı", "Savunma Yapıldı"])].copy()
     st.metric("Toplam Marka Adedi", f"{savunma_yapildi_df['Marka Adı'].nunique()} Adet")
     st.write("---")
     
@@ -1329,7 +1334,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
 
 elif is_muhasebe and st.session_state.aktif_sayfa in [
     "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
-    "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Savunma Yapıldı", "Savunma Yapılmadı", "Tescil Tebliğ Beklemede", 
+    "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Savunma Ücret Alındı", "Savunma Yapılmadı", "Tescil Tebliğ Beklemede", 
     "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
 ]:
     secilen_asama = st.session_state.aktif_sayfa
@@ -1339,7 +1344,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
     with top_col1: st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
     with top_col2: arama_metni = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...")
     
-    asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
+    if secilen_asama == "Savunma Ücret Alındı":
+        asama_df = df[df['Durum'].astype(str).str.strip().isin(["Savunma Ücret Alındı", "Savunma Yapıldı"])]
+    else:
+        asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
         
     if arama_metni.strip(): asama_df = asama_df[asama_df['Marka Adı'].astype(str).str.contains(arama_metni.strip(), case=False, na=False)]
     
@@ -1476,7 +1484,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                 c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
                 
-                savunma_durumu_secim = c3.selectbox("Savunma Durumu", options=["Seçiniz...", "Savunma Yapıldı", "Savunma Yapılmadı"])
+                savunma_durumu_secim = c3.selectbox("Savunma Durumu", options=["Seçiniz...", "Savunma Ücret Alındı", "Savunma Yapılmadı"])
                 
                 itiraz_tar_ham = c_op.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)*", value=mevcut_itiraz_tar)
                 c1.text_input("Savunma Son Günü", value=hesaplanan_savunma_son, disabled=True)
@@ -1499,7 +1507,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 st.write("")
                 btn_col1, btn_col2, btn_col3 = st.columns(3)
                 submitted_update = btn_col1.form_submit_button("💾 Kaydı Güncelle and Savunma Son Gününü Hesapla")
-                submitted_savunmayapildi = btn_col2.form_submit_button("📋 Savunma Ücret Alındı")
+                submitted_savunmayapildi = btn_col2.form_submit_button("📋 Savunma Ücret Alındı Yap")
                 submitted_savunmayapilmadi = btn_col3.form_submit_button("❌ Savunma Yapılmadı Yap")
                 
                 if submitted_update:
@@ -1516,7 +1524,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Operasyon Yetkilisi'] = otomatik_op
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar
                             df.at[idx, 'Savunma Son Günü'] = savunma_son_str
-                            df.at[idx, 'Savunma Durumu'] = savunma_durumu_secim if savunma_durumu_secim != "Seçiniz..." else "Savunma Yapıldı"
+                            df.at[idx, 'Savunma Durumu'] = savunma_durumu_secim if savunma_durumu_secim != "Seçiniz..." else "Savunma Ücret Alındı"
                             df.at[idx, 'Savunma Ücreti KDV Dahil'] = savunma_ucret_input.strip()
                             df.at[idx, 'Evrak Numarası'] = evrak_no_input.strip()
                             df.at[idx, 'Savunma Ücreti Alındı'] = "Evet" if savunma_ucreti_alindi_check else "Hayır"
@@ -1537,19 +1545,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         try:
                             savunma_son_str = hesapla_savunma_son_gun(itiraz_tar)
                             idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                            df.at[idx, 'Durum'] = "Savunma Yapıldı"
+                            df.at[idx, 'Durum'] = "Savunma Ücret Alındı"
                             df.at[idx, 'Operasyon Yetkilisi'] = otomatik_op
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar
                             df.at[idx, 'Savunma Son Günü'] = savunma_son_str
-                            df.at[idx, 'Savunma Durumu'] = "Savunma Yapıldı"
+                            df.at[idx, 'Savunma Durumu'] = "Savunma Ücret Alındı"
                             df.at[idx, 'Savunma Ücreti KDV Dahil'] = savunma_ucret_input.strip()
                             df.at[idx, 'Evrak Numarası'] = evrak_no_input.strip()
                             df.at[idx, 'Savunma Ücreti Alındı'] = "Evet" if savunma_ucreti_alindi_check else "Hayır"
                             
                             veriyi_kaydet_ve_yedekle(df)
-                            st.success("✅ Başarılı! Savunma Yapıldı aşamasına aktarıldı.")
+                            st.success("✅ Başarılı! Savunma Ücret Alındı aşamasına aktarıldı.")
                             import time; time.sleep(1.2)
-                            st.session_state.aktif_sayfa = "Savunma Yapıldı"
+                            st.session_state.aktif_sayfa = "Savunma Ücret Alındı"
                             st.rerun()
                         except Exception as e:
                             st.error(f"❌ Hata oluştu: {e}")
