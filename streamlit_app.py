@@ -181,7 +181,7 @@ def load_data():
         "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
-        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı"
+        "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı", "Sabitlenen Maliyet"
     ]
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         if os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
@@ -366,7 +366,7 @@ if is_muhasebe:
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
-        if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
+        if st.button("💰 Fiyatlandırma dan Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
     
     with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True): sayfa_degistir("Muhasebe Onayı Bekliyor")
@@ -411,7 +411,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
         "Başvuru No": ["2026/01234", "2026/05678"], "Başvuru Tarihi": ["11/01/2026", "16/02/2026"],
         "Yayın Tarihi": ["", "01/03/2026"], "Yayın Bitiş Tarihi": ["", "01/05/2026"],
         "Sonraki Aşama Seçimi": ["", ""], "İtiraz Tarihi": ["", ""], "Tescil Tebliğ Tarihi": ["", ""],
-        "Tescil Son Ödeme Tarihi": ["", ""], "Ödeme Tarihi": ["", ""], "Tescil Harç Tutarı": ["", ""]
+        "Tescil Son Ödeme Tarihi": ["", ""], "Ödeme Tarihi": ["", ""], "Tescil Harç Tutarı": ["", ""], "Sabitlenen Maliyet": ["", ""]
     }
     ornek_df = pd.DataFrame(ornek_data)
     csv_veri = ornek_df.to_csv(index=False, encoding='utf-8-sig', sep=';').encode('utf-8-sig')
@@ -443,6 +443,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
                 zorunlu_kolonlar = list(ornek_data.keys())
                 for col in zorunlu_kolonlar:
                     if col not in yuklenen_df.columns: yuklenen_df[col] = ""
+                
+                # Sabitlenen maliyeti boş olanlar için mevcut dönemsel maliyeti hesaplayıp sabitleyelim
+                for idx_u, row_u in yuklenen_df.iterrows():
+                    if not str(row_u.get('Sabitlenen Maliyet', '')).strip():
+                        yuklenen_df.at[idx_u, 'Sabitlenen Maliyet'] = str(sinif_toplam_ucret_hesapla(row_u.get('Sınıf', '')))
+                        
                 yuklenen_df = yuklenen_df[zorunlu_kolonlar].fillna("")
                 
                 islem_turu = st.radio("İşlem Türü Seçin:", ["Mevcut Verilerin Üstüne Ekle (Append)", "Mevcut Verileri Sil ve Dosyadakileri Yükle (Sıfırdan Kur)"])
@@ -530,10 +536,23 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
     tablo_satirlari = []
     kdv_orani = st.session_state.kdv_orani
     
-    for _, row in rapor_df.iterrows():
+    for idx_r, row in rapor_df.iterrows():
         tutar_dahil = float(str(row.get('Tutar', '0')).replace(',', '.')) if str(row.get('Tutar', '0')).strip() else 0.0
         kdv_haric = tutar_dahil / (1 + (kdv_orani / 100.0))
-        harc_maliyeti = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+        
+        # MANTIK GÜNCELLEMESİ: Sabitlenen maliyet varsa onu baz al, yoksa o anki hesaplamayı yap ve kaydet
+        sabit_maliyet_val = row.get('Sabitlenen Maliyet', '')
+        if pd.notna(sabit_maliyet_val) and str(sabit_maliyet_val).strip() != '' and str(sabit_maliyet_val).lower() != 'nan':
+            try:
+                harc_maliyeti = float(str(sabit_maliyet_val).replace(',', '.'))
+            except:
+                harc_maliyeti = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+        else:
+            harc_maliyeti = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+            # Veritabanında eksikse otomatik sabitleyelim
+            df.at[idx_r, 'Sabitlenen Maliyet'] = str(harc_maliyeti)
+            veriyi_kaydet_ve_yedekle(df)
+
         net_durum = kdv_haric - harc_maliyeti
         toplam_kdv_haric_ciro += kdv_haric
         toplam_harc_maliyeti += harc_maliyeti
@@ -737,11 +756,15 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
             elif not bilgilendirme_onayi:
                 st.error("❌ Lütfen müşteriye tescil ödemesini bildirdiğinizi onaylayın.")
             else:
+                # Satış anındaki toplam maliyeti hesaplayıp sabitleyelim
+                anlik_hesaplanan_maliyet = sinif_toplam_ucret_hesapla(",".join(sinif))
+                
                 new_row = {
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
                     "Doğum Tarihi": dogru_tarihi, "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi, "Tutar": tutar_input.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
-                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": ""
+                    "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": "",
+                    "Sabitlenen Maliyet": str(anlik_hesaplanan_maliyet)
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 veriyi_kaydet_ve_yedekle(guncel_df)
@@ -847,6 +870,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Satış Tarihi'] = tarih_birlestir_ve_formatla(y_s_tarih)
                         df.at[idx, 'Tutar'] = y_tutar.strip()
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
+                        
+                        # Sınıf değiştiyse sabitlenen maliyeti de güncelle
+                        yeni_maliyet = sinif_toplam_ucret_hesapla(y_sinif.strip())
+                        df.at[idx, 'Sabitlenen Maliyet'] = str(yeni_maliyet)
                         
                         veriyi_kaydet_ve_yedekle(df)
                         st.session_state["success_msg"] = f"Başarılı! '{secilen_duzenle_marka}' bilgileri güncellendi ve yedeklendi."
@@ -1052,8 +1079,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
                     c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')), disabled=True)
                     
-                    c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
-                    c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
+                    c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True, disabled=True)
+                    c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True, disabled=True)
                     
                     tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)*", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                     
@@ -1086,11 +1113,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
                     b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "")
                     
-                    y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "")
+                    y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
                     yayin_bitis = c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
                     
-                    sonraki_asama = c1.selectbox("Sonraki Aşama Seçimi", options=["", "İtiraz Tebliğ Beklemede", "Tescil Tebliğ Beklemede"], index=0)
-                    itiraz_tar_ham = c2.text_input("İtiraz Tarihi", value=str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) else "")
                     tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
@@ -1098,9 +1123,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'Durum'] = yeni_durum
                         df.at[idx, 'Başvuru No'] = b_no.strip()
                         df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
-                        df.at[idx, 'Yayın Tarihi'] = tarih_birlestir_ve_formatla(y_tar_ham)
-                        df.at[idx, 'Sonraki Aşama Seçimi'] = sonraki_asama
-                        df.at[idx, 'İtiraz Tarihi'] = tarih_birlestir_ve_formatla(itiraz_tar_ham)
                         df.at[idx, 'Tescil Tebliğ Tarihi'] = tarih_birlestir_ve_formatla(tescil_tar_ham)
                         
                         veriyi_kaydet_ve_yedekle(df)
