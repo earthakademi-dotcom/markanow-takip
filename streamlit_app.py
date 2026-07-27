@@ -209,12 +209,6 @@ def load_data():
         if col not in d_temp.columns: d_temp[col] = ""
         
     d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
-    gecerli_durumlar = [
-        "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
-        "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
-        "Ödeme Sözü Verenler", "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
-    ]
-    d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
 
 if "sinif_harclari" not in st.session_state:
@@ -541,19 +535,27 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     else:
         rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
-    # KESİN EŞLEŞTİRME: Tablodaki tüm aşama isimlerini esnek hale getirdik
+    # KESİN VE KAPSAYICI SAYIM MANTIĞI: Veritabanındaki tüm durumları esnek eşleştiriyoruz
     def get_count_and_df(asama_adi):
         temiz_hedef = str(asama_adi).strip().lower()
         
-        # DataFrame içerisindeki durumlar ile birebir veya kapsayıcı eşleşme
         def durum_eslesiyor(d_val):
             d_str = str(d_val).strip().lower()
+            if not d_str or d_str == 'nan':
+                return False
+            # Birebir veya parça eşleşmesi
             if temiz_hedef in d_str or d_str in temiz_hedef:
                 return True
-            # Özel alternatif kelime eşleşmeleri
-            if "tescil tebliğ beklemede" in temiz_hedef and "tescil tebliğ beklemede" in d_str:
+            # Kelime bazlı akıllı eşleştirmeler
+            if "yayında" in temiz_hedef and "yayında" in d_str:
                 return True
-            if "muhasebe onayı bekliyor" in temiz_hedef and "muhasebe" in d_str:
+            if "muhasebe onayı" in temiz_hedef and "muhasebe" in d_str:
+                return True
+            if "başvuru beklemede" in temiz_hedef and "başvuru" in d_str:
+                return True
+            if "kurum incelemesinde" in temiz_hedef and "kurum" in d_str:
+                return True
+            if "tescil tebliğ beklemede" in temiz_hedef and "tescil tebliğ" in d_str:
                 return True
             return False
 
@@ -574,6 +576,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         ("Tescil Kuruma Ödendi", "Tescil Kuruma Ödendi"),
         ("Tescillendi", "Tescillendi 🎉"), ("Reddedildi", "Reddedildi ❌")
     ]
+
+    # GÖZLEM / HATA AYIKLAMA ALANI (Veritabanındaki markaların durumlarını anlık gösterir)
+    with st.expander("🔍 Sistemdeki Kayıtların Durum Özetini Görmek İçin Tıklayın (Hata Ayıklama)", expanded=False):
+        if not df.empty and 'Marka Adı' in df.columns:
+            st.dataframe(df[['Marka Adı', 'Durum', 'Satış Tarihi', 'Danışman']], use_container_width=True)
+        else:
+            st.info("Kayıt bulunmuyor.")
+
     st.write("---")
     cols = st.columns(3)
     for idx, (gorunen_isim, durum_kod) in enumerate(rapor_kalemleri):
