@@ -1336,11 +1336,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             with st.form(f"form_guncelle_tescil_teblig_{secilen_marka}"):
                 c1, c2 = st.columns(2)
                 c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
-                c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
-                c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')), disabled=True)
+                c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
                 
-                c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')), disabled=True)
-                c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')), disabled=True)
+                c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
+                c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
                 
                 tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi (GG/AA/YYYY)*", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
                 
@@ -1403,6 +1403,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 mevcut_odeme_sozu = str(s_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(s_row.get('Ödeme Sözü Tarihi')) else ""
                 odeme_sozu_ham = c1.text_input("Ödeme Sözü Tarihi (GG/AA/YYYY)", value=mevcut_odeme_sozu)
                 
+                mevcut_fatura_no = str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else ""
+                fatura_no_input = c2.text_input("Fatura No*", value=mevcut_fatura_no)
+                
                 btn_col1, btn_col2 = st.columns(2)
                 submitted_update = btn_col1.form_submit_button("💾 Ödeme Tarihi Güncelle")
                 submitted_odemepap = btn_col2.form_submit_button("💳 Ödeme Yap (Tescil Kurum Ödemesi Bekleyen Yap)")
@@ -1412,6 +1415,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                     df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
                     df.at[idx, 'Ödeme Sözü Tarihi'] = yeni_sozu_tarihi.strip()
+                    df.at[idx, 'Fatura No'] = fatura_no_input.strip()
                     if hesaplanan_son_odeme:
                         df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                     
@@ -1421,17 +1425,21 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     st.rerun()
 
                 if submitted_odemepap:
-                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                    df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
-                    df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
-                    if hesaplanan_son_odeme:
-                        df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
-                    
-                    veriyi_kaydet_ve_yedekle(df)
-                    st.success("✅ Başarılı! Tescil Kurum Ödemesi Bekleyen aşamasına aktarıldı.")
-                    import time; time.sleep(1.2)
-                    st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
-                    st.rerun()
+                    if not fatura_no_input.strip():
+                        st.warning("⚠️ Lütfen Fatura No alanını doldurunuz.")
+                    else:
+                        idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                        df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
+                        df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
+                        df.at[idx, 'Fatura No'] = fatura_no_input.strip()
+                        if hesaplanan_son_odeme:
+                            df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
+                        
+                        veriyi_kaydet_ve_yedekle(df)
+                        st.success("✅ Başarılı! Tescil Kurum Ödemesi Bekleyen aşamasına aktarıldı.")
+                        import time; time.sleep(1.2)
+                        st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
+                        st.rerun()
     else:
         st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
         marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
