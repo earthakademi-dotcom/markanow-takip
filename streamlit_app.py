@@ -1242,12 +1242,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 c_op, c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1, 1])
                 
-                if aktif_kullanici_ad in OPERASYON_YETKILILERI:
-                    otomatik_op = aktif_kullanici_ad
-                else:
-                    kayitli_op = str(t_row.get('Operasyon Yetkilisi', '')).strip().upper()
-                    otomatik_op = kayitli_op if kayitli_op in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0]
-                
+                otomatik_op = aktif_kullanici_ad if aktif_kullanici_ad in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0]
                 op_yetkilisi_input = c_op.text_input("Operasyon Yetkilisi*", value=otomatik_op, disabled=True)
                 
                 c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
@@ -1260,14 +1255,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 with b_col1:
                     if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", use_container_width=True):
                         odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
-                        if not op_yetkilisi_input.strip():
-                            st.warning("⚠️ Lütfen Operasyon Yetkilisi seçiniz.")
-                        elif not odeme_gunu.strip():
+                        if not odeme_gunu.strip():
                             st.warning("⚠️ Lütfen Ödeme Günü alanını doldurunuz.")
                         else:
                             idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                             df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
-                            df.at[idx, 'Operasyon Yetkilisi'] = op_yetkilisi_input.strip().upper()
+                            df.at[idx, 'Operasyon Yetkilisi'] = otomatik_op
                             df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
                             df.at[idx, 'Ödeme Tarihi'] = odeme_gunu.strip()
                             if son_odeme_tarihi_str:
@@ -1280,14 +1273,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 with b_col2:
                     if st.button("📅 Ödeme Sözü Verildi Yap", use_container_width=True):
                         odeme_sozu_tarihi = tarih_birlestir_ve_formatla(odeme_sozu_tarihi_ham)
-                        if not op_yetkilisi_input.strip():
-                            st.warning("⚠️ Lütfen Operasyon Yetkilisi seçiniz.")
-                        elif not odeme_sozu_tarihi.strip():
+                        if not odeme_sozu_tarihi.strip():
                             st.warning("⚠️ Lütfen Ödeme Sözü Tarihi alanını doldurunuz.")
                         else:
                             idx = df.index[df['Marka Adı'].astype(str) == str(secilen_tescil_marka)][0]
                             df.at[idx, 'Durum'] = "Ödeme Sözü Verenler"
-                            df.at[idx, 'Operasyon Yetkilisi'] = op_yetkilisi_input.strip().upper()
+                            df.at[idx, 'Operasyon Yetkilisi'] = otomatik_op
                             df.at[idx, 'Fatura No'] = tescil_fatura_no.strip()
                             df.at[idx, 'Ödeme Sözü Tarihi'] = odeme_sozu_tarihi.strip()
                             if son_odeme_tarihi_str:
@@ -1438,12 +1429,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) and str(s_row.get('İtiraz Tarihi')).lower() != 'nan' else ""
             hesaplanan_savunma_son = hesapla_savunma_son_gun(mevcut_itiraz_tar)
             
-            mevcut_kayitli_op = str(s_row.get('Operasyon Yetkilisi', '')).strip().upper()
-            varsayilan_op_secim = mevcut_kayitli_op if mevcut_kayitli_op in OPERASYON_YETKILILERI else (aktif_kullanici_ad if aktif_kullanici_ad in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0])
+            otomatik_op = aktif_kullanici_ad if aktif_kullanici_ad in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0]
             
             with st.form(f"form_guncelle_itiraz_teblig_{secilen_marka}"):
                 c_op, c1, c2 = st.columns(3)
-                op_yetkilisi_input = c_op.selectbox("Operasyon Yetkilisi*", options=OPERASYON_YETKILILERI, index=OPERASYON_YETKILILERI.index(varsayilan_op_secim))
+                op_yetkilisi_input = c_op.text_input("Operasyon Yetkilisi*", value=otomatik_op, disabled=True)
                 c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                 c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
                 
@@ -1452,16 +1442,14 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 
                 if st.form_submit_button("💾 Kaydı Güncelle ve Savunma Son Gününü Hesapla"):
                     itiraz_tar = tarih_birlestir_ve_formatla(itiraz_tar_ham)
-                    if not op_yetkilisi_input.strip():
-                        st.warning("⚠️ Lütfen Operasyon Yetkilisi seçiniz.")
-                    elif not itiraz_tar.strip():
+                    if not itiraz_tar.strip():
                         st.warning("⚠️ Lütfen İtiraz Tebliğ Tarihini giriniz.")
                     else:
                         try:
                             savunma_son_str = hesapla_savunma_son_gun(itiraz_tar)
 
                             idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
-                            df.at[idx, 'Operasyon Yetkilisi'] = op_yetkilisi_input.strip().upper()
+                            df.at[idx, 'Operasyon Yetkilisi'] = otomatik_op
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar
                             df.at[idx, 'Savunma Son Günü'] = savunma_son_str
                             
