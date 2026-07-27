@@ -382,7 +382,7 @@ if is_muhasebe:
         if st.button("📅 Ödeme Sözü Verenler Raporu", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
-        if st.button("💰 Fiyatlandırma dan Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
+        if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
     
     with st.sidebar.expander("📈 Marka Tescil Aşamaları", expanded=True):
         if st.button("📌 Muhasebe Onayı Bekliyor", use_container_width=True): sayfa_degistir("Muhasebe Onayı Bekliyor")
@@ -829,7 +829,26 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Rap
     if sozu_verenler_df.empty: 
         st.info("Kayıt bulunmuyor.")
     else: 
+        bugun = datetime.now().date()
+        kalan_gunler_listesi = []
+        for _, r_item in sozu_verenler_df.iterrows():
+            son_odeme_str = str(r_item.get('Tescil Son Ödeme Tarihi', '')).strip()
+            try:
+                dt_son = pd.to_datetime(son_odeme_str, format='%d/%m/%Y').date()
+                fark_gun = (dt_son - bugun).days
+                if fark_gun < 0: kalan_gunler_listesi.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+                elif fark_gun == 0: kalan_gunler_listesi.append("Bugün Son Gün! ⚠️")
+                else: kalan_gunler_listesi.append(f"{fark_gun} Gün Kaldı")
+            except:
+                kalan_gunler_listesi.append("Bilinmiyor")
+
         rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']].copy()
+        rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
+        
+        # Sütun sırasını düzenleme (Tescil Son Ödeme Tarihi yanına Kalan Süre)
+        kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı']
+        rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
+        
         st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
@@ -1341,7 +1360,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             if secilen_marka:
                 s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
                 
-                # Tescil Tebliğ Tarihine göre 2 ay ekleyip hafta sonu / resmi tatil kontrolü ile Tescil Son Ödeme Tarihi hesaplama
                 mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
                 hesaplanan_son_odeme = ""
                 if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
@@ -1368,7 +1386,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
                     tescil_harc_tutar_val = c2.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
                     
-                    # Tescil Ödeme Son Günü gösterim alanı
                     c1.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
