@@ -265,7 +265,6 @@ def load_data():
     if "ID" in d_temp.columns:
         d_temp = d_temp.drop(columns=["ID"])
         
-    # Eski kalkması istenen sütun varsa veriden düşürebiliriz veya boş bırakabiliriz
     if "Tescil Tebliğ Tarihi" in d_temp.columns:
         d_temp = d_temp.drop(columns=["Tescil Tebliğ Tarihi"])
 
