@@ -1346,21 +1346,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     yeni_durum = c1.selectbox("Yeni Durum / Aşama", options=tum_durumlar, index=tum_durumlar.index(secilen_asama) if secilen_asama in tum_durumlar else 0)
                     c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                     
-                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "")
-                    b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "")
+                    b_no = c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                    b_tarih_ham = c2.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
                     
                     y_tar_ham = c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
                     yayin_bitis = c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
                     
-                    tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "")
+                    tescil_tar_ham = c1.text_input("Tescil Tebliğ Tarihi", value=str(s_row.get('Tescil Tebliğ Tarihi', '')) if pd.notna(s_row.get('Tescil Tebliğ Tarihi')) else "", disabled=True)
+                    tescil_harc_tutar_val = c2.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = yeni_durum
-                        df.at[idx, 'Başvuru No'] = b_no.strip()
-                        df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
-                        t_teblig_yeni = tarih_birlestir_ve_formatla(tescil_tar_ham)
-                        df.at[idx, 'Tescil Tebliğ Tarihi'] = t_teblig_yeni
+                        df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
                         
                         veriyi_kaydet_ve_yedekle(df)
                         
