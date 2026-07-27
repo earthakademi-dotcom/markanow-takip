@@ -502,11 +502,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         st.session_state.genel_rapor_filtrelendi = True
         st.session_state.secilen_rapor_yil = secilen_rapor_yil
         st.session_state.secilen_rapor_ay_isim = secilen_rapor_ay_isim
+        st.success("✅ Filtrelendi!")
 
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
-    # KESİN VE HATA RİSKSİZ EŞLEŞTİRME MANTIĞI
     def genel_rapor_filtrele(row):
         try:
             if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
@@ -541,21 +541,29 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     else:
         rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
-    # KUSURSUZ SAYIM: Tüm durumları boşluk, büyük/küçük harf ve özel karakterlerden bağımsız eşleştiriyoruz
+    # KESİN EŞLEŞTİRME: Tablodaki tüm aşama isimlerini esnek hale getirdik
     def get_count_and_df(asama_adi):
         temiz_hedef = str(asama_adi).strip().lower()
         
-        # DataFrame içindeki durumları temizle ve eşleştir
-        durumlar_series = df['Durum'].astype(str).str.strip().str.lower()
-        df_durum = df[durumlar_series == temiz_hedef]
+        # DataFrame içerisindeki durumlar ile birebir veya kapsayıcı eşleşme
+        def durum_eslesiyor(d_val):
+            d_str = str(d_val).strip().lower()
+            if temiz_hedef in d_str or d_str in temiz_hedef:
+                return True
+            # Özel alternatif kelime eşleşmeleri
+            if "tescil tebliğ beklemede" in temiz_hedef and "tescil tebliğ beklemede" in d_str:
+                return True
+            if "muhasebe onayı bekliyor" in temiz_hedef and "muhasebe" in d_str:
+                return True
+            return False
+
+        sub_df = df[df['Durum'].apply(durum_eslesiyor)]
         
         if "tescil tebliğ beklemede" in temiz_hedef:
-            sub_df = df_durum[
-                (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
-                (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")
+            sub_df = sub_df[
+                (sub_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
+                (sub_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")
             ]
-        else:
-            sub_df = df_durum
         return len(sub_df), sub_df
         
     rapor_kalemleri = [
@@ -895,7 +903,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
 
 elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>📊 Genel Satışlarım</h2>", unsafe_allow_html=True)
     df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
     danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
     danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
