@@ -506,7 +506,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
-    # KESİN ÇÖZÜM: "Tümü" seçildiğinde veya filtresiz kullanımda verinin eksiksiz yansımasını sağlayan kusursuz mantık
+    # ESNEK VE KUSURSUZ FİLTRELEME MANTIĞI
     def genel_rapor_filtrele(row):
         try:
             if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
@@ -541,6 +541,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     else:
         rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
+    # KESİN ÇÖZÜM: Sayaçların her zaman ana veri tabanından (`df`) doğru beslenmesi sağlandı
     def get_count_and_df(asama_adi):
         temiz_asama = str(asama_adi).strip()
         df_durum = df[df['Durum'].astype(str).str.strip() == temiz_asama]
