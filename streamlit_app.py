@@ -76,6 +76,49 @@ st.markdown(
         border: 1px solid #E0A800 !important;
     }
     </style>
+
+    <script>
+    function forceDateSlashMask() {
+        const inputs = document.querySelectorAll('input[type="text"]');
+        inputs.forEach(input => {
+            if (input && !input.dataset.slashFixed) {
+                const parentContainer = input.closest('.stTextInput');
+                let isDateLike = false;
+                if (parentContainer) {
+                    const label = parentContainer.querySelector('label');
+                    if (label && (label.innerText.includes('Tarihi') || label.innerText.includes('Günü') || label.innerText.includes('GG/AA/YYYY'))) {
+                        isDateLike = true;
+                    }
+                }
+                if (input.placeholder && (input.placeholder.includes('GG/AA/YYYY') || input.placeholder.includes('gg/aa/yyyy'))) {
+                    isDateLike = true;
+                }
+
+                if (isDateLike) {
+                    input.dataset.slashFixed = "true";
+                    const formatValue = (el) => {
+                        let val = el.value.replace(/\\D/g, "");
+                        if (val.length > 8) val = val.slice(0, 8);
+                        let formatted = "";
+                        if (val.length > 0) { formatted += val.substring(0, 2); }
+                        if (val.length >= 3) { formatted += "/" + val.substring(2, 4); }
+                        if (val.length >= 5) { formatted += "/" + val.substring(4, 8); }
+                        if (el.value !== formatted) {
+                            el.value = formatted;
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    };
+                    input.addEventListener('input', function (e) { formatValue(e.target); });
+                    input.addEventListener('blur', function (e) { formatValue(e.target); });
+                }
+            }
+        });
+    }
+    const observer = new MutationObserver(forceDateSlashMask);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('load', forceDateSlashMask);
+    </script>
     """,
     unsafe_allow_html=True
 )
@@ -94,7 +137,7 @@ if not os.path.exists(USER_FILE):
     pd.DataFrame({
         "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ"],
         "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
-    }).to_csv(USER_FILE, index=False)
+    }).to_csv(USER_FILE, index=False, encoding='utf-8-sig')
 
 def ay_ekle(kaynak_tarih, ay_sayisi=2):
     yil = kaynak_tarih.year + (kaynak_tarih.month + ay_sayisi - 1) // 12
@@ -162,6 +205,14 @@ def load_data():
         d_temp = d_temp.drop(columns=["ID"])
     for col in zorunlu_kolonlar:
         if col not in d_temp.columns: d_temp[col] = ""
+        
+    d_temp['Durum'] = d_temp['Durum'].fillna("").str.strip()
+    gecerli_durumlar = [
+        "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
+        "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
+        "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Ödeme Sözü Verenler", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
+    ]
+    d_temp.loc[~d_temp['Durum'].isin(gecerli_durumlar), 'Durum'] = "Muhasebe Onayı Bekliyor"
     return d_temp
 
 if "sinif_harclari" not in st.session_state:
@@ -197,12 +248,32 @@ if os.path.exists(EK_HARC_CONFIG_FILE) and os.path.getsize(EK_HARC_CONFIG_FILE) 
         if "KDV Oranı" in ek_df.columns and not ek_df.empty: st.session_state.kdv_orani = float(ek_df.iloc[0]["KDV Oranı"])
     except: pass
 
+def sinif_harci_ve_avukat_hesapla(sinif_str):
+    try:
+        parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
+        toplam_tutar = 0.0
+        islenen_ana_siniflar = set()
+        sirali_sayac = 0
+        for p in parcalar:
+            if "/" in p: continue
+            if p.isdigit():
+                s_int = int(p)
+                if 1 <= s_int <= 45:
+                    if s_int not in islenen_ana_siniflar:
+                        islenen_ana_siniflar.add(s_int)
+                        sirali_sayac += 1
+                        kayit = st.session_state.sinif_harclari.get(sirali_sayac, {"harc": 2820.0, "avukat": 750.0})
+                        toplam_tutar += kayit["harc"] + kayit["avukat"]
+        return toplam_tutar
+    except: return 0.0
+
 def sinif_toplam_ucret_hesapla(sinif_str):
     try:
         parcalar = [p.strip() for p in str(sinif_str).split(",") if p.strip()]
         gorulen_ana_siniflar = set()
         for p in parcalar:
-            if "/" not in p and p.isdigit():
+            if "/" in p: continue
+            if p.isdigit():
                 s_int = int(p)
                 if 1 <= s_int <= 45: gorulen_ana_siniflar.add(s_int)
                 else: gorulen_ana_siniflar.add(3)
@@ -305,6 +376,7 @@ if is_admin:
 
 df = load_data()
 
+# --- SAYFA İÇERİKLERİ ---
 if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
     st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
@@ -409,6 +481,221 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         adet = len(df[df['Durum'].astype(str).str.strip() == durum_kod])
         with cols[idx % 3]: st.metric(label=gorunen_isim, value=f"{adet} Adet")
 
+elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>📊 Aylık Net Kar / Zarar Raporu</h2>", unsafe_allow_html=True)
+    aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
+    mevcut_yil_str = str(datetime.now().year)
+    yillar_kumesi = {mevcut_yil_str}
+    if 'Satış Tarihi' in df.columns:
+        for t_str in df['Satış Tarihi'].dropna():
+            try:
+                dt_temp = pd.to_datetime(t_str, format='%d/%m/%Y', errors='coerce')
+                if pd.isna(dt_temp): dt_temp = pd.to_datetime(t_str, errors='coerce')
+                if not pd.isna(dt_temp): yillar_kumesi.add(str(dt_temp.year))
+            except: pass
+    yillar_listesi = sorted(list(yillar_kumesi), reverse=True)
+    danismanlar_listesi = ["Tümü"]
+    if 'Danışman' in df.columns:
+        unik_danismanlar = sorted(df['Danışman'].dropna().astype(str).str.strip().str.upper().unique().tolist())
+        danismanlar_listesi.extend([d for d in unik_danismanlar if d])
+
+    col_f1, col_f2, col_f3 = st.columns(3)
+    secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), key="kar_zarar_ay_sec")
+    varsayilan_yil_index = yillar_listesi.index(mevcut_yil_str) if mevcut_yil_str in yillar_listesi else 0
+    secilen_yil = col_f2.selectbox("Yıl", options=yillar_listesi, index=varsayilan_yil_index, key="kar_zarar_yil_sec")
+    secilen_danisman_filtre = col_f3.selectbox("Danışman Seçin", danismanlar_listesi, key="kar_zarar_danisman_sec")
+    secilen_ay_kod = aylar[secilen_ay_isim]
+    
+    rapor_df = df.copy()
+    def net_kar_filtrele(row):
+        try:
+            if secilen_danisman_filtre != "Tümü":
+                if str(row.get('Danışman', '')).strip().upper() != secilen_danisman_filtre: return False
+            s_tarih = row.get('Satış Tarihi', '')
+            if pd.isna(s_tarih) or str(s_tarih).strip() == '': return False
+            dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
+            if pd.isna(dt): return False
+            ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
+            yil_eslesir = True if not str(secilen_yil).strip() else (str(dt.year) == str(secilen_yil).strip())
+            return ay_eslesir and yil_eslesir
+        except: return False
+        
+    if not rapor_df.empty: rapor_df = rapor_df[rapor_df.apply(net_kar_filtrele, axis=1)]
+    
+    toplam_kdv_haric_ciro, toplam_harc_maliyeti = 0.0, 0.0
+    tablo_satirlari = []
+    kdv_orani = st.session_state.kdv_orani
+    
+    for _, row in rapor_df.iterrows():
+        tutar_dahil = float(str(row.get('Tutar', '0')).replace(',', '.')) if str(row.get('Tutar', '0')).strip() else 0.0
+        kdv_haric = tutar_dahil / (1 + (kdv_orani / 100.0))
+        harc_maliyeti = sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))
+        net_durum = kdv_haric - harc_maliyeti
+        toplam_kdv_haric_ciro += kdv_haric
+        toplam_harc_maliyeti += harc_maliyeti
+        tablo_satirlari.append({
+            "Marka Adı": row.get('Marka Adı', ''), "Danışman": row.get('Danışman', ''), "Satış Tarihi": row.get('Satış Tarihi', ''),
+            "Sınıf": row.get('Sınıf', ''), "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL", "KDV Hariç Tutar (TL)": f"{kdv_haric:,.2f} TL",
+            "Sınıf Toplam Harç (TL)": f"{harc_maliyeti:,.2f} TL", "Net Rakam (TL)": f"{net_durum:,.2f} TL"
+        })
+    genel_net_kar = toplam_kdv_haric_ciro - toplam_harc_maliyeti
+    
+    st.write("---")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam KDV Hariç Ciro", f"{toplam_kdv_haric_ciro:,.2f} TL")
+    c2.metric("Toplam Sınıf Harç Maliyeti", f"{toplam_harc_maliyeti:,.2f} TL")
+    c3.metric("Toplam Net Kar / Zarar", f"{genel_net_kar:,.2f} TL")
+    st.write("---")
+    if not tablo_satirlari: st.info("Seçilen kriterlere uygun kayıt bulunamadı.")
+    else: st.dataframe(pd.DataFrame(tablo_satirlari), use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Muhasebe Bekleyen Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>📌 Muhasebe Bekleyen Raporu</h2>", unsafe_allow_html=True)
+    muhasebe_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Muhasebe Onayı Bekliyor"]
+    toplam_marka_sayisi = muhasebe_bekleyen_df['Marka Adı'].nunique()
+    toplam_sinif_adedi = sum([sinif_adedi_hesapla(s) for s in muhasebe_bekleyen_df['Sınıf'].dropna()])
+    toplam_tutar = sum([sinif_toplam_ucret_hesapla(row.get('Sınıf', '')) for _, row in muhasebe_bekleyen_df.iterrows()])
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam Bekleyen Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Bekleyen Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
+    c3.metric("Toplam Bekleyen Tutar", f"{toplam_tutar:,.2f} TL")
+    st.write("---")
+    if muhasebe_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
+    else:
+        ozet_df = muhasebe_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        ozet_df.insert(ozet_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', [f"{sinif_adedi_hesapla(s)} Sınıf" for s in ozet_df['Sınıf']])
+        ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(s):,.2f} TL" for s in ozet_df['Sınıf']]
+        st.dataframe(ozet_df[['Marka Adı', 'Sınıf', 'Sınıf Adedi', 'Satış Tarihi', 'Sınıf Toplam Harç Ücreti']], use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Başvuru Beklemede Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>⏳ Başvuru Beklemede Raporu</h2>", unsafe_allow_html=True)
+    basvuru_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Başvuru Beklemede"]
+    toplam_marka_sayisi = basvuru_bekleyen_df['Marka Adı'].nunique()
+    toplam_sinif_adedi = sum([sinif_adedi_hesapla(s) for s in basvuru_bekleyen_df['Sınıf'].dropna()])
+    toplam_tutar = sum([sinif_toplam_ucret_hesapla(row.get('Sınıf', '')) for _, row in basvuru_bekleyen_df.iterrows()])
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Toplam Başvuru Marka Adedi", f"{toplam_marka_sayisi} Adet")
+    c2.metric("Toplam Başvuru Sınıf Adedi", f"{toplam_sinif_adedi} Sınıf")
+    c3.metric("Toplam Başvuru Ücret Tutarı", f"{toplam_tutar:,.2f} TL")
+    st.write("---")
+    if basvuru_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
+    else:
+        ozet_df = basvuru_bekleyen_df[['Marka Adı', 'Sınıf', 'Satış Tarihi']].copy()
+        ozet_df['Sınıf Adedi'] = [f"{sinif_adedi_hesapla(row.get('Sınıf', ''))} Sınıf" for _, row in basvuru_bekleyen_df.iterrows()]
+        ozet_df['Sınıf Toplam Harç Ücreti'] = [f"{sinif_toplam_ucret_hesapla(row.get('Sınıf', ''))}:,.2f TL" for _, row in basvuru_bekleyen_df.iterrows()]
+        st.dataframe(ozet_df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Kurum İncelemesinde Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>🔍 Kurum İncelemesinde Raporu</h2>", unsafe_allow_html=True)
+    kurum_inceleme_df = df[df['Durum'].astype(str).str.strip() == "Kurum İncelemesinde"]
+    st.metric("Toplam Marka Adedi", f"{kurum_inceleme_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    if kurum_inceleme_df.empty: st.info("Kayıt bulunmuyor.")
+    else: st.dataframe(kurum_inceleme_df[['Marka Adı', 'Satış Tarihi', 'Başvuru Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Yayında Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>📰 Yayında Raporu</h2>", unsafe_allow_html=True)
+    yayinda_df = df[df['Durum'].astype(str).str.strip() == "Yayında"].copy()
+    st.metric("Toplam Marka Adedi", f"{yayinda_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    if yayinda_df.empty: st.info("Kayıt bulunmuyor.")
+    else:
+        bugun = datetime.now().date()
+        kalan_gunler = []
+        for _, r_item in yayinda_df.iterrows():
+            try:
+                dt_bitis = pd.to_datetime(str(r_item.get('Yayın Bitiş Tarihi', '')).strip(), format='%d/%m/%Y').date()
+                fark_gun = (dt_bitis - bugun).days
+                if fark_gun < 0: kalan_gunler.append(f"Süresi Doldu ({abs(fark_gun)} gün önce)")
+                elif fark_gun == 0: kalan_gunler.append("Bugün Son Gün! ⚠️")
+                else: kalan_gunler.append(f"{fark_gun} Gün Kaldı")
+            except: kalan_gunler.append("Bilinmiyor")
+        ozet_df = yayinda_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].copy()
+        ozet_df['Kalan Süre'] = kalan_gunler
+        st.dataframe(ozet_df.rename(columns={'Başvuru No': 'Başvuru Numarası'})[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Kalan Süre', 'Başvuru Numarası']], use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>📌 Tescil Tebliğ Beklemede Raporu</h2>", unsafe_allow_html=True)
+    tescil_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Beklemede"].copy()
+    st.metric("Toplam Marka Adedi", f"{tescil_bekleyen_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    if tescil_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
+    else: st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
+    
+    mevcut_h1 = float(st.session_state.sinif_harclari.get(1, {"harc": 2820.0})["harc"])
+    mevcut_h3_bedel = float(st.session_state.sinif_harclari.get(4, {"harc": 3150.0})["harc"] - st.session_state.sinif_harclari.get(3, {"harc": 3150.0})["harc"]) if len(st.session_state.sinif_harclari) >= 4 else 3150.0
+    mevcut_ortak_avukat = float(list(st.session_state.sinif_harclari.values())[0]["avukat"]) if st.session_state.sinif_harclari else 750.0
+
+    col_k1, col_k2, col_k3 = st.columns(3)
+    giris_h1 = col_k1.number_input("1. Sınıf Bedeli (TL)", value=float(mevcut_h1), step=50.0, format="%.2f")
+    giris_h3_bedel = col_k2.number_input("3. Sınıf Bedeli (TL)", value=float(mevcut_h3_bedel), step=50.0, format="%.2f")
+    ortak_avukat_input = col_k3.number_input("Tüm Sınıflar İçin Ortak Avukat Ücreti (TL)", value=float(mevcut_ortak_avukat), step=50.0, format="%.2f")
+
+    col_e1, col_e2, col_e3, col_e4 = st.columns(4)
+    tescil_harc_input = col_e1.number_input("Tescil Harç Bedeli (TL)", value=float(st.session_state.tescil_harc_bedeli), step=50.0, format="%.2f")
+    savunma_harc_input = col_e2.number_input("Savunma Harç Bedeli (TL)", value=float(st.session_state.savunma_harc_bedeli), step=50.0, format="%.2f")
+    bildirim_tutar_input = col_e3.number_input("Bildirim Tescil Ödemesi (TL)", value=float(st.session_state.bildirim_tescil_tutar), step=100.0, format="%.2f")
+    kdv_orani_input = col_e4.number_input("KDV Oranı (%)", value=float(st.session_state.kdv_orani), step=1.0, format="%.2f")
+
+    st.write("---")
+    tablo_verileri = []
+    h1 = giris_h1
+    tablo_verileri.append({"Sınıf Adedi": 1, "Harç (TL)": h1, "Avukat (TL)": ortak_avukat_input, "Sınıf Toplam Harç Ücreti": h1 + ortak_avukat_input})
+    h2 = giris_h1 + giris_h1
+    tablo_verileri.append({"Sınıf Adedi": 2, "Harç (TL)": h2, "Avukat (TL)": ortak_avukat_input, "Sınıf Toplam Harç Ücreti": h2 + ortak_avukat_input})
+    h3 = giris_h1 + giris_h1 + giris_h3_bedel
+    tablo_verileri.append({"Sınıf Adedi": 3, "Harç (TL)": h3, "Avukat (TL)": ortak_avukat_input, "Sınıf Toplam Harç Ücreti": h3 + ortak_avukat_input})
+    onceki_h = h3
+    for i in range(4, 46):
+        onceki_h += giris_h3_bedel
+        tablo_verileri.append({"Sınıf Adedi": i, "Harç (TL)": onceki_h, "Avukat (TL)": ortak_avukat_input, "Sınıf Toplam Harç Ücreti": onceki_h + ortak_avukat_input})
+    
+    st.dataframe(pd.DataFrame(tablo_verileri), use_container_width=True)
+
+    if st.button("💾 Tüm Sınıf Fiyatlarını ve Ücretleri Kaydet", use_container_width=True):
+        yeni_sozluk, save_list = {}, []
+        calc_h1, calc_h2, calc_h3 = giris_h1, giris_h1 + giris_h1, giris_h1 + giris_h1 + giris_h3_bedel
+        cur_h = calc_h3
+        for i in range(1, 46):
+            if i == 1: h_fiyat = calc_h1
+            elif i == 2: h_fiyat = calc_h2
+            elif i == 3: h_fiyat = calc_h3
+            else:
+                cur_h += giris_h3_bedel
+                h_fiyat = cur_h
+            yeni_sozluk[i] = {"harc": h_fiyat, "avukat": float(ortak_avukat_input)}
+            save_list.append({"Sınıf Adedi": i, "Harç": h_fiyat, "Avukat": float(ortak_avukat_input)})
+            
+        st.session_state.sinif_harclari = yeni_sozluk
+        pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False, encoding='utf-8-sig')
+        
+        st.session_state.tescil_harc_bedeli = float(tescil_harc_input)
+        st.session_state.savunma_harc_bedeli = float(savunma_harc_input)
+        st.session_state.bildirim_tescil_tutar = float(bildirim_tutar_input)
+        st.session_state.kdv_orani = float(kdv_orani_input)
+        
+        pd.DataFrame({
+            "Tescil Harç Bedeli": [st.session_state.tescil_harc_bedeli], "Savunma Harç Bedeli": [st.session_state.savunma_harc_bedeli],
+            "Bildirim Tescil Tutar": [st.session_state.bildirim_tescil_tutar], "KDV Oranı": [st.session_state.kdv_orani]
+        }).to_csv(EK_HARC_CONFIG_FILE, index=False, encoding='utf-8-sig')
+        
+        st.success("🎉 Başarıyla kaydedildi!")
+        import time; time.sleep(1.2)
+        st.rerun()
+
 elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📝 Yeni Satış Girişi</h2>", unsafe_allow_html=True)
@@ -427,12 +714,22 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
         s_tarihi_ham = c2.text_input("Satış Tarihi (GG/AA/YYYY)", value=datetime.now().strftime("%d/%m/%Y"))
         tutar_input = c2.text_input("Tutar (KDV Dahil, TL)", value="")
         
-        submitted = st.form_submit_button("Satışı Kaydet")
-        if submitted:
+        if tutar_input.strip():
+            try:
+                kdv_haric_gosterge = float(tutar_input.strip().replace(",", ".")) / (1 + (st.session_state.kdv_orani / 100.0))
+                c2.markdown(f"💡 **KDV Hariç Tutar:** `{kdv_haric_gosterge:,.2f} TL`")
+            except: pass
+
+        st.write("")
+        bilgilendirme_onayi = st.checkbox(f"4 ila 6 ay sonra tescil ödemesinin {st.session_state.bildirim_tescil_tutar:,.2f} TL + KDV olduğunu müşteriye bildirdim.")
+        
+        if st.form_submit_button("Satışı Kaydet"):
             dogru_tarihi = tarih_birlestir_ve_formatla(dogru_tarihi_ham)
             s_tarihi = tarih_birlestir_ve_formatla(s_tarihi_ham)
             if not m_adi.strip() or not ad_soyad.strip() or not sinif or not tutar_input.strip():
                 st.error("❌ Lütfen zorunlu alanları doldurunuz.")
+            elif not bilgilendirme_onayi:
+                st.error("❌ Lütfen müşteriye tescil ödemesini bildirdiğinizi onaylayın.")
             else:
                 new_row = {
                     "Marka Adı": m_adi.strip(), "Ad Soyad": ad_soyad.strip(), "TC": tc.strip(), "Telefon": tel.strip(), "E-Mail": email.strip(),
@@ -440,8 +737,7 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Satış Tarihi": s_tarihi, "Tutar": tutar_input.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": ""
                 }
-                guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                veriyi_kaydet_ve_yedekle(guncel_df)
+                veriyi_kaydet_ve_yedekle(pd.concat([df, pd.DataFrame([new_row])], ignore_index=True))
                 st.success("✅ Satış başarıyla kaydedildi!")
                 import time; time.sleep(1.5)
                 st.session_state.aktif_sayfa = "Ana Sayfa"
@@ -449,10 +745,50 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
 
 elif st.session_state.aktif_sayfa == "Satışlarım":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>📅 Satışlarım</h2>", unsafe_allow_html=True)
+    mevcut_ay, mevcut_yil = datetime.now().strftime("%m"), str(datetime.now().year)
+    st.markdown(f"<h2>📅 Satışlarım (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
+    listeleme_df = df.copy()
+    if not listeleme_df.empty:
+        listeleme_df = listeleme_df[listeleme_df.apply(lambda r: str(r.get('Fatura Tarihi', '')).strip() != '' and f"{pd.to_datetime(r.get('Fatura Tarihi'), errors='coerce').month:02d}" == mevcut_ay, axis=1)]
+    st.dataframe(listeleme_df, use_container_width=True)
+
+elif st.session_state.aktif_sayfa == "Genel Satışlarım":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>📊 Genel Satışlar</h2>", unsafe_allow_html=True)
     st.dataframe(df, use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını Düzenle":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>🛠️ Danışman Satışlarını Düzenleme Paneli</h2>", unsafe_allow_html=True)
+    if df.empty: st.info("Kayıt bulunmuyor.")
+    else:
+        arama_input = st.text_input("🔍 Marka Adı ile Ara")
+        filtrelenmis_df = df[df['Marka Adı'].astype(str).str.contains(arama_input.strip(), case=False, na=False)] if arama_input.strip() else df
+        if not filtrelenmis_df.empty:
+            secilen_duzenle_marka = st.selectbox("Düzenlenecek Markayı Seçin", options=filtrelenmis_df['Marka Adı'].astype(str).tolist())
+            if secilen_duzenle_marka:
+                d_row = df[df['Marka Adı'].astype(str) == secilen_duzenle_marka].iloc[0]
+                with st.form("admin_satis_duzenle_form"):
+                    y_ad_soyad = st.text_input("İsim Soyisim", value=str(d_row.get('Ad Soyad', '')))
+                    if st.form_submit_button("💾 Güncelle"):
+                        idx = df.index[df['Marka Adı'].astype(str) == secilen_duzenle_marka][0]
+                        df.at[idx, 'Ad Soyad'] = y_ad_soyad.strip()
+                        veriyi_kaydet_ve_yedekle(df)
+                        st.success("Güncellendi!")
+                        st.rerun()
+
+elif is_muhasebe and st.session_state.aktif_sayfa in [
+    "Muhasebe Onayı Bekliyor", "Başvuru Beklemede", "Kurum İncelemesinde", 
+    "Yayında", "İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede", 
+    "Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen", "Ödeme Sözü Verenler", "Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"
+]:
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    secilen_asama = st.session_state.aktif_sayfa
+    st.markdown(f"<h2>📂 Aşama: {secilen_asama}</h2>", unsafe_allow_html=True)
+    asama_df = df[df['Durum'].astype(str).str.strip() == secilen_asama]
+    st.dataframe(asama_df, use_container_width=True)
 
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>👥 Personel ve Danışman Yönetimi</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>👥 Personel Yönetimi</h2>", unsafe_allow_html=True)
     if os.path.exists(USER_FILE): st.dataframe(pd.read_csv(USER_FILE, encoding='utf-8-sig'), use_container_width=True)
