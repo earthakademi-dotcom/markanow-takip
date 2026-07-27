@@ -636,7 +636,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Beklemede R
     if tescil_bekleyen_df.empty: st.info("Kayıt bulunmuyor.")
     else: st.dataframe(tescil_bekleyen_df[['Marka Adı', 'Satış Tarihi', 'Yayın Tarihi', 'Yayın Bitiş Tarihi', 'Başvuru No']].rename(columns={'Başvuru No': 'Başvuru Numarası'}), use_container_width=True)
 
-elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma dan ve Harç Yönetimi" or is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
+elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>⚙️ Profesyonel Fiyatlandırma ve Harç Yönetimi (1 - 45 Sınıf)</h2>", unsafe_allow_html=True)
     
@@ -984,6 +984,42 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         import time; time.sleep(1.2)
                         st.session_state.aktif_sayfa = "Kurum İncelemesinde"
                         st.rerun()
+        elif secilen_asama == "Kurum İncelemesinde":
+            st.subheader("✏️ Yayın Tarihini Girin ve Yayına Aktarın")
+            secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
+            if secilen_marka:
+                s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+                with st.form(f"form_guncelle_kurum_{secilen_marka}"):
+                    c1, c2 = st.columns(2)
+                    c2.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                    c1.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')), disabled=True)
+                    
+                    yayin_tar_ham = c2.text_input("Yayın Tarihi (GG/AA/YYYY)", value="")
+                    
+                    if st.form_submit_button("💾 Kaydı Güncelle"):
+                        yayin_tar = tarih_birlestir_ve_formatla(yayin_tar_ham)
+                        if yayin_tar.strip():
+                            try:
+                                dt_yayin = datetime.strptime(yayin_tar, "%d/%m/%Y")
+                                dt_bitis = ay_ekle(dt_yayin, 2)
+                                dt_bitis_kontrol = resmi_tatil_ve_tatil_kontrol(dt_bitis)
+                                yayin_bitis_str = dt_bitis_kontrol.strftime("%d/%m/%Y")
+                                
+                                idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                                df.at[idx, 'Yayın Tarihi'] = yayin_tar
+                                df.at[idx, 'Yayın Bitiş Tarihi'] = yayin_bitis_str
+                                df.at[idx, 'Durum'] = "Yayında"
+                                
+                                veriyi_kaydet_ve_yedekle(df)
+                                
+                                st.success("Güncellendi!")
+                                import time; time.sleep(1.2)
+                                st.session_state.aktif_sayfa = "Yayında"
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
+                        else:
+                            st.warning("Lütfen Yayın Tarihi alanını doldurunuz.")
         else:
             st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
             secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=asama_df['Marka Adı'].astype(str).tolist())
