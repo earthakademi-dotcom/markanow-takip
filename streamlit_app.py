@@ -467,12 +467,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📈 Marka Tescil Aşamaları Raporlama Paneli</h2>", unsafe_allow_html=True)
     
-    # --- YIL VE AY FİLTRELEME ALANI ---
     aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     mevcut_yil_str = str(datetime.now().year)
     yillar_kumesi = {mevcut_yil_str}
     
-    # Tüm tarih kolonlarından yılları toplayalım ki hangi yılda işlem varsa listede çıksın
     if not df.empty:
         tarih_kolonlari = ['Satış Tarihi', 'Fatura Tarihi', 'Başvuru Tarihi', 'Yayın Tarihi', 'Tescil Tebliğ Tarihi', 'Ödeme Tarihi']
         for t_col in tarih_kolonlari:
@@ -508,42 +506,37 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
-    # Aşamaya göre ilgili tarihi baz alan akıllı filtreleme mantığı
-    def asama_tarihi_sec(row):
-        durum = str(row.get('Durum', '')).strip()
-        tarih_str = ""
-        if durum in ["Muhasebe Onayı Bekliyor"]:
-            tarih_str = row.get('Satış Tarihi', '')
-        elif durum in ["Başvuru Beklemede"]:
-            tarih_str = row.get('Fatura Tarihi', '') if str(row.get('Fatura Tarihi', '')).strip() else row.get('Satış Tarihi', '')
-        elif durum in ["Kurum İncelemesinde"]:
-            tarih_str = row.get('Başvuru Tarihi', '') if str(row.get('Başvuru Tarihi', '')).strip() else row.get('Satış Tarihi', '')
-        elif durum in ["Yayında"]:
-            tarih_str = row.get('Yayın Tarihi', '') if str(row.get('Yayın Tarihi', '')).strip() else row.get('Başvuru Tarihi', '')
-        elif durum in ["İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede"]:
-            tarih_str = row.get('Yayın Tarihi', '')
-        elif durum in ["Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen"]:
-            tarih_str = row.get('Tescil Tebliğ Tarihi', '')
-        elif durum in ["Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]:
-            tarih_str = row.get('Ödeme Tarihi', '') if str(row.get('Ödeme Tarihi', '')).strip() else row.get('Tescil Tebliğ Tarihi', '')
-        
-        if not tarih_str or str(tarih_str).strip() == '' or str(tarih_str).lower() == 'nan':
-            tarih_str = row.get('Satış Tarihi', '')
-        return tarih_str
-
+    # KESİN ÇÖZÜM: Tarih alanı boş veya geçersiz olan markaların "Tümü" denildiğinde asla kaybolmaması için esnek ve güvenli filtreleme
     def genel_rapor_filtrele(row):
         try:
-            ilgili_tarih = asama_tarihi_sec(row)
-            if pd.isna(ilgili_tarih) or str(ilgili_tarih).strip() == '' or str(ilgili_tarih).lower() == 'nan':
-                return False
-            dt = pd.to_datetime(ilgili_tarih, format='%d/%m/%Y', errors='coerce')
-            if pd.isna(dt): dt = pd.to_datetime(ilgili_tarih, errors='coerce')
-            if pd.isna(dt): return False
+            if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
+                return True # Tümü seçildiyse hiçbirini eleme, doğrudan göster
 
-            yil_uyusur = True if aktif_yil == "Tümü" else (str(dt.year) == str(aktif_yil))
-            ay_uyusur = True if secilen_rapor_ay_kod is None else (f"{dt.month:02d}" == secilen_rapor_ay_kod)
+            tarih_listesi = [
+                row.get('Satış Tarihi', ''), row.get('Fatura Tarihi', ''), 
+                row.get('Başvuru Tarihi', ''), row.get('Yayın Tarihi', ''), 
+                row.get('Tescil Tebliğ Tarihi', ''), row.get('Ödeme Tarihi', '')
+            ]
+            
+            # Geçerli ilk tarihi bul
+            gecerli_dt = None
+            for t_str in tarih_listesi:
+                if pd.notna(t_str) and str(t_str).strip() != '' and str(t_str).lower() != 'nan':
+                    dt = pd.to_datetime(t_str, format='%d/%m/%Y', errors='coerce')
+                    if pd.isna(dt): dt = pd.to_datetime(t_str, errors='coerce')
+                    if not pd.isna(dt):
+                        gecerli_dt = dt
+                        break
+            
+            # Eğer tablodaki hiçbir tarih formatı tutmuyorsa veya boşsa, "Tümü" filtresinde kaybolmasın diye dahil ediyoruz
+            if gecerli_dt is None:
+                return True
+
+            yil_uyusur = True if aktif_yil == "Tümü" else (str(gecerli_dt.year) == str(aktif_yil))
+            ay_uyusur = True if secilen_rapor_ay_kod is None else (f"{gecerli_dt.month:02d}" == secilen_rapor_ay_kod)
             return yil_uyusur and ay_uyusur
-        except: return False
+        except: 
+            return True
 
     rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
