@@ -469,7 +469,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
                 
                 veriyi_kaydet_ve_yedekle(final_df) 
                 
-                st.success("🎉 Başarılı! Tüm geçmiş satışlar ve durumлар sisteme aktarıldı ve yedeklendi.")
+                st.success("🎉 Başarılı! Tüm geçmiş satışlar ve durumlar sisteme aktarıldı ve yedeklendi.")
                 import time; time.sleep(1.5)
                 st.session_state.aktif_sayfa = "Ana Sayfa"
                 st.rerun()
@@ -1282,8 +1282,8 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'Durum'] = yeni_durum
                         df.at[idx, 'Başvuru No'] = b_no.strip()
                         df.at[idx, 'Başvuru Tarihi'] = tarih_birlestir_ve_formatla(b_tarih_ham)
-                        t_teblig_ yeni = tarih_birlestir_ve_formatla(tescil_tar_ham)
-                        df.at[idx, 'Tescil Tebliğ Tarihi'] = t_teblig_yeni if 't_teblig_yeni' in locals() else tarih_birlestir_ve_formatla(tescil_tar_ham)
+                        t_teblig_yeni = tarih_birlestir_ve_formatla(tescil_tar_ham)
+                        df.at[idx, 'Tescil Tebliğ Tarihi'] = t_teblig_yeni
                         
                         veriyi_kaydet_ve_yedekle(df)
                         
