@@ -317,12 +317,12 @@ def sinif_harci_ve_avukat_hesapla(sinif_str):
                             sirali_sayac += 1
                             kayit = st.session_state.sinif_harclari.get(sirali_sayac, {"harc": 2820.0, "avukat": 750.0})
                             toplam_tutar += kayit["harc"] + kayit["avukat"]
-                    else:
-                        if s_int not in islenen_ana_siniflar:
-                            islenen_ana_siniflar.add(s_int)
-                            sirali_sayac += 1
-                            kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 750.0})
-                            toplam_tutar += kayit["harc"] + kayit["avukat"]
+                else:
+                    if s_int not in islenen_ana_siniflar:
+                        islenen_ana_siniflar.add(s_int)
+                        sirali_sayac += 1
+                        kayit = st.session_state.sinif_harclari.get(3, {"harc": 2820.0, "avukat": 750.0})
+                        toplam_tutar += kayit["harc"] + kayit["avukat"]
         return toplam_tutar
     except:
         return 0.0
@@ -431,13 +431,13 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 
 st.sidebar.write("---")
 
-if not is_muhasebe:
-    if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
-        sayfa_degistir("Yeni Satış Giriş")
-    if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
-        sayfa_degistir("Satışlarım")
-    if st.sidebar.button("📊 Genel Satışlarım", use_container_width=True):
-        sayfa_degistir("Genel Satışlarım")
+# TÜM KULLANICILAR İÇİN ORTAK MENÜ ÖĞELERİ (SATIŞ GİRİŞ VE LİSTELEME)
+if st.sidebar.button("📝 Yeni Satış Giriş", use_container_width=True):
+    sayfa_degistir("Yeni Satış Giriş")
+if st.sidebar.button("📅 Satışlarım (Bu Ay)", use_container_width=True):
+    sayfa_degistir("Satışlarım")
+if st.sidebar.button("📊 Genel Satışlarım", use_container_width=True):
+    sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
     with st.sidebar.expander("📈 Raporlama", expanded=True):
@@ -924,7 +924,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         import time; time.sleep(1.2)
         st.rerun()
 
-elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
+elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
@@ -996,16 +996,16 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                 st.session_state.aktif_sayfa = "Ana Sayfa"
                 st.rerun()
 
-elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
+elif st.session_state.aktif_sayfa == "Satışlarım":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
     mevcut_ay = datetime.now().strftime("%m")
     mevcut_yil = str(datetime.now().year)
-    st.markdown(f"<h2>📅 Satışlarım (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>📅 Satışlarım / Tüm Satışlar (Bu Ay: {mevcut_ay}/{mevcut_yil})</h2>", unsafe_allow_html=True)
     
-    df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
-    danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
+    # TÜM SATIŞLARIN GÖSTERİLMESİ İÇİN KULLANICI FİLTRESİ KALDIRILDI
+    listeleme_df = df.copy()
     
     def bu_ay_faturalanan(row):
         try:
@@ -1017,34 +1017,33 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Satışlarım":
             return f"{dt.month:02d}" == mevcut_ay and str(dt.year) == mevcut_yil
         except: return False
             
-    if not danisman_df.empty:
-        danisman_df = danisman_df[danisman_df.apply(bu_ay_faturalanan, axis=1)]
-    danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
+    if not listeleme_df.empty:
+        listeleme_df = listeleme_df[listeleme_df.apply(bu_ay_faturalanan, axis=1)]
     
-    toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
+    toplam_ciro = pd.to_numeric(listeleme_df['Tutar'], errors='coerce').fillna(0).sum()
     c1, c2 = st.columns(2)
-    c1.metric("Bu Ay Satış Adedi", len(danisman_df))
+    c1.metric("Bu Ay Toplam Satış Adedi", len(listeleme_df))
     c2.metric("Bu Ay Toplam Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
-    if not danisman_df.empty and 'Sınıf' in danisman_df.columns:
-        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in danisman_df['Sınıf']]
-        danisman_df.insert(danisman_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
+    if not listeleme_df.empty and 'Sınıf' in listeleme_df.columns:
+        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in listeleme_df['Sınıf']]
+        listeleme_df.insert(listeleme_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
 
-    st.dataframe(danisman_df, use_container_width=True)
+    st.dataframe(listeleme_df, use_container_width=True)
 
-elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
+elif st.session_state.aktif_sayfa == "Genel Satışlarım":
     if st.button("⬅️ Geri Çık"):
         sayfa_degistir("Ana Sayfa")
         
-    st.markdown(f"<h2>📊 Genel Satışlarım (Filtreleme)</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>📊 Genel Satışlar / Tüm Şirket Satışları</h2>", unsafe_allow_html=True)
     aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     col_f1, col_f2 = st.columns(2)
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()))
     secilen_yil = col_f2.text_input("Yıl (Örn: 2026)", value=str(datetime.now().year))
     secilen_ay_kod = aylar[secilen_ay_isim]
     
-    df['Danisman_Temp'] = df['Danışman'].astype(str).str.strip().str.upper()
-    danisman_df = df[df['Danisman_Temp'] == aktif_kullanici_ad].copy()
+    # TÜM SATIŞLARIN GÖSTERİLMESİ İÇİN KULLANICI FİLTRESİ KALDIRILDI
+    listeleme_df = df.copy()
     
     def genel_filtrele(row):
         try:
@@ -1058,26 +1057,25 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Genel Satışlarım":
             return ay_eslesir and yil_eslesir
         except: return False
             
-    if not danisman_df.empty:
-        danisman_df = danisman_df[danisman_df.apply(genel_filtrele, axis=1)]
-    danisman_df = danisman_df.drop(columns=['Danisman_Temp'], errors='ignore')
+    if not listeleme_df.empty:
+        listeleme_df = listeleme_df[listeleme_df.apply(genel_filtrele, axis=1)]
     
-    toplam_ciro = pd.to_numeric(danisman_df['Tutar'], errors='coerce').fillna(0).sum()
+    toplam_ciro = pd.to_numeric(listeleme_df['Tutar'], errors='coerce').fillna(0).sum()
     
     toplam_gecerli_sinif_adedi = 0
-    for s_val in danisman_df['Sınıf'].dropna():
+    for s_val in listeleme_df['Sınıf'].dropna():
         toplam_gecerli_sinif_adedi += sinif_adedi_hesapla(s_val)
 
     c1, c2 = st.columns(2)
     c1.metric("Filtrelenen Sınıf Adedi", toplam_gecerli_sinif_adedi)
     c2.metric("Filtrelenen Ciro (TL)", f"{toplam_ciro:,.2f} TL")
     
-    if not danisman_df.empty and 'Sınıf' in danisman_df.columns:
-        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in danisman_df['Sınıf']]
-        danisman_df.insert(danisman_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
+    if not listeleme_df.empty and 'Sınıf' in listeleme_df.columns:
+        sinif_adedi_listesi = [f"{sinif_adedi_hesapla(s)} Sınıf" for s in listeleme_df['Sınıf']]
+        listeleme_df.insert(listeleme_df.columns.get_loc('Sınıf') + 1, 'Sınıf Adedi', sinif_adedi_listesi)
 
     st.write("")
-    st.dataframe(danisman_df, use_container_width=True)
+    st.dataframe(listeleme_df, use_container_width=True)
 
 # --- DANIŞMAN SATIŞLARINI DÜZENLE (YÖNETİCİLER İÇİN) ---
 elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını Düzenle":
