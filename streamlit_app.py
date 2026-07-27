@@ -132,11 +132,12 @@ EK_HARC_CONFIG_FILE = "ek_harc_config.csv"
 
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
+OPERASYON_YETKILILERI = ["SELEN", "DENİZ", "ALİ OSMAN", "ATA"]
 
 def load_users():
     default_users = pd.DataFrame({
-        "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ"],
-        "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
+        "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ", "ATA"],
+        "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
     })
     if not os.path.exists(USER_FILE) or os.path.getsize(USER_FILE) == 0:
         default_users.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
@@ -341,7 +342,7 @@ if not st.session_state.kullanici:
 
 aktif_kullanici_ad = str(st.session_state.kullanici).strip().upper()
 is_admin = (aktif_kullanici_ad == "ALİ OSMAN YELBEY")
-is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN", "ELİF YILDIZ"])
+is_muhasebe = is_admin or (aktif_kullanici_ad in ["DENİZ TELLİ GÜRLEYENDAĞ", "SELEN AKCAN", "ELİF YILDIZ", "ATA"])
 
 if "aktif_sayfa" not in st.session_state: st.session_state.aktif_sayfa = "Ana Sayfa"
 
@@ -351,7 +352,7 @@ def sayfa_degistir(sayfa_adi):
 
 st.sidebar.markdown(f"### 👤 Kullanıcı: {st.session_state.kullanici}")
 if is_admin: st.sidebar.markdown("👑 Rol: **Admin**")
-elif is_muhasebe: st.sidebar.markdown("💰 Rol: **Muhasebe / Yönetici**")
+elif is_muhasebe: st.sidebar.markdown("💰 Rol: **Muhasebe / Yönetici / Operasyon**")
 else: st.sidebar.markdown("💼 Rol: **Danışman**")
 
 if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
@@ -603,7 +604,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Raporu":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
-    st.markdown("<h2>📊 Aylık Net Kar / Zarar Raporu</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📊 Aylık Net Kar / Zarar ve Personel Ciro Raporu</h2>", unsafe_allow_html=True)
     aylar = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     mevcut_yil_str = str(datetime.now().year)
     yillar_kumesi = {mevcut_yil_str}
@@ -617,25 +618,28 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
     
     yillar_listesi = ["Tümü"] + sorted(list(yillar_kumesi), reverse=True)
 
-    danismanlar_listesi = ["Tümü"]
+    personel_listesi = ["Tümü"]
+    unik_personel = set()
     if 'Danışman' in df.columns:
-        unik_danismanlar = sorted(df['Danışman'].dropna().astype(str).str.strip().str.upper().unique().tolist())
-        danismanlar_listesi.extend([d for d in unik_danismanlar if d])
+        unik_personel.update(df['Danışman'].dropna().astype(str).str.strip().str.upper().tolist())
+    if 'Operasyon Yetkilisi' in df.columns:
+        unik_personel.update(df['Operasyon Yetkilisi'].dropna().astype(str).str.strip().str.upper().tolist())
+    personel_listesi.extend(sorted([p for p in unik_personel if p]))
 
     if "kar_zarar_filtrelendi" not in st.session_state:
         st.session_state.kar_zarar_filtrelendi = False
         st.session_state.secilen_kz_ay = "Tümü"
         st.session_state.secilen_kz_yil = mevcut_yil_str if mevcut_yil_str in yillar_listesi else "Tümü"
-        st.session_state.secilen_kz_danisman = "Tümü"
+        st.session_state.secilen_kz_personel = "Tümü"
 
     col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1])
     varsayilan_yil_index = yillar_listesi.index(st.session_state.secilen_kz_yil) if st.session_state.secilen_kz_yil in yillar_listesi else 0
     varsayilan_ay_index = list(aylar.keys()).index(st.session_state.secilen_kz_ay) if st.session_state.secilen_kz_ay in aylar else 0
-    varsayilan_danisman_index = danismanlar_listesi.index(st.session_state.secilen_kz_danisman) if st.session_state.secilen_kz_danisman in danismanlar_listesi else 0
+    varsayilan_personel_index = personel_listesi.index(st.session_state.secilen_kz_personel) if st.session_state.secilen_kz_personel in personel_listesi else 0
 
     secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), index=varsayilan_ay_index, key="kar_zarar_ay_sec")
     secilen_yil = col_f2.selectbox("Yıl", options=yillar_listesi, index=varsayilan_yil_index, key="kar_zarar_yil_sec")
-    secilen_danisman_filtre = col_f3.selectbox("Danışman Seçin", danismanlar_listesi, index=varsayilan_danisman_index, key="kar_zarar_danisman_sec")
+    secilen_personel_filtre = col_f3.selectbox("Danışman / Operasyon Yetkilisi Seçin", personel_listesi, index=varsayilan_personel_index, key="kar_zarar_personel_sec")
     
     with col_f4:
         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
@@ -645,18 +649,20 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         st.session_state.kar_zarar_filtrelendi = True
         st.session_state.secilen_kz_ay = secilen_ay_isim
         st.session_state.secilen_kz_yil = secilen_yil
-        st.session_state.secilen_kz_danisman = secilen_danisman_filtre
+        st.session_state.secilen_kz_personel = secilen_personel_filtre
         st.success("✅ Filtrelendi!")
 
     secilen_ay_kod = aylar[st.session_state.secilen_kz_ay]
     aktif_kz_yil = st.session_state.secilen_kz_yil
-    aktif_kz_danisman = st.session_state.secilen_kz_danisman
+    aktif_kz_personel = st.session_state.secilen_kz_personel
 
     rapor_df = df.copy()
     def net_kar_filtrele(row):
         try:
-            if aktif_kz_danisman != "Tümü":
-                if str(row.get('Danışman', '')).strip().upper() != aktif_kz_danisman: return False
+            if aktif_kz_personel != "Tümü":
+                dan = str(row.get('Danışman', '')).strip().upper()
+                op = str(row.get('Operasyon Yetkilisi', '')).strip().upper()
+                if dan != aktif_kz_personel and op != aktif_kz_personel: return False
             s_tarih = row.get('Satış Tarihi', '')
             if pd.isna(s_tarih) or str(s_tarih).strip() == '': return False
             dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
@@ -700,7 +706,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         kac_sinif_metin = f"{kac_sinif_sayisi} Sınıf" if kac_sinif_sayisi > 0 else "0 Sınıf"
 
         tablo_satirlari.append({
-            "Marka Adı": row.get('Marka Adı', ''), "Danışman": row.get('Danışman', ''), "Satış Tarihi": row.get('Satış Tarihi', ''),
+            "Marka Adı": row.get('Marka Adı', ''), "Danışman": row.get('Danışman', ''), "Operasyon Yetkilisi": row.get('Operasyon Yetkilisi', ''), "Satış Tarihi": row.get('Satış Tarihi', ''),
             "Sınıf": sinif_degeri, "Kaç Sınıf": kac_sinif_metin, "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL", "KDV Hariç Tutar (TL)": f"{kdv_haric:,.2f} TL",
             "KDV (TL)": f"{kdv_tutari:,.2f} TL", "Sınıf Toplam Harç (TL)": f"{harc_maliyeti:,.2f} TL", "Net Rakam (TL)": f"{net_durum:,.2f} TL"
         })
@@ -996,7 +1002,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                     y_s_tarih = c2.text_input("Satış Tarihi", value=str(d_row.get('Satış Tarihi', '')))
                     y_tutar = c2.text_input("Tutar (TL)", value=str(d_row.get('Tutar', '')))
                     y_danisman = c2.text_input("Danışman", value=str(d_row.get('Danışman', '')))
-                    y_operasyon = c2.text_input("Operasyon Yetkilisi", value=str(d_row.get('Operasyon Yetkilisi', '')))
+                    
+                    mevcut_kayitli_op = str(d_row.get('Operasyon Yetkilisi', '')).strip().upper()
+                    varsayilan_op_secim = mevcut_kayitli_op if mevcut_kayitli_op in OPERASYON_YETKILILERI else (aktif_kullanici_ad if aktif_kullanici_ad in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0])
+                    y_operasyon = c2.selectbox("Operasyon Yetkilisi", options=OPERASYON_YETKILILERI, index=OPERASYON_YETKILILERI.index(varsayilan_op_secim))
                     
                     b_col1, b_col2, b_col3 = st.columns([1, 1, 2])
                     submitted_admin_edit = b_col1.form_submit_button("💾 Bilgileri Güncelle")
@@ -1068,7 +1077,17 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                 
                 st.markdown(f"**Marka:** {t_row['Marka Adı']} | **Danışman:** *{t_row['Danışman']}*")
                 c_op, c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 1, 1, 1, 1, 1])
-                op_yetkilisi_input = c_op.text_input("Operasyon Yetkilisi*", value=str(t_row.get('Operasyon Yetkilisi', '')) if pd.notna(t_row.get('Operasyon Yetkilisi')) else aktif_kullanici_ad)
+                
+                kayitli_op = str(t_row.get('Operasyon Yetkilisi', '')).strip().upper()
+                if kayitli_op in OPERASYON_YETKILILERI:
+                    varsayilan_op = kayitli_op
+                elif aktif_kullanici_ad in OPERASYON_YETKILILERI:
+                    varsayilan_op = aktif_kullanici_ad
+                else:
+                    varsayilan_op = OPERASYON_YETKILILERI[0]
+                
+                op_yetkilisi_input = c_op.selectbox("Operasyon Yetkilisi*", options=OPERASYON_YETKILILERI, index=OPERASYON_YETKILILERI.index(varsayilan_op))
+                
                 c1.markdown(f"**Tescil Tebliğ Tarihi**\n\n`{tescil_tarihi_str}`")
                 c2.markdown(f"**TESCİL SON GÜNÜ**\n\n`{son_odeme_tarihi_str}`")
                 tescil_fatura_no = c3.text_input("Tescil Fatura No", value="")
@@ -1081,7 +1100,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                     if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Yap", use_container_width=True):
                         odeme_gunu = tarih_birlestir_ve_formatla(odeme_gunu_ham)
                         if not op_yetkilisi_input.strip():
-                            st.warning("⚠️ Lütfen Operasyon Yetkilisi alanını doldurunuz.")
+                            st.warning("⚠️ Lütfen Operasyon Yetkilisi seçiniz.")
                         elif not tescil_tutar.strip():
                             st.warning("⚠️ Lütfen Tescil Harç / Hizmet Tutarı alanını doldurunuz.")
                         elif not odeme_gunu.strip():
@@ -1104,7 +1123,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Mü�
                     if st.button("📅 Ödeme Sözü Verildi Yap", use_container_width=True):
                         odeme_sozu_tarihi = tarih_birlestir_ve_formatla(odeme_sozu_tarihi_ham)
                         if not op_yetkilisi_input.strip():
-                            st.warning("⚠️ Lütfen Operasyon Yetkilisi alanını doldurunuz.")
+                            st.warning("⚠️ Lütfen Operasyon Yetkilisi seçiniz.")
                         elif not tescil_tutar.strip():
                             st.warning("⚠️ Lütfen Tescil Harç / Hizmet Tutarı alanını doldurunuz.")
                         elif not odeme_sozu_tarihi.strip():
