@@ -460,7 +460,7 @@ if is_muhasebe:
         if st.button("🔍 Kurum İncelemesinde", use_container_width=True): sayfa_degistir("Kurum İncelemesinde")
         if st.button("📰 Yayında", use_container_width=True): sayfa_degistir("Yayında")
         if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True): sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
-        if st.button("📋 Savunma Yapıldı", use_container_width=True): sayfa_degistir("Savunma Yapıldı")
+        if st.button("📋 Savunma Ücret Alındı", use_container_width=True): sayfa_degistir("Savunma Yapıldı")
         if st.button("❌ Savunma Yapılmadı", use_container_width=True): sayfa_degistir("Savunma Yapılmadı")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede")
         if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
