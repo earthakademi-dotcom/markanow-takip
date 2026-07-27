@@ -133,11 +133,36 @@ EK_HARC_CONFIG_FILE = "ek_harc_config.csv"
 ILLER = ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 SINIFLAR = [str(i) for i in range(1, 46)] + [f"35/{i}" for i in range(1, 35)]
 
-if not os.path.exists(USER_FILE):
-    pd.DataFrame({
+def load_users():
+    default_users = pd.DataFrame({
         "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ"],
         "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
-    }).to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
+    })
+    if not os.path.exists(USER_FILE) or os.path.getsize(USER_FILE) == 0:
+        default_users.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
+        return default_users
+    try:
+        u_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=';', dtype=str)
+        if len(u_df.columns) <= 1:
+            u_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=',', dtype=str)
+        
+        # Sütun isimleri temizliği ve kontrolü
+        u_df.columns = [c.strip() for c in u_df.columns]
+        if "İsim" not in u_df.columns or "Şifre" not in u_df.columns:
+            # Eğer eski bozuk formatlı dosyaysa düzelt
+            if len(u_df.columns) == 1 and "," in u_df.columns[0]:
+                u_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=',', dtype=str)
+                u_df.columns = [c.strip() for c in u_df.columns]
+            if "İsim" not in u_df.columns or "Şifre" not in u_df.columns:
+                default_users.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
+                return default_users
+        return u_df
+    except:
+        default_users.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
+        return default_users
+
+def save_users(u_df):
+    u_df.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
 
 def ay_ekle(kaynak_tarih, ay_sayisi=2):
     yil = kaynak_tarih.year + (kaynak_tarih.month + ay_sayisi - 1) // 12
@@ -300,11 +325,7 @@ if not st.session_state.kullanici:
     st.markdown("<p style='text-align: center; color: #FFFFFF;'>Lütfen sisteme giriş yapınız.</p>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        try:
-            user_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=';')
-            if len(user_df.columns) <= 1: user_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=',')
-        except:
-            user_df = pd.DataFrame({"İsim": ["ALİ OSMAN YELBEY"], "Şifre": ["MARKA123"]})
+        user_df = load_users()
             
         with st.form("giris_formu"):
             secili_kullanici = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
@@ -676,7 +697,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         toplam_kdv_tutari += kdv_tutari
         toplam_harc_maliyeti += harc_maliyeti
         
-        # Kaç Sınıf hesaplaması
         sinif_degeri = row.get('Sınıf', '')
         kac_sinif_sayisi = sinif_adedi_hesapla(sinif_degeri)
         kac_sinif_metin = f"{kac_sinif_sayisi} Sınıf" if kac_sinif_sayisi > 0 else "0 Sınıf"
@@ -1262,29 +1282,44 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>👥 Personel Yönetimi</h2>", unsafe_allow_html=True)
-    if os.path.exists(USER_FILE): st.dataframe(pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=';'), use_container_width=True)
+    
+    u_df_display = load_users()
+    if not u_df_display.empty:
+        st.dataframe(u_df_display, use_container_width=True)
     
     t1, t2, t3 = st.tabs(["➕ Danışman Ekle", "🔑 Şifre Değiştir", "❌ Danışman Sil"])
     with t1:
         with st.form("personel_ekle_form", clear_on_submit=True):
             n, s = st.text_input("Danışman Adı"), st.text_input("Şifre", type="password")
             if st.form_submit_button("Danışman Ekle") and n.strip():
-                u_df = pd.read_csv(USER_FILE, sep=';') if os.path.exists(USER_FILE) else pd.DataFrame(columns=["İsim", "Şifre"])
-                if n.strip().upper() in u_df["İsim"].values: st.error("Personel zaten var!")
+                u_df = load_users()
+                if n.strip().upper() in u_df["İsim"].values:
+                    st.error("Personel zaten var!")
                 else:
-                    pd.concat([u_df, pd.DataFrame({"İsim": [n.strip().upper()], "Şifre": [s.strip()]})], ignore_index=True).to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
-                    st.success("Eklendi!"); import time; time.sleep(1.2); st.rerun()
+                    yeni_satir = pd.DataFrame({"İsim": [n.strip().upper()], "Şifre": [s.strip()]})
+                    u_df = pd.concat([u_df, yeni_satir], ignore_index=True)
+                    save_users(u_df)
+                    st.success("Eklendi!")
+                    import time; time.sleep(1.2)
+                    st.rerun()
     with t2:
-        if os.path.exists(USER_FILE):
-            u_df = pd.read_csv(USER_FILE, sep=';')
-            p, s2 = st.selectbox("Personel", u_df["İsim"].tolist()), st.text_input("Yeni Şifre", type="password")
+        u_df = load_users()
+        if not u_df.empty:
+            p = st.selectbox("Personel", u_df["İsim"].tolist(), key="sifre_degis_pers")
+            s2 = st.text_input("Yeni Şifre", type="password", key="sifre_degis_val")
             if st.button("Şifreyi Güncelle"):
-                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip(); u_df.to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
-                st.success("Güncellendi!"); import time; time.sleep(1.2); st.rerun()
+                u_df.loc[u_df["İsim"] == p, "Şifre"] = s2.strip()
+                save_users(u_df)
+                st.success("Güncellendi!")
+                import time; time.sleep(1.2)
+                st.rerun()
     with t3:
-        if os.path.exists(USER_FILE):
-            u_df = pd.read_csv(USER_FILE, sep=';')
-            s3 = st.selectbox("Silinecek", u_df["İsim"].tolist())
+        u_df = load_users()
+        if not u_df.empty:
+            s3 = st.selectbox("Silinecek", u_df["İsim"].tolist(), key="sil_pers")
             if st.button("Sil"):
-                u_df[u_df["İsim"] != s3].to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
-                st.success("Silindi!"); import time; time.sleep(1.2); st.rerun()
+                u_df = u_df[u_df["İsim"] != s3]
+                save_users(u_df)
+                st.success("Silindi!")
+                import time; time.sleep(1.2)
+                st.rerun()
