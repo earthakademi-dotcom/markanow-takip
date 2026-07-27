@@ -836,7 +836,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Rap
     arandi_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Edildi Müşteri Arandı"].copy()
     st.metric("Toplam Marka Adedi", f"{arandi_df['Marka Adı'].nunique()} Adet")
     st.write("---")
-    rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy() if not arandi_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi'])
+    rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy() if not arandi_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı', 'Ödeme Tarihi'])
     st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Raporu":
@@ -859,10 +859,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Rap
         except:
             kalan_gunler_listesi.append("Bilinmiyor")
 
-    rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Sözü Güncelleme Sayısı']].copy() if not sozu_verenler_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Tescil Harç Tutarı', 'Ödeme Sözü Güncelleme Sayısı'])
+    rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı', 'Ödeme Sözü Güncelleme Sayısı']].copy() if not sozu_verenler_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı', 'Ödeme Sözü Güncelleme Sayısı'])
     rapor_goruntule_df['Kalan Süre'] = kalan_gunler_listesi
     
-    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Ödeme Sözü Tarihi', 'Ödeme Sözü Güncelleme Sayısı', 'Fatura No', 'Tescil Harç Tutarı']
+    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Kalan Süre', 'Ödeme Sözü Tarihi', 'Ödeme Sözü Güncelleme Sayısı', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı']
     rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
     
     st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)', 'Ödeme Sözü Güncelleme Sayısı': 'Kaç Kez Güncellendi'}), use_container_width=True)
@@ -1394,27 +1394,29 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
             
             with st.form(f"form_guncelle_odeme_sozu_{secilen_marka}"):
-                c1, c2 = st.columns(2)
+                c1, c2, c3 = st.columns(3)
                 c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                 c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                c3.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
                 
-                b_tarih_ham = c1.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
-                y_tar_ham = c2.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
-                
-                yayin_bitis = c1.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
-                tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
+                c1.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
+                c2.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
+                c3.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
                 
                 tescil_harc_tutar_val = c1.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
                 c2.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
                 
                 mevcut_odeme_sozu = str(s_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(s_row.get('Ödeme Sözü Tarihi')) else ""
-                odeme_sozu_ham = c1.text_input("Ödeme Sözü Tarihi (GG/AA/YYYY)", value=mevcut_odeme_sozu)
+                odeme_sozu_ham = c3.text_input("Ödeme Sözü Tarihi (GG/AA/YYYY)", value=mevcut_odeme_sozu)
                 
                 mevcut_fatura_no = str(s_row.get('Fatura No', '')) if pd.notna(s_row.get('Fatura No')) else ""
-                fatura_no_input = c2.text_input("Fatura No*", value=mevcut_fatura_no)
+                fatura_no_input = c1.text_input("Fatura No*", value=mevcut_fatura_no)
+                
+                mevcut_fatura_tarihi = str(s_row.get('Fatura Tarihi', '')) if pd.notna(s_row.get('Fatura Tarihi')) else ""
+                fatura_tarihi_ham = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=mevcut_fatura_tarihi)
                 
                 mevcut_sayac = str(s_row.get('Ödeme Sözü Güncelleme Sayısı', '0'))
-                st.markdown(f"ℹ️ **Bu marka için ödeme sözü tarihi bugüne kadar `{mevcut_sayac}` kez güncellendi.**")
+                c3.markdown(f"<div style='margin-top: 24px;'>ℹ️ Güncelleme: <b>{mevcut_sayac}</b> kez</div>", unsafe_allow_html=True)
 
                 btn_col1, btn_col2 = st.columns(2)
                 submitted_update = btn_col1.form_submit_button("💾 Ödeme Tarihi Güncelle")
@@ -1422,6 +1424,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 
                 if submitted_update:
                     yeni_sozu_tarihi = tarih_birlestir_ve_formatla(odeme_sozu_ham)
+                    yeni_fatura_tarihi = tarih_birlestir_ve_formatla(fatura_tarihi_ham)
                     idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                     
                     try:
@@ -1433,6 +1436,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
                     df.at[idx, 'Ödeme Sözü Tarihi'] = yeni_sozu_tarihi.strip()
                     df.at[idx, 'Fatura No'] = fatura_no_input.strip()
+                    df.at[idx, 'Fatura Tarihi'] = yeni_fatura_tarihi.strip()
                     if hesaplanan_son_odeme:
                         df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                     
@@ -1445,10 +1449,12 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     if not fatura_no_input.strip():
                         st.warning("⚠️ Lütfen Fatura No alanını doldurunuz.")
                     else:
+                        yeni_fatura_tarihi = tarih_birlestir_ve_formatla(fatura_tarihi_ham)
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                         df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
                         df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
                         df.at[idx, 'Fatura No'] = fatura_no_input.strip()
+                        df.at[idx, 'Fatura Tarihi'] = yeni_fatura_tarihi.strip()
                         if hesaplanan_son_odeme:
                             df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                         
