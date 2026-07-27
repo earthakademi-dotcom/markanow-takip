@@ -137,7 +137,7 @@ if not os.path.exists(USER_FILE):
     pd.DataFrame({
         "İsim": ["ALİ OSMAN YELBEY", "DENİZ TELLİ GÜRLEYENDAĞ", "MERVE YURTLU", "SELEN AKCAN", "ELİF YILDIZ"],
         "Şifre": ["MARKA123", "MARKA123", "MARKA123", "MARKA123", "MARKA123"]
-    }).to_csv(USER_FILE, index=False, encoding='utf-8-sig')
+    }).to_csv(USER_FILE, index=False, encoding='utf-8-sig', sep=';')
 
 def ay_ekle(kaynak_tarih, ay_sayisi=2):
     yil = kaynak_tarih.year + (kaynak_tarih.month + ay_sayisi - 1) // 12
@@ -170,9 +170,9 @@ def tarih_birlestir_ve_formatla(tarih_str):
     return tarih_str.strip()
 
 def veriyi_kaydet_ve_yedekle(df_to_save):
-    df_to_save.to_csv(DATA_FILE, index=False, encoding='utf-8-sig')
+    df_to_save.to_csv(DATA_FILE, index=False, encoding='utf-8-sig', sep=';')
     try:
-        df_to_save.to_csv(BACKUP_FILE, index=False, encoding='utf-8-sig')
+        df_to_save.to_csv(BACKUP_FILE, index=False, encoding='utf-8-sig', sep=';')
     except:
         pass
 
@@ -185,8 +185,10 @@ def load_data():
     ]
     if (not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0) and os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
         try:
-            d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig')
-            d_temp.to_csv(DATA_FILE, index=False, encoding='utf-8-sig')
+            d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig', sep=';')
+            if len(d_temp.columns) <= 1:
+                d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig', sep=',')
+            d_temp.to_csv(DATA_FILE, index=False, encoding='utf-8-sig', sep=';')
         except:
             d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
     elif not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -194,9 +196,11 @@ def load_data():
         veriyi_kaydet_ve_yedekle(d_temp)
     else:
         try:
-            d_temp = pd.read_csv(DATA_FILE, dtype=str, encoding='utf-8-sig')
+            d_temp = pd.read_csv(DATA_FILE, dtype=str, encoding='utf-8-sig', sep=';')
+            if len(d_temp.columns) <= 1:
+                d_temp = pd.read_csv(DATA_FILE, dtype=str, encoding='utf-8-sig', sep=',')
             if d_temp.empty and os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
-                d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig')
+                d_temp = pd.read_csv(BACKUP_FILE, dtype=str, encoding='utf-8-sig', sep=';')
         except:
             d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
             veriyi_kaydet_ve_yedekle(d_temp)
@@ -219,7 +223,7 @@ if "sinif_harclari" not in st.session_state:
     st.session_state.sinif_harclari = {}
     if os.path.exists(HARC_CONFIG_FILE) and os.path.getsize(HARC_CONFIG_FILE) > 0:
         try:
-            h_df = pd.read_csv(HARC_CONFIG_FILE, encoding='utf-8-sig')
+            h_df = pd.read_csv(HARC_CONFIG_FILE, encoding='utf-8-sig', sep=';')
             for _, row in h_df.iterrows():
                 st.session_state.sinif_harclari[int(row["Sınıf Adedi"])] = {"harc": float(row["Harç"]), "avukat": float(row["Avukat"])}
         except: pass
@@ -241,7 +245,7 @@ if "kdv_orani" not in st.session_state: st.session_state.kdv_orani = 20.0
 
 if os.path.exists(EK_HARC_CONFIG_FILE) and os.path.getsize(EK_HARC_CONFIG_FILE) > 0:
     try:
-        ek_df = pd.read_csv(EK_HARC_CONFIG_FILE, encoding='utf-8-sig')
+        ek_df = pd.read_csv(EK_HARC_CONFIG_FILE, encoding='utf-8-sig', sep=';')
         if "Tescil Harç Bedeli" in ek_df.columns and not ek_df.empty: st.session_state.tescil_harc_bedeli = float(ek_df.iloc[0]["Tescil Harç Bedeli"])
         if "Savunma Harç Bedeli" in ek_df.columns and not ek_df.empty: st.session_state.savunma_harc_bedeli = float(ek_df.iloc[0]["Savunma Harç Bedeli"])
         if "Bildirim Tescil Tutar" in ek_df.columns and not ek_df.empty: st.session_state.bildirim_tescil_tutar = float(ek_df.iloc[0]["Bildirim Tescil Tutar"])
@@ -302,7 +306,7 @@ if not st.session_state.kullanici:
     st.markdown("<p style='text-align: center; color: #FFFFFF;'>Lütfen sisteme giriş yapınız.</p>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        user_df = pd.read_csv(USER_FILE, encoding='utf-8-sig')
+        user_df = pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=';')
         with st.form("giris_formu"):
             secili_kullanici = st.selectbox("Kullanıcı Seçiniz", user_df["İsim"].tolist())
             sifre_input = st.text_input("Şifre", type="password")
@@ -384,7 +388,7 @@ if st.session_state.aktif_sayfa == "Ana Sayfa":
 elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>📂 Toplu Excel / CSV Veri Yükleme Paneli</h2>", unsafe_allow_html=True)
-    st.write("Geçmiş tüm satışlarınızı ve durumlarını tek seferde sisteme yüklemek için aşağıdaki örnek CSV şablonunu indirebilir ve Excel'de açarak doldurup yükleyebilirsiniz.")
+    st.write("Geçmiş tüm satışlarınızı ve durumlarını tek seferde sisteme yüklemek için aşağıdaki örnek şablonu indirebilir ve Excel'de doğrudan sütunlara ayrılmış şekilde açıp doldurabilirsiniz.")
     
     ornek_data = {
         "Marka Adı": ["Örnek Marka A", "Örnek Marka B"],
@@ -414,10 +418,10 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
         "Tescil Harç Tutarı": ["", ""]
     }
     ornek_df = pd.DataFrame(ornek_data)
-    csv_veri = ornek_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+    csv_veri = ornek_df.to_csv(index=False, encoding='utf-8-sig', sep=';').encode('utf-8-sig')
 
     st.download_button(
-        label="📥 Örnek CSV Şablonunu İndir",
+        label="📥 Sütunlu Örnek CSV Şablonunu İndir",
         data=csv_veri,
         file_name="markanow_satis_sablonu.csv",
         mime="text/csv",
@@ -430,7 +434,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
     if yuklenen_dosya is not None:
         try:
             if yuklenen_dosya.name.endswith('.csv'):
-                yuklenen_df = pd.read_csv(yuklenen_dosya, dtype=str, encoding='utf-8-sig')
+                yuklenen_df = pd.read_csv(yuklenen_dosya, dtype=str, encoding='utf-8-sig', sep=';')
+                if len(yuklenen_df.columns) <= 1:
+                    yuklenen_df = pd.read_csv(yuklenen_dosya, dtype=str, encoding='utf-8-sig', sep=',')
             else:
                 yuklenen_df = pd.read_excel(yuklenen_dosya, dtype=str)
                 
@@ -676,7 +682,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
             save_list.append({"Sınıf Adedi": i, "Harç": h_fiyat, "Avukat": float(ortak_avukat_input)})
             
         st.session_state.sinif_harclari = yeni_sozluk
-        pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False, encoding='utf-8-sig')
+        pd.DataFrame(save_list).to_csv(HARC_CONFIG_FILE, index=False, encoding='utf-8-sig', sep=';')
         
         st.session_state.tescil_harc_bedeli = float(tescil_harc_input)
         st.session_state.savunma_harc_bedeli = float(savunma_harc_input)
@@ -686,7 +692,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Y�
         pd.DataFrame({
             "Tescil Harç Bedeli": [st.session_state.tescil_harc_bedeli], "Savunma Harç Bedeli": [st.session_state.savunma_harc_bedeli],
             "Bildirim Tescil Tutar": [st.session_state.bildirim_tescil_tutar], "KDV Oranı": [st.session_state.kdv_orani]
-        }).to_csv(EK_HARC_CONFIG_FILE, index=False, encoding='utf-8-sig')
+        }).to_csv(EK_HARC_CONFIG_FILE, index=False, encoding='utf-8-sig', sep=';')
         
         st.success("🎉 Başarıyla kaydedildi!")
         import time; time.sleep(1.2)
@@ -787,4 +793,4 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
 elif is_admin and st.session_state.aktif_sayfa == "Personel Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>👥 Personel Yönetimi</h2>", unsafe_allow_html=True)
-    if os.path.exists(USER_FILE): st.dataframe(pd.read_csv(USER_FILE, encoding='utf-8-sig'), use_container_width=True)
+    if os.path.exists(USER_FILE): st.dataframe(pd.read_csv(USER_FILE, encoding='utf-8-sig', sep=';'), use_container_width=True)
