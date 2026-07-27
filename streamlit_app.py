@@ -506,11 +506,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
-    # KESİN ÇÖZÜM: Tarih alanı boş veya geçersiz olan markaların "Tümü" denildiğinde asla kaybolmaması için esnek ve güvenli filtreleme
+    # KESİN ÇÖZÜM: "Tümü" seçildiğinde verinin eksiksiz gelmesini sağlayan kusursuz filtre
     def genel_rapor_filtrele(row):
         try:
             if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
-                return True # Tümü seçildiyse hiçbirini eleme, doğrudan göster
+                return True
 
             tarih_listesi = [
                 row.get('Satış Tarihi', ''), row.get('Fatura Tarihi', ''), 
@@ -518,7 +518,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
                 row.get('Tescil Tebliğ Tarihi', ''), row.get('Ödeme Tarihi', '')
             ]
             
-            # Geçerli ilk tarihi bul
             gecerli_dt = None
             for t_str in tarih_listesi:
                 if pd.notna(t_str) and str(t_str).strip() != '' and str(t_str).lower() != 'nan':
@@ -528,7 +527,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
                         gecerli_dt = dt
                         break
             
-            # Eğer tablodaki hiçbir tarih formatı tutmuyorsa veya boşsa, "Tümü" filtresinde kaybolmasın diye dahil ediyoruz
             if gecerli_dt is None:
                 return True
 
@@ -538,15 +536,22 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
         except: 
             return True
 
-    rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
+    # Eğer "Tümü" seçiliyse filtreyi bypass et, doğrudan tüm veri setini kullan
+    if aktif_yil == "Tümü" and secilen_rapor_ay_kod is None:
+        rapor_filtrelenmis_df = df.copy() if not df.empty else df.copy()
+    else:
+        rapor_filtrelenmis_df = df[df.apply(genel_rapor_filtrele, axis=1)].copy() if not df.empty else df.copy()
 
     def get_count_and_df(asama_adi):
-        if asama_adi == "Tescil Tebliğ Beklemede":
-            sub_df = rapor_filtrelenmis_df[(rapor_filtrelenmis_df['Durum'].astype(str).str.strip() == asama_adi) &
-                                          ((rapor_filtrelenmis_df['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
-                                           (rapor_filtrelenmis_df['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan"))]
+        temiz_asama = str(asama_adi).strip()
+        df_durum = rapor_filtrelenmis_df[rapor_filtrelenmis_df['Durum'].astype(str).str.strip() == temiz_asama]
+        if temiz_asama == "Tescil Tebliğ Beklemede":
+            sub_df = df_durum[
+                (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.strip() == "") |
+                (df_durum['Tescil Tebliğ Tarihi'].astype(str).str.lower() == "nan")
+            ]
         else:
-            sub_df = rapor_filtrelenmis_df[rapor_filtrelenmis_df['Durum'].astype(str).str.strip() == asama_adi]
+            sub_df = df_durum
         return len(sub_df), sub_df
         
     rapor_kalemleri = [
