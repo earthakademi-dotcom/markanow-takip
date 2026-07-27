@@ -379,6 +379,7 @@ if is_muhasebe:
         if st.button("📰 Yayında Raporu", use_container_width=True): sayfa_degistir("Yayında Raporu")
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
         if st.button("💳 Tescil Tebliğ Arandı Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Arandı Raporu")
+        if st.button("📅 Ödeme Sözü Verenler Raporu", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
         if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
@@ -817,6 +818,18 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Arandı Rap
         st.info("Kayıt bulunmuyor.")
     else: 
         rapor_goruntule_df = arandi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Tescil Fatura No', 'Tescil Harç Tutarı', 'Ödeme Tarihi']].copy()
+        st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Fatura No': 'Fatura No', 'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>📅 Ödeme Sözü Verenler Raporu</h2>", unsafe_allow_html=True)
+    sozu_verenler_df = df[df['Durum'].astype(str).str.strip() == "Ödeme Sözü Verenler"].copy()
+    st.metric("Toplam Marka Adedi", f"{sozu_verenler_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    if sozu_verenler_df.empty: 
+        st.info("Kayıt bulunmuyor.")
+    else: 
+        rapor_goruntule_df = sozu_verenler_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'Tescil Fatura No', 'Tescil Harç Tutarı']].copy()
         st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Fatura No': 'Fatura No', 'Tescil Harç Tutarı': 'Harç Tutarı (TL)'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
