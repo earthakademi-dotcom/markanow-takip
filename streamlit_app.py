@@ -387,6 +387,7 @@ if is_muhasebe:
         if st.button("📌 Tescil Tebliğ Beklemede Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede Raporu")
         if st.button("💳 Tescil Tebliğ Arandı Raporu", use_container_width=True): sayfa_degistir("Tescil Tebliğ Arandı Raporu")
         if st.button("📅 Ödeme Sözü Verenler Raporu", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler Raporu")
+        if st.button("⏳ Tescil Kurum Ödemesi Bekleyen Raporu", use_container_width=True): sayfa_degistir("Tescil Kurum Ödemesi Bekleyen Raporu")
     
     with st.sidebar.expander("⚙️ Fiyatlandırma Yönetimi", expanded=True):
         if st.button("💰 Fiyatlandırma ve Harç Yönetimi", use_container_width=True): sayfa_degistir("Fiyatlandırma ve Harç Yönetimi")
@@ -866,6 +867,16 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Ödeme Sözü Verenler Rap
     rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
     
     st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)', 'Ödeme Sözü Güncelleme Sayısı': 'Kaç Kez Güncellendi'}), use_container_width=True)
+
+elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Kurum Ödemesi Bekleyen Raporu":
+    if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
+    st.markdown("<h2>⏳ Tescil Kurum Ödemesi Bekleyen Raporu</h2>", unsafe_allow_html=True)
+    kurum_odeme_bekleyen_df = df[df['Durum'].astype(str).str.strip() == "Tescil Kurum Ödemesi Bekleyen"].copy()
+    st.metric("Toplam Marka Adedi", f"{kurum_odeme_bekleyen_df['Marka Adı'].nunique()} Adet")
+    st.write("---")
+    
+    rapor_goruntule_df = kurum_odeme_bekleyen_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı']].copy() if not kurum_odeme_bekleyen_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'Tescil Tebliğ Tarihi', 'Tescil Son Ödeme Tarihi', 'Ödeme Tarihi', 'Fatura No', 'Fatura Tarihi', 'Tescil Harç Tutarı'])
+    st.dataframe(rapor_goruntule_df.rename(columns={'Tescil Harç Tutarı': 'Harç Tutarı (TL)', 'Ödeme Tarihi': 'Ödeme Günü'}), use_container_width=True)
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Fiyatlandırma ve Harç Yönetimi":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
