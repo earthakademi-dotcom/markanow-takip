@@ -229,11 +229,10 @@ def load_data():
         "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı"
     ]
     
-    # Ana dosya yoksa veya boşsa, yedekten kurtarmayı dene
     if (not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0) and os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
         try:
             d_temp = pd.read_csv(BACKUP_FILE, dtype=str)
-            d_temp.to_csv(DATA_FILE, index=False) # Ana dosyayı yedekten geri yükle
+            d_temp.to_csv(DATA_FILE, index=False)
         except:
             d_temp = pd.DataFrame(columns=zorunlu_kolonlar)
     elif not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
@@ -457,6 +456,9 @@ if st.sidebar.button("📊 Genel Satışlarım", use_container_width=True):
     sayfa_degistir("Genel Satışlarım")
 
 if is_muhasebe:
+    if st.sidebar.button("📂 Toplu Excel / Veri Yükleme", use_container_width=True):
+        sayfa_degistir("Toplu Excel Yükleme")
+
     with st.sidebar.expander("📈 Raporlama", expanded=True):
         if st.button("📊 Genel Rapor Paneli", use_container_width=True):
             sayfa_degistir("Marka Tescil Raporlama")
@@ -518,6 +520,100 @@ df = load_data()
 if st.session_state.aktif_sayfa == "Ana Sayfa":
     st.markdown(f"<h2>Hoş Geldiniz, {aktif_kullanici_ad}</h2>", unsafe_allow_html=True)
     st.write("Sol taraftaki menüyü kullanarak işlemlerinize başlayabilirsiniz.")
+
+# --- TOPLU EXCEL YÜKLEME EKRANI ---
+elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
+    if st.button("⬅️ Geri Çık"):
+        sayfa_degistir("Ana Sayfa")
+        
+    st.markdown("<h2>📂 Toplu Excel / CSV Veri Yükleme Paneli</h2>", unsafe_allow_html=True)
+    st.write("Geçmiş tüm satışlarınızı ve durumlarını tek seferde sisteme yüklemek için aşağıdaki şablonu kullanabilir veya kendi Excel/CSV dosyanızı yükleyebilirsiniz.")
+    
+    # Örnek Şablon İndirme Butonu
+    ornek_data = {
+        "Marka Adı": ["Örnek Marka A", "Örnek Marka B"],
+        "Ad Soyad": ["Ahmet Yılmaz", "Ayşe Demir"],
+        "TC": ["11111111111", "22222222222"],
+        "Telefon": ["05321112233", "05334445566"],
+        "E-Mail": ["ahmet@ornek.com", "ayse@ornek.com"],
+        "Doğum Tarihi": ["01/01/1990", "05/05/1985"],
+        "İl": ["İstanbul", "Ankara"],
+        "Sınıf": ["9, 35", "25"],
+        "Ödeme": ["EFT", "Kredi Kartı"],
+        "Satış Tarihi": ["10/01/2026", "15/02/2026"],
+        "Tutar": ["15000", "20000"],
+        "Durum": ["Başvuru Beklemede", "Yayında"],
+        "Danışman": ["MERVE YURTLU", "SELEN AKCAN"],
+        "Fatura No": ["ABC2026000001", "ABC2026000002"],
+        "Fatura Tarihi": ["10/01/2026", "15/02/2026"],
+        "Başvuru No": ["2026/01234", "2026/05678"],
+        "Başvuru Tarihi": ["11/01/2026", "16/02/2026"],
+        "Yayın Tarihi": ["", "01/03/2026"],
+        "Yayın Bitiş Tarihi": ["", "01/05/2026"],
+        "Sonraki Aşama Seçimi": ["", ""],
+        "İtiraz Tarihi": ["", ""],
+        "Tescil Tebliğ Tarihi": ["", ""],
+        "Tescil Son Ödeme Tarihi": ["", ""],
+        "Ödeme Tarihi": ["", ""],
+        "Tescil Harç Tutarı": ["", ""]
+    }
+    ornek_df = pd.DataFrame(ornek_data)
+    csv_ornek = ornek_df.to_csv(index=False).encode('utf-8')
+    
+    st.download_button(
+        label="📥 Örnek CSV Şablonunu İndir",
+        data=csv_ornek,
+        file_name="markanow_satis_sablonu.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+    
+    st.write("---")
+    
+    yuklenen_dosya = st.file_uploader("Excel (.xlsx) veya CSV (.csv) Dosyanızı Seçin", type=["csv", "xlsx"])
+    
+    if yuklenen_dosya is not None:
+        try:
+            if yuklenen_dosya.name.endswith('.csv'):
+                yuklenen_df = pd.read_csv(yuklenen_dosya, dtype=str)
+            else:
+                yuklenen_df = pd.read_excel(yuklenen_dosya, dtype=str)
+                
+            st.success(f"✅ Dosya başarıyla okundu! Toplam {len(yuklenen_df)} adet kayıt bulundu.")
+            st.dataframe(yuklenen_df.head(), use_container_width=True)
+            
+            if st.button("🚀 Tüm Kayıtları Sisteme Aktar ve Veritabanını Güncelle", use_container_width=True):
+                zorunlu_kolonlar = [
+                    "Marka Adı", "Ad Soyad", "TC", "Telefon", "E-Mail", "Doğum Tarihi", "İl", "Sınıf", "Ödeme", 
+                    "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
+                    "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
+                    "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı"
+                ]
+                
+                # Eksik kolonları boş olarak ekle
+                for col in zorunlu_kolonlar:
+                    if col not in yuklenen_df.columns:
+                        yuklenen_df[col] = ""
+                        
+                yuklenen_df = yuklenen_df[zorunlu_kolonlar] # Kolon sırasını sabitle
+                yuklenen_df = yuklenen_df.fillna("")
+                
+                # Mevcut verilerle birleştir veya tamamen üzerine yaz seçeneği
+                islem_turu = st.radio("İşlem Türü Seçin:", ["Mevcut Verilerin Üstüne Ekle (Append)", "Mevcut Verileri Sil ve Dosyadakileri Yükle (Sıfırdan Kur)"])
+                
+                if "Sıfırdan Kur" in islem_turu:
+                    final_df = yuklenen_df
+                else:
+                    final_df = pd.concat([df, yuklenen_df], ignore_index=True)
+                    
+                veriyi_kaydet_ve_yedekle(final_df)
+                st.success("🎉 Başarılı! Tüm geçmiş satışlar ve durumlar sisteme kaydedildi, otomatik yedek alındı.")
+                import time; time.sleep(1.5)
+                st.session_state.aktif_sayfa = "Ana Sayfa"
+                st.rerun()
+                
+        except Exception as e:
+            st.error(f"❌ Dosya okunurken bir hata oluştu: {e}")
 
 elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     if st.button("⬅️ Geri Çık"):
@@ -1006,7 +1102,7 @@ elif st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Yayın Tarihi": "", "Yayın Bitiş Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Tescil Harç Tutarı": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                veriyi_kaydet_ve_yedekle(guncel_df) # OTOMATİK YEDEKLEME
+                veriyi_kaydet_ve_yedekle(guncel_df)
                 st.success("✅ Satış başarıyla kaydedildi, otomatik yedek alındı ve onay için muhasebeye gönderildi!")
                 st.info("Ana sayfaya yönlendiriliyorsunuz, lütfen bekleyin...")
                 import time; time.sleep(1.5)
@@ -1153,13 +1249,13 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
                         df.at[idx, 'Tutar'] = y_tutar.strip()
                         df.at[idx, 'Danışman'] = y_danisman.strip().upper()
                         
-                        veriyi_kaydet_ve_yedekle(df) # OTOMATİK YEDEKLEME
+                        veriyi_kaydet_ve_yedekle(df)
                         st.session_state["success_msg"] = f"Başarılı! '{secilen_duzenle_marka}' markasına ait bilgiler güncellendi ve yedeklendi."
                         st.rerun()
 
                     if submitted_delete:
                         df_yeni = df[df['Marka Adı'].astype(str) != secilen_duzenle_marka]
-                        veriyi_kaydet_ve_yedekle(df_yeni) # OTOMATİK YEDEKLEME
+                        veriyi_kaydet_ve_yedekle(df_yeni)
                         st.session_state["success_msg"] = f"🗑️ '{secilen_duzenle_marka}' markasına ait kayıt silindi!"
                         st.rerun()
 
