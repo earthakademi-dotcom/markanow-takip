@@ -1416,7 +1416,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 fatura_tarihi_ham = c2.text_input("Fatura Tarihi (GG/AA/YYYY)", value=mevcut_fatura_tarihi)
                 
                 mevcut_sayac = str(s_row.get('Ödeme Sözü Güncelleme Sayısı', '0'))
-                c3.markdown(f"<div style='margin-top: 24px;'>ℹ️ Güncelleme: <b>{mevcut_sayac}</b> kez</div>", unsafe_allow_html=True)
+                c3.markdown(f"<div style='margin-top: 24px; color: #FFFFFF !important;'>ℹ️ Güncelleme: <b style='color: #FFFFFF !important;'>{mevcut_sayac}</b> kez</div>", unsafe_allow_html=True)
 
                 btn_col1, btn_col2 = st.columns(2)
                 submitted_update = btn_col1.form_submit_button("💾 Ödeme Tarihi Güncelle")
