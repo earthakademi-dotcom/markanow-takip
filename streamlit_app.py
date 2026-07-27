@@ -1438,23 +1438,30 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
             mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) and str(s_row.get('İtiraz Tarihi')).lower() != 'nan' else ""
             hesaplanan_savunma_son = hesapla_savunma_son_gun(mevcut_itiraz_tar)
             
+            mevcut_kayitli_op = str(s_row.get('Operasyon Yetkilisi', '')).strip().upper()
+            varsayilan_op_secim = mevcut_kayitli_op if mevcut_kayitli_op in OPERASYON_YETKILILERI else (aktif_kullanici_ad if aktif_kullanici_ad in OPERASYON_YETKILILERI else OPERASYON_YETKILILERI[0])
+            
             with st.form(f"form_guncelle_itiraz_teblig_{secilen_marka}"):
-                c1, c2 = st.columns(2)
+                c_op, c1, c2 = st.columns(3)
+                op_yetkilisi_input = c_op.selectbox("Operasyon Yetkilisi*", options=OPERASYON_YETKILILERI, index=OPERASYON_YETKILILERI.index(varsayilan_op_secim))
                 c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
                 c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
                 
-                itiraz_tar_ham = c1.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)*", value=mevcut_itiraz_tar)
-                c2.text_input("Savunma Son Günü", value=hesaplanan_savunma_son, disabled=True)
+                itiraz_tar_ham = c_op.text_input("İtiraz Tebliğ Tarihi (GG/AA/YYYY)*", value=mevcut_itiraz_tar)
+                c1.text_input("Savunma Son Günü", value=hesaplanan_savunma_son, disabled=True)
                 
                 if st.form_submit_button("💾 Kaydı Güncelle ve Savunma Son Gününü Hesapla"):
                     itiraz_tar = tarih_birlestir_ve_formatla(itiraz_tar_ham)
-                    if not itiraz_tar.strip():
+                    if not op_yetkilisi_input.strip():
+                        st.warning("⚠️ Lütfen Operasyon Yetkilisi seçiniz.")
+                    elif not itiraz_tar.strip():
                         st.warning("⚠️ Lütfen İtiraz Tebliğ Tarihini giriniz.")
                     else:
                         try:
                             savunma_son_str = hesapla_savunma_son_gun(itiraz_tar)
 
                             idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                            df.at[idx, 'Operasyon Yetkilisi'] = op_yetkilisi_input.strip().upper()
                             df.at[idx, 'İtiraz Tarihi'] = itiraz_tar
                             df.at[idx, 'Savunma Son Günü'] = savunma_son_str
                             
