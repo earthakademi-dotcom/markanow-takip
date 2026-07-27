@@ -471,13 +471,19 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     aylar_secenek = {"Tümü": None, "Ocak": "01", "Şubat": "02", "Mart": "03", "Nisan": "04", "Mayıs": "05", "Haziran": "06", "Temmuz": "07", "Ağustos": "08", "Eylül": "09", "Ekim": "10", "Kasım": "11", "Aralık": "12"}
     mevcut_yil_str = str(datetime.now().year)
     yillar_kumesi = {mevcut_yil_str}
-    if 'Satış Tarihi' in df.columns:
-        for t_str in df['Satış Tarihi'].dropna():
-            try:
-                dt_temp = pd.to_datetime(t_str, format='%d/%m/%Y', errors='coerce')
-                if pd.isna(dt_temp): dt_temp = pd.to_datetime(t_str, errors='coerce')
-                if not pd.isna(dt_temp): yillar_kumesi.add(str(dt_temp.year))
-            except: pass
+    
+    # Tüm tarih kolonlarından yılları toplayalım ki hangi yılda işlem varsa listede çıksın
+    if not df.empty:
+        tarih_kolonlari = ['Satış Tarihi', 'Fatura Tarihi', 'Başvuru Tarihi', 'Yayın Tarihi', 'Tescil Tebliğ Tarihi', 'Ödeme Tarihi']
+        for t_col in tarih_kolonlari:
+            if t_col in df.columns:
+                for t_str in df[t_col].dropna():
+                    try:
+                        dt_temp = pd.to_datetime(t_str, format='%d/%m/%Y', errors='coerce')
+                        if pd.isna(dt_temp): dt_temp = pd.to_datetime(t_str, errors='coerce')
+                        if not pd.isna(dt_temp): yillar_kumesi.add(str(dt_temp.year))
+                    except: pass
+                    
     yillar_listesi = ["Tümü"] + sorted(list(yillar_kumesi), reverse=True)
 
     if "genel_rapor_filtrelendi" not in st.session_state:
@@ -502,13 +508,36 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     secilen_rapor_ay_kod = aylar_secenek[st.session_state.secilen_rapor_ay_isim]
     aktif_yil = st.session_state.secilen_rapor_yil
 
+    # Aşamaya göre ilgili tarihi baz alan akıllı filtreleme mantığı
+    def asama_tarihi_sec(row):
+        durum = str(row.get('Durum', '')).strip()
+        tarih_str = ""
+        if durum in ["Muhasebe Onayı Bekliyor"]:
+            tarih_str = row.get('Satış Tarihi', '')
+        elif durum in ["Başvuru Beklemede"]:
+            tarih_str = row.get('Fatura Tarihi', '') if str(row.get('Fatura Tarihi', '')).strip() else row.get('Satış Tarihi', '')
+        elif durum in ["Kurum İncelemesinde"]:
+            tarih_str = row.get('Başvuru Tarihi', '') if str(row.get('Başvuru Tarihi', '')).strip() else row.get('Satış Tarihi', '')
+        elif durum in ["Yayında"]:
+            tarih_str = row.get('Yayın Tarihi', '') if str(row.get('Yayın Tarihi', '')).strip() else row.get('Başvuru Tarihi', '')
+        elif durum in ["İtiraz Geldi - Savunma Bekliyor", "Tescil Tebliğ Beklemede"]:
+            tarih_str = row.get('Yayın Tarihi', '')
+        elif durum in ["Tescil Tebliğ Edildi Müşteri Arandı", "Tescil Kurum Ödemesi Bekleyen"]:
+            tarih_str = row.get('Tescil Tebliğ Tarihi', '')
+        elif durum in ["Tescil Kuruma Ödendi", "Tescillendi 🎉", "Reddedildi ❌"]:
+            tarih_str = row.get('Ödeme Tarihi', '') if str(row.get('Ödeme Tarihi', '')).strip() else row.get('Tescil Tebliğ Tarihi', '')
+        
+        if not tarih_str or str(tarih_str).strip() == '' or str(tarih_str).lower() == 'nan':
+            tarih_str = row.get('Satış Tarihi', '')
+        return tarih_str
+
     def genel_rapor_filtrele(row):
         try:
-            s_tarih = row.get('Satış Tarihi', '')
-            if pd.isna(s_tarih) or str(s_tarih).strip() == '' or str(s_tarih).lower() == 'nan':
+            ilgili_tarih = asama_tarihi_sec(row)
+            if pd.isna(ilgili_tarih) or str(ilgili_tarih).strip() == '' or str(ilgili_tarih).lower() == 'nan':
                 return False
-            dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
-            if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
+            dt = pd.to_datetime(ilgili_tarih, format='%d/%m/%Y', errors='coerce')
+            if pd.isna(dt): dt = pd.to_datetime(ilgili_tarih, errors='coerce')
             if pd.isna(dt): return False
 
             yil_uyusur = True if aktif_yil == "Tümü" else (str(dt.year) == str(aktif_yil))
