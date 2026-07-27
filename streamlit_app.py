@@ -1369,7 +1369,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         except Exception as e:
                             st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
     elif secilen_asama == "Ödeme Sözü Verenler":
-        st.subheader("✏️ Marka Bilgilerini ve Ödeme Sözü Tarihini Güncelle")
+        st.subheader("✏️ Ödeme Sözü Tarihini Güncelle veya Ödeme Alındı İşlemi Yap")
         marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
         secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
         if secilen_marka:
@@ -1403,7 +1403,11 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                 mevcut_odeme_sozu = str(s_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(s_row.get('Ödeme Sözü Tarihi')) else ""
                 odeme_sozu_ham = c1.text_input("Ödeme Sözü Tarihi (GG/AA/YYYY)", value=mevcut_odeme_sozu)
                 
-                if st.form_submit_button("💾 Kaydı Güncelle"):
+                btn_col1, btn_col2 = st.columns(2)
+                submitted_update = btn_col1.form_submit_button("💾 Ödeme Tarihi Güncelle")
+                submitted_odemepap = btn_col2.form_submit_button("💳 Ödeme Yap (Tescil Kurum Ödemesi Bekleyen Yap)")
+                
+                if submitted_update:
                     yeni_sozu_tarihi = tarih_birlestir_ve_formatla(odeme_sozu_ham)
                     idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                     df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
@@ -1412,13 +1416,22 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                         df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                     
                     veriyi_kaydet_ve_yedekle(df)
-                    
-                    st.session_state["success_msg"] = f"Başarılı! Kayıt güncellendi ve yedeklendi."
+                    st.success("Güncellendi")
+                    import time; time.sleep(1.0)
                     st.rerun()
+
+                if submitted_odemepap:
+                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'Durum'] = "Tescil Kurum Ödemesi Bekleyen"
+                    df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
+                    if hesaplanan_son_odeme:
+                        df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
                     
-            if "success_msg" in st.session_state:
-                st.success(st.session_state["success_msg"])
-                del st.session_state["success_msg"]
+                    veriyi_kaydet_ve_yedekle(df)
+                    st.success("✅ Başarılı! Tescil Kurum Ödemesi Bekleyen aşamasına aktarıldı.")
+                    import time; time.sleep(1.2)
+                    st.session_state.aktif_sayfa = "Tescil Kurum Ödemesi Bekleyen"
+                    st.rerun()
     else:
         st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
         marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
