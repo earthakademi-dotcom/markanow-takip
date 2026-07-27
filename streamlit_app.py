@@ -672,9 +672,15 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         net_durum = kdv_haric - harc_maliyeti
         toplam_kdv_haric_ciro += kdv_haric
         toplam_harc_maliyeti += harc_maliyeti
+        
+        # Kaç Sınıf hesaplaması
+        sinif_degeri = row.get('Sınıf', '')
+        kac_sinif_sayisi = sinif_adedi_hesapla(sinif_degeri)
+        kac_sinif_metin = f"{kac_sinif_sayisi} Sınıf" if kac_sinif_sayisi > 0 else "0 Sınıf"
+
         tablo_satirlari.append({
             "Marka Adı": row.get('Marka Adı', ''), "Danışman": row.get('Danışman', ''), "Satış Tarihi": row.get('Satış Tarihi', ''),
-            "Sınıf": row.get('Sınıf', ''), "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL", "KDV Hariç Tutar (TL)": f"{kdv_haric:,.2f} TL",
+            "Sınıf": sinif_degeri, "Kaç Sınıf": kac_sinif_metin, "KDV Dahil Tutar (TL)": f"{tutar_dahil:,.2f} TL", "KDV Hariç Tutar (TL)": f"{kdv_haric:,.2f} TL",
             "Sınıf Toplam Harç (TL)": f"{harc_maliyeti:,.2f} TL", "Net Rakam (TL)": f"{net_durum:,.2f} TL"
         })
     genel_net_kar = toplam_kdv_haric_ciro - toplam_harc_maliyeti
