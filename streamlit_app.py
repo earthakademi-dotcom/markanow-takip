@@ -596,7 +596,6 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
                 if not pd.isna(dt_temp): yillar_kumesi.add(str(dt_temp.year))
             except: pass
     
-    # Yıl filtresine en üste "Tümü" seçeneği eklendi
     yillar_listesi = ["Tümü"] + sorted(list(yillar_kumesi), reverse=True)
 
     danismanlar_listesi = ["Tümü"]
@@ -604,25 +603,48 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Aylık Net Kar / Zarar Rap
         unik_danismanlar = sorted(df['Danışman'].dropna().astype(str).str.strip().str.upper().unique().tolist())
         danismanlar_listesi.extend([d for d in unik_danismanlar if d])
 
-    col_f1, col_f2, col_f3 = st.columns(3)
-    secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), key="kar_zarar_ay_sec")
-    varsayilan_yil_index = yillar_listesi.index(mevcut_yil_str) if mevcut_yil_str in yillar_listesi else 0
+    if "kar_zarar_filtrelendi" not in st.session_state:
+        st.session_state.kar_zarar_filtrelendi = False
+        st.session_state.secilen_kz_ay = "Tümü"
+        st.session_state.secilen_kz_yil = mevcut_yil_str if mevcut_yil_str in yillar_listesi else "Tümü"
+        st.session_state.secilen_kz_danisman = "Tümü"
+
+    col_f1, col_f2, col_f3, col_f4 = st.columns([1, 1, 1, 1])
+    varsayilan_yil_index = yillar_listesi.index(st.session_state.secilen_kz_yil) if st.session_state.secilen_kz_yil in yillar_listesi else 0
+    varsayilan_ay_index = list(aylar.keys()).index(st.session_state.secilen_kz_ay) if st.session_state.secilen_kz_ay in aylar else 0
+    varsayilan_danisman_index = danismanlar_listesi.index(st.session_state.secilen_kz_danisman) if st.session_state.secilen_kz_danisman in danismanlar_listesi else 0
+
+    secilen_ay_isim = col_f1.selectbox("Ay Seçin", list(aylar.keys()), index=varsayilan_ay_index, key="kar_zarar_ay_sec")
     secilen_yil = col_f2.selectbox("Yıl", options=yillar_listesi, index=varsayilan_yil_index, key="kar_zarar_yil_sec")
-    secilen_danisman_filtre = col_f3.selectbox("Danışman Seçin", danismanlar_listesi, key="kar_zarar_danisman_sec")
-    secilen_ay_kod = aylar[secilen_ay_isim]
+    secilen_danisman_filtre = col_f3.selectbox("Danışman Seçin", danismanlar_listesi, index=varsayilan_danisman_index, key="kar_zarar_danisman_sec")
     
+    with col_f4:
+        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+        kz_filtrele_basildi = st.button("🔍 Filtrele", key="kz_filtre_btn", use_container_width=True)
+
+    if kz_filtrele_basildi:
+        st.session_state.kar_zarar_filtrelendi = True
+        st.session_state.secilen_kz_ay = secilen_ay_isim
+        st.session_state.secilen_kz_yil = secilen_yil
+        st.session_state.secilen_kz_danisman = secilen_danisman_filtre
+        st.success("✅ Filtrelendi!")
+
+    secilen_ay_kod = aylar[st.session_state.secilen_kz_ay]
+    aktif_kz_yil = st.session_state.secilen_kz_yil
+    aktif_kz_danisman = st.session_state.secilen_kz_danisman
+
     rapor_df = df.copy()
     def net_kar_filtrele(row):
         try:
-            if secilen_danisman_filtre != "Tümü":
-                if str(row.get('Danışman', '')).strip().upper() != secilen_danisman_filtre: return False
+            if aktif_kz_danisman != "Tümü":
+                if str(row.get('Danışman', '')).strip().upper() != aktif_kz_danisman: return False
             s_tarih = row.get('Satış Tarihi', '')
             if pd.isna(s_tarih) or str(s_tarih).strip() == '': return False
             dt = pd.to_datetime(s_tarih, format='%d/%m/%Y', errors='coerce')
             if pd.isna(dt): dt = pd.to_datetime(s_tarih, errors='coerce')
             if pd.isna(dt): return False
             ay_eslesir = True if secilen_ay_kod is None else (f"{dt.month:02d}" == secilen_ay_kod)
-            yil_eslesir = True if secilen_yil == "Tümü" else (str(dt.year) == str(secilen_yil).strip())
+            yil_eslesir = True if aktif_kz_yil == "Tümü" else (str(dt.year) == str(aktif_kz_yil).strip())
             return ay_eslesir and yil_eslesir
         except: return False
         
