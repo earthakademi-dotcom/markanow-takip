@@ -240,7 +240,7 @@ def load_data():
         "Satış Tarihi", "Tutar", "Durum", "Danışman", "Fatura No", "Fatura Tarihi", 
         "Başvuru No", "Başvuru Tarihi", "Yayın Tarihi", "Yayın Bitiş Tarihi", 
         "Sonraki Aşama Seçimi", "İtiraz Tarihi", "Savunma Son Günü", "Tescil Tebliğ Tarihi", "Tescil Son Ödeme Tarihi", "Ödeme Tarihi", "Tescil Harç Tutarı", "Sabitlenen Maliyet", "Ödeme Sözü Tarihi", "Operasyon Yetkilisi", "Ödeme Sözü Güncelleme Sayısı",
-        "Savunma Durumu", "Savunma Ücreti KDV Dahil", "Evrak Numarası", "Savunma Ücreti Alındı"
+        "Savunma Durumu", "Savunma Ücreti KDV Dahil", "Evrak Numarası", "Savunma Ücreti Alındı", "Savunma Yapıldı Tarihi"
     ]
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         if os.path.exists(BACKUP_FILE) and os.path.getsize(BACKUP_FILE) > 0:
@@ -460,7 +460,7 @@ if is_muhasebe:
         if st.button("🔍 Kurum İncelemesinde", use_container_width=True): sayfa_degistir("Kurum İncelemesinde")
         if st.button("📰 Yayında", use_container_width=True): sayfa_degistir("Yayında")
         if st.button("⚠️ İtiraz / Savunma Bekliyor", use_container_width=True): sayfa_degistir("İtiraz Geldi - Savunma Bekliyor")
-        if st.button("📋 Savunma Ücret Alındı", use_container_width=True): sayfa_degistir("Savunma Yapıldı")
+        if st.button("📋 Savunma Yapıldı", use_container_width=True): sayfa_degistir("Savunma Yapıldı")
         if st.button("❌ Savunma Yapılmadı", use_container_width=True): sayfa_degistir("Savunma Yapılmadı")
         if st.button("📄 Tescil Tebliğ Beklemede", use_container_width=True): sayfa_degistir("Tescil Tebliğ Beklemede")
         if st.button("📞 Ödeme Sözü Verenler", use_container_width=True): sayfa_degistir("Ödeme Sözü Verenler")
@@ -499,7 +499,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Toplu Excel Yükleme":
         "Başvuru No": ["2026/01234", "2026/05678"], "Başvuru Tarihi": ["11/01/2026", "16/02/2026"],
         "Sonraki Aşama Seçimi": ["", ""], "İtiraz Tarihi": ["", ""], "Savunma Son Günü": ["", ""], "Tescil Tebliğ Tarihi": ["", ""],
         "Tescil Son Ödeme Tarihi": ["", ""], "Ödeme Tarihi": ["", ""], "Sabitlenen Maliyet": ["", ""], "Ödeme Sözü Tarihi": ["", ""], "Operasyon Yetkilisi": ["", ""], "Ödeme Sözü Güncelleme Sayısı": ["0", "0"],
-        "Savunma Durumu": ["", ""], "Savunma Ücreti KDV Dahil": ["", ""], "Evrak Numarası": ["", ""], "Savunma Ücreti Alındı": ["Hayır", "Hayır"]
+        "Savunma Durumu": ["", ""], "Savunma Ücreti KDV Dahil": ["", ""], "Evrak Numarası": ["", ""], "Savunma Ücreti Alındı": ["Hayır", "Hayır"], "Savunma Yapıldı Tarihi": ["", ""]
     }
     ornek_df = pd.DataFrame(ornek_data)
     csv_veri = ornek_df.to_csv(index=False, encoding='utf-8-sig', sep=';').encode('utf-8-sig')
@@ -560,7 +560,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
     yillar_kumesi = {mevcut_yil_str}
     
     if not df.empty:
-        tarih_kolonlari = ['Satış Tarihi', 'Fatura Tarihi', 'Başvuru Tarihi', 'Tescil Tebliğ Tarihi', 'Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'İtiraz Tarihi', 'Savunma Son Günü']
+        tarih_kolonlari = ['Satış Tarihi', 'Fatura Tarihi', 'Başvuru Tarihi', 'Tescil Tebliğ Tarihi', 'Ödeme Tarihi', 'Ödeme Sözü Tarihi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Yapıldı Tarihi']
         for t_col in tarih_kolonlari:
             if t_col in df.columns:
                 for t_str in df[t_col].dropna():
@@ -604,7 +604,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Marka Tescil Raporlama":
                 row.get('Satış Tarihi', ''), row.get('Fatura Tarihi', ''), 
                 row.get('Başvuru Tarihi', ''), 
                 row.get('Tescil Tebliğ Tarihi', ''), row.get('Ödeme Tarihi', ''), row.get('Ödeme Sözü Tarihi', ''),
-                row.get('İtiraz Tarihi', ''), row.get('Savunma Son Günü', '')
+                row.get('İtiraz Tarihi', ''), row.get('Savunma Son Günü', ''), row.get('Savunma Yapıldı Tarihi', '')
             ]
             
             gecerli_dt = None
@@ -922,9 +922,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Savunma Yapıldı Raporu":
     st.metric("Toplam Marka Adedi", f"{savunma_yapildi_df['Marka Adı'].nunique()} Adet")
     st.write("---")
     
-    rapor_goruntule_df = savunma_yapildi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Durumu', 'Savunma Ücreti KDV Dahil', 'Evrak Numarası', 'Savunma Ücreti Alındı', 'Başvuru No']].copy() if not savunma_yapildi_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Durumu', 'Savunma Ücreti KDV Dahil', 'Evrak Numarası', 'Savunma Ücreti Alındı', 'Başvuru No'])
+    rapor_goruntule_df = savunma_yapildi_df[['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Yapıldı Tarihi', 'Savunma Durumu', 'Savunma Ücreti KDV Dahil', 'Evrak Numarası', 'Savunma Ücreti Alındı', 'Başvuru No']].copy() if not savunma_yapildi_df.empty else pd.DataFrame(columns=['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Yapıldı Tarihi', 'Savunma Durumu', 'Savunma Ücreti KDV Dahil', 'Evrak Numarası', 'Savunma Ücreti Alındı', 'Başvuru No'])
     
-    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Durumu', 'Savunma Ücreti KDV Dahil', 'Evrak Numarası', 'Savunma Ücreti Alındı', 'Başvuru No']
+    kolon_sirasi = ['Marka Adı', 'Danışman', 'Operasyon Yetkilisi', 'İtiraz Tarihi', 'Savunma Son Günü', 'Savunma Yapıldı Tarihi', 'Savunma Durumu', 'Savunma Ücreti KDV Dahil', 'Evrak Numarası', 'Savunma Ücreti Alındı', 'Başvuru No']
     rapor_goruntule_df = rapor_goruntule_df[[c for c in kolon_sirasi if c in rapor_goruntule_df.columns]]
     
     st.dataframe(rapor_goruntule_df.rename(columns={'Başvuru No': 'Başvuru Numarası', 'Savunma Ücreti KDV Dahil': 'Savunma Ücreti (KDV Dahil)'}), use_container_width=True)
@@ -1125,7 +1125,7 @@ elif not is_muhasebe and st.session_state.aktif_sayfa == "Yeni Satış Giriş":
                     "Doğum Tarihi": dogru_tarihi, "İl": il, "Sınıf": ",".join(sinif), "Ödeme": odeme, 
                     "Satış Tarihi": s_tarihi, "Tutar": tutar_input.strip(), "Durum": "Muhasebe Onayı Bekliyor", 
                     "Danışman": aktif_kullanici_ad, "Fatura No": "", "Fatura Tarihi": "", "Başvuru No": "", "Başvuru Tarihi": "", "Sonraki Aşama Seçimi": "", "İtiraz Tarihi": "", "Savunma Son Günü": "", "Tescil Tebliğ Tarihi": "", "Tescil Son Ödeme Tarihi": "", "Ödeme Tarihi": "", "Sabitlenen Maliyet": str(anlik_hesaplanan_maliyet), "Ödeme Sözü Tarihi": "", "Operasyon Yetkilisi": "", "Ödeme Sözü Güncelleme Sayısı": "0",
-                    "Savunma Durumu": "", "Savunma Ücreti KDV Dahil": "", "Evrak Numarası": "", "Savunma Ücreti Alındı": "Hayır"
+                    "Savunma Durumu": "", "Savunma Ücreti KDV Dahil": "", "Evrak Numarası": "", "Savunma Ücreti Alındı": "Hayır", "Savunma Yapıldı Tarihi": ""
                 }
                 guncel_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                 veriyi_kaydet_ve_yedekle(guncel_df)
@@ -1536,6 +1536,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     else:
                         try:
                             savunma_son_str = hesapla_savunma_son_gun(itiraz_tar)
+                            bugunku_tarih = datetime.now().strftime("%d/%m/%Y")
                             idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
                             df.at[idx, 'Durum'] = "Savunma Yapıldı"
                             df.at[idx, 'Operasyon Yetkilisi'] = otomatik_op
@@ -1545,6 +1546,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             df.at[idx, 'Savunma Ücreti KDV Dahil'] = savunma_ucret_input.strip()
                             df.at[idx, 'Evrak Numarası'] = evrak_no_input.strip()
                             df.at[idx, 'Savunma Ücreti Alındı'] = "Evet" if savunma_ucreti_alindi_check else "Hayır"
+                            df.at[idx, 'Savunma Yapıldı Tarihi'] = bugunku_tarih
                             
                             veriyi_kaydet_ve_yedekle(df)
                             st.success("✅ Başarılı! Savunma Yapıldı aşamasına aktarıldı.")
@@ -1578,6 +1580,35 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             st.rerun()
                         except Exception as e:
                             st.error(f"❌ Hata oluştu: {e}")
+    elif secilen_asama == "Savunma Yapıldı":
+        st.subheader("✏️ Savunma Yapıldı Bilgilerini Güncelle")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            
+            mevcut_itiraz_tar = str(s_row.get('İtiraz Tarihi', '')) if pd.notna(s_row.get('İtiraz Tarihi')) and str(s_row.get('İtiraz Tarihi')).lower() != 'nan' else ""
+            mevcut_savunma_son = str(s_row.get('Savunma Son Günü', '')) if pd.notna(s_row.get('Savunma Son Günü')) and str(s_row.get('Savunma Son Günü')).lower() != 'nan' else ""
+            mevcut_savunma_yapildi_tar = str(s_row.get('Savunma Yapıldı Tarihi', '')) if pd.notna(s_row.get('Savunma Yapıldı Tarihi')) and str(s_row.get('Savunma Yapıldı Tarihi')).lower() != 'nan' else datetime.now().strftime("%d/%m/%Y")
+            
+            with st.form(f"form_guncelle_savunma_yapildi_{secilen_marka}"):
+                c1, c2, c3 = st.columns(3)
+                c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                c3.text_input("İtiraz Tebliğ Tarihi", value=mevcut_itiraz_tar, disabled=True)
+                
+                c1.text_input("Savunma Son Günü", value=mevcut_savunma_son, disabled=True)
+                savunma_yapildi_tar_ham = c2.text_input("Savunma Yapıldı Tarihi (GG/AA/YYYY)", value=mevcut_savunma_yapildi_tar)
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    yeni_savunma_yapildi_tar = tarih_birlestir_ve_formatla(savunma_yapildi_tar_ham)
+                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'Savunma Yapıldı Tarihi'] = yeni_savunma_yapildi_tar
+                    
+                    veriyi_kaydet_ve_yedekle(df)
+                    st.success("✅ Başarılı! Kayıt güncellendi.")
+                    import time; time.sleep(1.2)
+                    st.rerun()
     elif secilen_asama == "Tescil Tebliğ Beklemede":
         st.subheader("✏️ Tescil Tebliğ Tarihini Girin")
         marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
