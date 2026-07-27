@@ -1368,6 +1368,57 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                             st.rerun()
                         except Exception as e:
                             st.error(f"❌ Tarih hesaplanırken hata oluştu: {e}")
+    elif secilen_asama == "Ödeme Sözü Verenler":
+        st.subheader("✏️ Marka Bilgilerini ve Ödeme Sözü Tarihini Güncelle")
+        marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
+        secilen_marka = st.selectbox("İşlem Yapılacak Markayı Seçin", options=marka_listesi) if marka_listesi else None
+        if secilen_marka:
+            s_row = df[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)].iloc[0]
+            
+            mevcut_tescil_teblig = str(s_row.get('Tescil Tebliğ Tarihi', '')).strip()
+            hesaplanan_son_odeme = ""
+            if mevcut_tescil_teblig and mevcut_tescil_teblig.lower() != 'nan':
+                try:
+                    parsed_t = datetime.strptime(mevcut_tescil_teblig, "%d/%m/%Y")
+                    eklenen_iki_ay = ay_ekle(parsed_t, 2)
+                    kontrol_edilen_dt = resmi_tatil_ve_tatil_kontrol(eklenen_iki_ay)
+                    hesaplanan_son_odeme = kontrol_edilen_dt.strftime("%d/%m/%Y")
+                except:
+                    hesaplanan_son_odeme = str(s_row.get('Tescil Son Ödeme Tarihi', ''))
+            
+            with st.form(f"form_guncelle_odeme_sozu_{secilen_marka}"):
+                c1, c2 = st.columns(2)
+                c1.text_input("Danışman", value=str(s_row.get('Danışman', '')), disabled=True)
+                c2.text_input("Başvuru No", value=str(s_row.get('Başvuru No', '')) if pd.notna(s_row.get('Başvuru No')) else "", disabled=True)
+                
+                b_tarih_ham = c1.text_input("Başvuru Tarihi", value=str(s_row.get('Başvuru Tarihi', '')) if pd.notna(s_row.get('Başvuru Tarihi')) else "", disabled=True)
+                y_tar_ham = c2.text_input("Yayın Tarihi", value=str(s_row.get('Yayın Tarihi', '')) if pd.notna(s_row.get('Yayın Tarihi')) else "", disabled=True)
+                
+                yayin_bitis = c1.text_input("Yayın Bitiş Tarihi", value=str(s_row.get('Yayın Bitiş Tarihi', '')) if pd.notna(s_row.get('Yayın Bitiş Tarihi')) else "", disabled=True)
+                tescil_tar_ham = c2.text_input("Tescil Tebliğ Tarihi", value=mevcut_tescil_teblig, disabled=True)
+                
+                tescil_harc_tutar_val = c1.text_input("Tescil Harç Tutarı (TL)", value=str(s_row.get('Tescil Harç Tutarı', '')) if pd.notna(s_row.get('Tescil Harç Tutarı')) else "")
+                c2.text_input("Tescil Ödeme Son Günü", value=hesaplanan_son_odeme, disabled=True)
+                
+                mevcut_odeme_sozu = str(s_row.get('Ödeme Sözü Tarihi', '')) if pd.notna(s_row.get('Ödeme Sözü Tarihi')) else ""
+                odeme_sozu_ham = c1.text_input("Ödeme Sözü Tarihi (GG/AA/YYYY)", value=mevcut_odeme_sozu)
+                
+                if st.form_submit_button("💾 Kaydı Güncelle"):
+                    yeni_sozu_tarihi = tarih_birlestir_ve_formatla(odeme_sozu_ham)
+                    idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                    df.at[idx, 'Tescil Harç Tutarı'] = tescil_harc_tutar_val.strip()
+                    df.at[idx, 'Ödeme Sözü Tarihi'] = yeni_sozu_tarihi.strip()
+                    if hesaplanan_son_odeme:
+                        df.at[idx, 'Tescil Son Ödeme Tarihi'] = hesaplanan_son_odeme
+                    
+                    veriyi_kaydet_ve_yedekle(df)
+                    
+                    st.session_state["success_msg"] = f"Başarılı! Kayıt güncellendi ve yedeklendi."
+                    st.rerun()
+                    
+            if "success_msg" in st.session_state:
+                st.success(st.session_state["success_msg"])
+                del st.session_state["success_msg"]
     else:
         st.subheader("✏️ Marka Bilgilerini ve Durumunu Güncelle")
         marka_listesi = asama_df['Marka Adı'].astype(str).tolist() if not asama_df.empty else []
