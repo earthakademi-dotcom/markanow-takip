@@ -865,11 +865,9 @@ elif is_muhasebe and st.session_state.aktif_sayfa == "Danışman Satışlarını
 elif is_muhasebe and st.session_state.aktif_sayfa == "Tescil Tebliğ Edildi Müşteri Arandı":
     if st.button("⬅️ Geri Çık"): sayfa_degistir("Ana Sayfa")
     st.markdown("<h2>💳 Tescil Tebliğ Edildi Müşteri Arandı Ekranı</h2>", unsafe_allow_html=True)
-    tescil_df = df[(df['Durum'].astype(str).str.strip().isin(["Tescil Tebliğ Beklemede", "Tescil Kurum Ödemesi Bekleyen"])) &
-                   (df['Tescil Tebliğ Tarihi'].astype(str).str.strip() != "") &
-                   (df['Tescil Tebliğ Tarihi'].astype(str).str.lower() != "nan")]
+    tescil_df = df[df['Durum'].astype(str).str.strip() == "Tescil Tebliğ Edildi Müşteri Arandı"]
     
-    if tescil_df.empty: st.info("Tescil Tebliğ Tarihi girilmiş ve işlem bekleyen marka bulunmuyor.")
+    if tescil_df.empty: st.info("Bu aşamada işlem bekleyen marka bulunmuyor.")
     else:
         arama_tescil = st.text_input("🔍 Marka Ara", placeholder="Marka adı yazın...")
         if arama_tescil.strip(): tescil_df = tescil_df[tescil_df['Marka Adı'].astype(str).str.contains(arama_tescil.strip(), case=False, na=False)]
@@ -1037,6 +1035,7 @@ elif is_muhasebe and st.session_state.aktif_sayfa in [
                     
                     if st.form_submit_button("💾 Kaydı Güncelle"):
                         idx = df.index[(df['Durum'].astype(str).str.strip() == secilen_asama) & (df['Marka Adı'].astype(str) == secilen_marka)][0]
+                        # DÜZELTME: Seçilen aşama (İtiraz Geldi - Savunma Bekliyor veya Tescil Tebliğ Beklemede) tam olarak duruma atanıyor
                         df.at[idx, 'Durum'] = secilen_sonraki_asama
                         
                         veriyi_kaydet_ve_yedekle(df)
